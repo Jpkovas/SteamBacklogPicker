@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Pipes;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace SteamBacklogPicker.Integration.SteamHooks;
@@ -20,7 +21,7 @@ public sealed class SteamNamedPipeHookClient : ISteamHookClient
     }
 
     /// <inheritdoc />
-    public async IAsyncEnumerable<SteamDownloadEvent> SubscribeAsync(CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<SteamDownloadEvent> SubscribeAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         while (!cancellationToken.IsCancellationRequested && !_disposed)
         {
