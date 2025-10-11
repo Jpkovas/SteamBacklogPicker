@@ -21,8 +21,8 @@
     <Compile Update="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
-    <ApplicationDefinition Include="App.xaml" />
-    <Page Include="MainWindow.xaml">
+    <ApplicationDefinition Update="App.xaml" />
+    <Page Update="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
