@@ -30,11 +30,15 @@ public sealed class SteamLibraryFoldersParser : ISteamLibraryFoldersParser
             .ToArray();
     }
 
-    private static void CollectPaths(VdfElement element, ICollection<string> collector, string? currentKey = null)
+    private static void CollectPaths(
+        VdfElement element,
+        ICollection<string> collector,
+        string? currentKey = null,
+        string? parentKey = null)
     {
         if (element.Value is not null)
         {
-            if (currentKey is not null && IsLibraryKey(currentKey))
+            if (currentKey is not null && IsLibraryKey(currentKey, parentKey))
             {
                 collector.Add(element.Value);
             }
@@ -46,22 +50,34 @@ public sealed class SteamLibraryFoldersParser : ISteamLibraryFoldersParser
             return;
         }
 
-        if (currentKey is not null && IsLibraryKey(currentKey) && TryExtractPath(element.Children, out var nestedPath))
+        if (currentKey is not null
+            && IsLibraryKey(currentKey, parentKey)
+            && TryExtractPath(element.Children, out var nestedPath))
         {
             collector.Add(nestedPath);
         }
 
         foreach (var pair in element.Children)
         {
-            CollectPaths(pair.Value, collector, pair.Key);
+            CollectPaths(pair.Value, collector, pair.Key, currentKey);
         }
     }
 
-    private static bool IsLibraryKey(string key)
+    private static bool IsLibraryKey(string key, string? parentKey)
     {
-        return key.Equals("path", StringComparison.OrdinalIgnoreCase)
-               || key.Equals("contentpath", StringComparison.OrdinalIgnoreCase)
-               || int.TryParse(key, out _);
+        if (key.Equals("path", StringComparison.OrdinalIgnoreCase)
+            || key.Equals("contentpath", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (!int.TryParse(key, out _))
+        {
+            return false;
+        }
+
+        return parentKey is null
+               || parentKey.Equals("LibraryFolders", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool TryExtractPath(IReadOnlyDictionary<string, VdfElement> children, out string? path)

@@ -133,9 +133,23 @@ public sealed class SteamLibraryLocator : IDisposable
                 return;
             }
 
-            if (FilePathMatches(e.OldFullPath) || FilePathMatches(e.FullPath))
+            var oldMatches = FilePathMatches(e.OldFullPath);
+            var newMatches = FilePathMatches(e.FullPath);
+
+            if (!oldMatches && !newMatches)
+            {
+                return;
+            }
+
+            if (newMatches)
             {
                 _libraryFilePath = e.FullPath;
+                UpdateCacheNoLock();
+                return;
+            }
+
+            if (oldMatches)
+            {
                 UpdateCacheNoLock();
             }
         }
