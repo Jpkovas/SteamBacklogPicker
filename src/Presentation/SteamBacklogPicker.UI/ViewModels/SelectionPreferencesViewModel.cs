@@ -96,7 +96,7 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
         {
             RequireInstalled = preferences.Filters.RequireInstalled;
             IncludeFamilyShared = preferences.Filters.IncludeFamilyShared;
-            RequiredTags = string.Join(", ", preferences.Filters.RequiredTags ?? Array.Empty<string>());
+            RequiredTags = string.Join(", ", preferences.Filters.RequiredTags ?? Enumerable.Empty<string>());
             MinimumSizeGb = FormatSize(preferences.Filters.MinimumSizeOnDisk);
             MaximumSizeGb = FormatSize(preferences.Filters.MaximumSizeOnDisk);
         }
