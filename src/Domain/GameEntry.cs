@@ -28,4 +28,6 @@ public sealed record class GameEntry
     public long? SizeOnDisk { get; init; }
 
     public DateTimeOffset? LastPlayed { get; init; }
+
+    public IReadOnlyCollection<string> Tags { get; init; } = Array.Empty<string>();
 }
