@@ -27,7 +27,7 @@ public sealed class FileTelemetryConsentStore : ITelemetryConsentStore
         try
         {
             using var stream = File.OpenRead(_storePath);
-            var? state = JsonSerializer.Deserialize<TelemetryConsentState>(stream);
+            TelemetryConsentState? state = JsonSerializer.Deserialize<TelemetryConsentState>(stream);
             return state ?? TelemetryConsentState.CreateDefault(_options.TelemetryEnabledByDefault);
         }
         catch
