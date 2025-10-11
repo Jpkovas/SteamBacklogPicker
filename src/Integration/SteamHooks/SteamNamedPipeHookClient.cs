@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO.Pipes;
 using System.Text;
 
@@ -186,8 +187,12 @@ public sealed class SteamNamedPipeHookClient : ISteamHookClient
         }
 
         int? depotId = int.TryParse(depotRaw, out var parsedDepot) ? parsedDepot : null;
-        double? progress = double.TryParse(progressRaw, out var parsedProgress) ? parsedProgress : null;
-        long? bytes = long.TryParse(bytesRaw, out var parsedBytes) ? parsedBytes : null;
+        double? progress = double.TryParse(progressRaw, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsedProgress)
+            ? parsedProgress
+            : null;
+        long? bytes = long.TryParse(bytesRaw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedBytes)
+            ? parsedBytes
+            : null;
         var status = string.IsNullOrWhiteSpace(statusRaw) ? "unknown" : statusRaw;
 
         downloadEvent = new SteamDownloadEvent(DateTimeOffset.UtcNow, appId, depotId, status, progress, bytes);

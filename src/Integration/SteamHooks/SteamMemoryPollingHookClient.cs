@@ -78,7 +78,7 @@ public sealed class SteamMemoryPollingHookClient : ISteamHookClient
 
         public static SteamProcessAccessor? TryCreate(Process process)
         {
-            var access = ProcessAccessFlags.VirtualMemoryRead | ProcessAccessFlags.QueryInformation;
+            var access = NativeMethods.ProcessAccessFlags.VirtualMemoryRead | NativeMethods.ProcessAccessFlags.QueryInformation;
             var handle = NativeMethods.OpenProcess(access, false, process.Id);
             if (handle.IsInvalid)
             {
