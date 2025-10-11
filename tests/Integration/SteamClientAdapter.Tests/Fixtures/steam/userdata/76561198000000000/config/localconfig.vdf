@@ -1,0 +1,21 @@
+"UserLocalConfigStore"
+{
+    "apps"
+    {
+        "10"
+        {
+            "name"      "Sample Game"
+            "Installed" "1"
+        }
+        "20"
+        {
+            "name"      "Family Shared Game"
+            "Installed" "1"
+        }
+        "30"
+        {
+            "name"      "Not Installed"
+            "Installed" "0"
+        }
+    }
+}
