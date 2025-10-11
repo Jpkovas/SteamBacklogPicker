@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -78,7 +79,7 @@ public sealed class SteamMemoryPollingHookClient : ISteamHookClient
 
         public static SteamProcessAccessor? TryCreate(Process process)
         {
-            var access = ProcessAccessFlags.VirtualMemoryRead | ProcessAccessFlags.QueryInformation;
+            var access = NativeMethods.ProcessAccessFlags.VirtualMemoryRead | NativeMethods.ProcessAccessFlags.QueryInformation;
             var handle = NativeMethods.OpenProcess(access, false, process.Id);
             if (handle.IsInvalid)
             {
@@ -159,8 +160,8 @@ public sealed class SteamMemoryPollingHookClient : ISteamHookClient
                     appId,
                     int.TryParse(depotRaw, out var depotId) ? depotId : null,
                     string.IsNullOrWhiteSpace(statusRaw) ? "unknown" : statusRaw!,
-                    double.TryParse(progressRaw, out var progress) ? progress : null,
-                    long.TryParse(bytesRaw, out var bytes) ? bytes : null);
+                    double.TryParse(progressRaw, NumberStyles.Float, CultureInfo.InvariantCulture, out var progress) ? progress : null,
+                    long.TryParse(bytesRaw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var bytes) ? bytes : null);
 
                 results.Add(downloadEvent);
             }
