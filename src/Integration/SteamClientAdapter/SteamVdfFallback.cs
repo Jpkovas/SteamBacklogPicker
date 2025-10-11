@@ -128,10 +128,23 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
         foreach (var (appId, node) in entries)
         {
             var flagNode = node.FindPath("extended", "IsSubscribedFromFamilySharing");
-            if (flagNode is not null && flagNode.TryGetBoolean(out var flag))
+            if (flagNode is null)
             {
-                _familySharingCache[appId] = flag;
+                continue;
             }
+
+            if (!flagNode.TryGetBoolean(out var flag))
+            {
+                if (flagNode.Value is null)
+                {
+                    continue;
+                }
+
+                flag = flagNode.Value == "1" ||
+                       flagNode.Value.Equals("true", StringComparison.OrdinalIgnoreCase);
+            }
+
+            _familySharingCache[appId] = flag;
         }
 
         _familySharingLoaded = true;
