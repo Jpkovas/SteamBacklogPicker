@@ -12,7 +12,7 @@
         MinHeight="600"
         Background="#FF1C1C1C"
         Foreground="White">
-    <Grid Margin="24" ColumnSpacing="32">
+    <Grid Margin="24">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="360" />
             <ColumnDefinition Width="*" />
@@ -84,6 +84,7 @@
         </Border>
 
         <Border Grid.Column="1"
+                Margin="32,0,0,0"
                 Background="#FF2A2A2A"
                 Padding="24"
                 CornerRadius="12"
