@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
@@ -28,7 +29,7 @@ public sealed class SteamMemoryPollingHookClient : ISteamHookClient
     }
 
     /// <inheritdoc />
-    public async IAsyncEnumerable<SteamDownloadEvent> SubscribeAsync(CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<SteamDownloadEvent> SubscribeAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         if (_options.MemoryPollingInterval <= TimeSpan.Zero)
         {
