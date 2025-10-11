@@ -44,11 +44,35 @@ public sealed class ValveBinaryVdfParser
             var payload = reader.ReadBytes((int)size);
             using var payloadStream = new MemoryStream(payload, writable: false);
             using var payloadReader = new BinaryReader(payloadStream, Encoding.UTF8);
+            SkipAppInfoMetadata(payloadReader, appId, size);
             var node = ParseNode(payloadReader);
             result[appId] = node;
         }
 
         return result;
+    }
+
+    private static void SkipAppInfoMetadata(BinaryReader reader, uint appId, uint size)
+    {
+        const int checksumLength = 20;
+        const int metadataLength = sizeof(uint) + sizeof(uint) + sizeof(ulong) + checksumLength + sizeof(uint);
+
+        if (size < metadataLength)
+        {
+            throw new InvalidDataException($"App {appId} metadata is smaller than the expected {metadataLength} bytes.");
+        }
+
+        reader.ReadUInt32(); // state
+        reader.ReadUInt32(); // last updated
+        reader.ReadUInt64(); // access token
+
+        var checksumBytes = reader.ReadBytes(checksumLength);
+        if (checksumBytes.Length != checksumLength)
+        {
+            throw new EndOfStreamException($"Unexpected end of stream while reading app {appId} metadata checksum.");
+        }
+
+        reader.ReadUInt32(); // change number
     }
 
     private static ValveKeyValueNode ParseNode(BinaryReader reader)
