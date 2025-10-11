@@ -19,6 +19,7 @@ public sealed class ValveBinaryVdfParser
         Color = 6,
         UInt64 = 7,
         End = 8,
+        Boolean = 0x14,
     }
 
     public IDictionary<uint, ValveKeyValueNode> ParseAppInfo(Stream stream)
@@ -123,6 +124,12 @@ public sealed class ValveBinaryVdfParser
                 case ValveBinaryType.Color:
                     parent.AddChild(ValveKeyValueNode.CreateValue(key, reader.ReadUInt32().ToString(CultureInfo.InvariantCulture)));
                     break;
+                case ValveBinaryType.Boolean:
+                    {
+                        var value = reader.ReadByte();
+                        parent.AddChild(ValveKeyValueNode.CreateValue(key, value != 0 ? "1" : "0"));
+                        break;
+                    }
                 default:
                     throw new InvalidDataException($"Unsupported Valve binary type: {type}.");
             }
