@@ -1,0 +1,6 @@
+# Normalize text files and explicitly mark Valve Data Format fixtures as text.
+* text=auto
+
+# Ensure Valve Data Format fixtures are treated as text so they diff correctly
+*.acf text working-tree-encoding=UTF-8 diff
+*.vdf text working-tree-encoding=UTF-8 diff
