@@ -4,4 +4,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Domain\Domain.csproj" />
+    <ProjectReference Include="..\..\Integration\SteamClientAdapter\SteamClientAdapter.csproj" />
+    <ProjectReference Include="..\..\Integration\ValveFormatParser\ValveFormatParser.csproj" />
+  </ItemGroup>
 </Project>

@@ -6,6 +6,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamDiscovery", "src/Infra
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ValveFormatParser", "src/Integration/ValveFormatParser/ValveFormatParser.csproj", "{4AE088D4-7E7D-4F97-87E7-9FF5C3D40174}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Domain", "src/Domain/Domain.csproj", "{01B31FA2-0A5D-459B-A4C1-6784E4DFAC1E}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamClientAdapter", "src/Integration/SteamClientAdapter/SteamClientAdapter.csproj", "{8F4A2F72-3D5E-4EDE-A9E2-7C77E7F42C40}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamDiscovery.Tests", "tests/Infrastructure/SteamDiscovery.Tests/SteamDiscovery.Tests.csproj", "{F9A50B94-7F77-45D6-9F95-D829C1279E4F}"
@@ -18,6 +20,10 @@ Global
         Release|Any CPU = Release|Any CPU
     EndGlobalSection
     GlobalSection(ProjectConfigurationPlatforms) = postSolution
+        {01B31FA2-0A5D-459B-A4C1-6784E4DFAC1E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {01B31FA2-0A5D-459B-A4C1-6784E4DFAC1E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {01B31FA2-0A5D-459B-A4C1-6784E4DFAC1E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {01B31FA2-0A5D-459B-A4C1-6784E4DFAC1E}.Release|Any CPU.Build.0 = Release|Any CPU
         {7A6D827E-7D89-4D9E-8A9C-772316A1129F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
         {7A6D827E-7D89-4D9E-8A9C-772316A1129F}.Debug|Any CPU.Build.0 = Debug|Any CPU
         {7A6D827E-7D89-4D9E-8A9C-772316A1129F}.Release|Any CPU.ActiveCfg = Release|Any CPU

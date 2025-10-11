@@ -3,7 +3,14 @@ using System.Linq;
 
 namespace SteamDiscovery;
 
-public sealed class SteamLibraryLocator : IDisposable
+public interface ISteamLibraryLocator
+{
+    IReadOnlyList<string> GetLibraryFolders();
+
+    void Refresh();
+}
+
+public sealed class SteamLibraryLocator : ISteamLibraryLocator, IDisposable
 {
     private readonly ISteamRegistryReader _registryReader;
     private readonly ISteamLibraryFoldersParser _parser;
