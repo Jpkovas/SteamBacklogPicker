@@ -1,0 +1,15 @@
+"users"
+{
+    "76561198000000000"
+    {
+        "AccountName"  "primary"
+        "MostRecent"   "1"
+        "Timestamp"    "1700000000"
+    }
+    "76561198000000001"
+    {
+        "AccountName"  "secondary"
+        "MostRecent"   "0"
+        "Timestamp"    "1600000000"
+    }
+}
