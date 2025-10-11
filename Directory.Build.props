@@ -1,0 +1,4 @@
+<Project>
+  <!-- Repository-wide properties are defined here. See Directory.Build.targets for
+       Windows targeting configuration that requires evaluated project metadata. -->
+</Project>

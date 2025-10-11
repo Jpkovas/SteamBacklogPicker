@@ -1,0 +1,5 @@
+<Project>
+  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'windows' and '$(EnableWindowsTargeting)' == ''">
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+  </PropertyGroup>
+</Project>
