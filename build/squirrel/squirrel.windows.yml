@@ -1,0 +1,10 @@
+# Configuration for Squirrel.Windows releasify command
+packId: SteamBacklogPicker
+packVersion: 1.0.0
+mainExe: SteamBacklogPicker.UI.exe
+setupIcon: assets\\app.ico
+loadingGif: assets\\splash.gif
+splashImage: assets\\splash.png
+signParams: "/a /fd SHA256 /f ${env:SBP_CERTIFICATE_PATH} /p ${env:SBP_CERTIFICATE_PASSWORD} /tr ${env:SBP_TIMESTAMP_URL} /td SHA256"
+releasesDir: build\\artifacts\\squirrel\\releases
+urlTemplate: https://example.com/steam-backlog-picker/releases/{version}/SteamBacklogPicker-{version}-full.nupkg
