@@ -40,7 +40,7 @@ public sealed class SteamLibraryFoldersParser : ISteamLibraryFoldersParser
         {
             if (currentKey is not null && IsLibraryKey(currentKey, parentKey))
             {
-                collector.Add(element.Value);
+                collector.Add(element.Value!);
             }
             return;
         }
@@ -54,7 +54,7 @@ public sealed class SteamLibraryFoldersParser : ISteamLibraryFoldersParser
             && IsLibraryKey(currentKey, parentKey)
             && TryExtractPath(element.Children, out var nestedPath))
         {
-            collector.Add(nestedPath);
+            collector.Add(nestedPath!);
         }
 
         foreach (var pair in element.Children)
