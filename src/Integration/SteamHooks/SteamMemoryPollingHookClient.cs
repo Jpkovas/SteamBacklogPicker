@@ -14,10 +14,17 @@ namespace SteamBacklogPicker.Integration.SteamHooks;
 public sealed class SteamMemoryPollingHookClient : ISteamHookClient
 {
     private readonly SteamHookOptions _options;
+    private readonly Func<SteamHookOptions, Process?> _processFactory;
+    private readonly Func<Process, SteamProcessAccessor?> _accessorFactory;
 
-    public SteamMemoryPollingHookClient(SteamHookOptions options)
+    public SteamMemoryPollingHookClient(
+        SteamHookOptions options,
+        Func<SteamHookOptions, Process?>? processFactory = null,
+        Func<Process, SteamProcessAccessor?>? accessorFactory = null)
     {
         _options = options;
+        _processFactory = processFactory ?? DefaultProcessFactory;
+        _accessorFactory = accessorFactory ?? SteamProcessAccessor.TryCreate;
     }
 
     /// <inheritdoc />
@@ -52,19 +59,23 @@ public sealed class SteamMemoryPollingHookClient : ISteamHookClient
     private bool TryCaptureDownloadState(out ImmutableArray<SteamDownloadEvent> events)
     {
         events = ImmutableArray<SteamDownloadEvent>.Empty;
-        var process = Process.GetProcessesByName(_options.ProcessName).FirstOrDefault();
+
+        var process = _processFactory(_options);
         if (process is null)
         {
             return false;
         }
 
-        using var accessor = SteamProcessAccessor.TryCreate(process);
-        if (accessor is null)
+        using (process)
         {
-            return false;
-        }
+            using var accessor = _accessorFactory(process);
+            if (accessor is null)
+            {
+                return false;
+            }
 
-        return accessor.TryReadDownloadEvents(_options.MemoryScanAddresses, _options.MemoryReadLength, out events);
+            return accessor.TryReadDownloadEvents(_options.MemoryScanAddresses, _options.MemoryReadLength, out events);
+        }
     }
 
     private sealed class SteamProcessAccessor : IDisposable
@@ -196,4 +207,7 @@ public sealed class SteamMemoryPollingHookClient : ISteamHookClient
             int dwSize,
             out int lpNumberOfBytesRead);
     }
+
+    private static Process? DefaultProcessFactory(SteamHookOptions options)
+        => Process.GetProcessesByName(options.ProcessName).FirstOrDefault();
 }
