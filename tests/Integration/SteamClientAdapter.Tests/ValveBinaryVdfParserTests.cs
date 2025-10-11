@@ -19,7 +19,7 @@ public sealed class ValveBinaryVdfParserTests
         var firstEntryLength = sizeof(uint) + sizeof(uint) + firstPayloadSize;
 
         using var stream = new MemoryStream();
-        stream.Write(bytes, 0, firstEntryLength);
+        stream.Write(bytes, 0, Math.Min(firstEntryLength, bytes.Length));
 
         var truncatedHeader = new byte[sizeof(uint) * 2];
         BitConverter.GetBytes(30u).CopyTo(truncatedHeader, 0);
