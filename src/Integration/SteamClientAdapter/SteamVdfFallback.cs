@@ -127,14 +127,37 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
         var entries = _binaryParser.ParseAppInfo(stream);
         foreach (var (appId, node) in entries)
         {
-            var flagNode = node.FindPath("extended", "IsSubscribedFromFamilySharing");
-            if (flagNode is not null && flagNode.TryGetBoolean(out var flag))
+            if (TryGetFamilySharingFlag(node, out var flag))
             {
                 _familySharingCache[appId] = flag;
             }
         }
 
         _familySharingLoaded = true;
+    }
+
+    private static bool TryGetFamilySharingFlag(ValveKeyValueNode node, out bool flag)
+    {
+        var stack = new Stack<ValveKeyValueNode>();
+        stack.Push(node);
+
+        while (stack.Count > 0)
+        {
+            var current = stack.Pop();
+            if (string.Equals(current.Name, "IsSubscribedFromFamilySharing", StringComparison.Ordinal) &&
+                current.TryGetBoolean(out flag))
+            {
+                return true;
+            }
+
+            foreach (var child in current.Children.Values)
+            {
+                stack.Push(child);
+            }
+        }
+
+        flag = false;
+        return false;
     }
 
     private static string? FindMostRecentUser(ValveKeyValueNode usersNode)

@@ -16,7 +16,7 @@ public sealed class ValveBinaryVdfParserTests
         var bytes = File.ReadAllBytes(fixturePath);
 
         var firstPayloadSize = (int)BitConverter.ToUInt32(bytes, 4);
-        var firstEntryLength = sizeof(uint) + sizeof(uint) + firstPayloadSize;
+        var firstEntryLength = Math.Min(bytes.Length, sizeof(uint) + sizeof(uint) + firstPayloadSize);
 
         using var stream = new MemoryStream();
         stream.Write(bytes, 0, firstEntryLength);
