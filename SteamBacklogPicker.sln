@@ -10,6 +10,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Domain", "src/Domain/Domain
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamClientAdapter", "src/Integration/SteamClientAdapter/SteamClientAdapter.csproj", "{8F4A2F72-3D5E-4EDE-A9E2-7C77E7F42C40}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamHooks", "src/Integration/SteamHooks/SteamHooks.csproj", "{0D38DF05-E826-405B-8F4E-27A2EEEC3B3C}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamDiscovery.Tests", "tests/Infrastructure/SteamDiscovery.Tests/SteamDiscovery.Tests.csproj", "{F9A50B94-7F77-45D6-9F95-D829C1279E4F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamClientAdapter.Tests", "tests/Integration/SteamClientAdapter.Tests/SteamClientAdapter.Tests.csproj", "{95FBF269-6707-43C5-A7F3-196AB2740A4B}"
@@ -38,6 +40,10 @@ Global
         {4AE088D4-7E7D-4F97-87E7-9FF5C3D40174}.Debug|Any CPU.Build.0 = Debug|Any CPU
         {4AE088D4-7E7D-4F97-87E7-9FF5C3D40174}.Release|Any CPU.ActiveCfg = Release|Any CPU
         {4AE088D4-7E7D-4F97-87E7-9FF5C3D40174}.Release|Any CPU.Build.0 = Release|Any CPU
+        {0D38DF05-E826-405B-8F4E-27A2EEEC3B3C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {0D38DF05-E826-405B-8F4E-27A2EEEC3B3C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {0D38DF05-E826-405B-8F4E-27A2EEEC3B3C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {0D38DF05-E826-405B-8F4E-27A2EEEC3B3C}.Release|Any CPU.Build.0 = Release|Any CPU
         {8F4A2F72-3D5E-4EDE-A9E2-7C77E7F42C40}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
         {8F4A2F72-3D5E-4EDE-A9E2-7C77E7F42C40}.Debug|Any CPU.Build.0 = Debug|Any CPU
         {8F4A2F72-3D5E-4EDE-A9E2-7C77E7F42C40}.Release|Any CPU.ActiveCfg = Release|Any CPU
