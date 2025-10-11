@@ -1,19 +1,25 @@
 using System;
 using System.IO;
 using SteamClientAdapter;
+using SteamTestUtilities.ValveFormat;
 using ValveFormatParser;
 using Xunit;
 
 namespace SteamClientAdapter.Tests;
 
-public sealed class SteamVdfFallbackTests
+public sealed class SteamVdfFallbackTests : IDisposable
 {
     private readonly string _steamRoot;
 
     public SteamVdfFallbackTests()
     {
-        _steamRoot = Path.Combine(AppContext.BaseDirectory, "Fixtures", "steam");
-        EnsureAppInfoFixture();
+        _steamRoot = Path.Combine(AppContext.BaseDirectory, "steam-fixture");
+        if (Directory.Exists(_steamRoot))
+        {
+            Directory.Delete(_steamRoot, recursive: true);
+        }
+
+        CopyDirectory(Path.Combine(VdfFixtureLoader.RootDirectory, "steam"), _steamRoot);
     }
 
     [Fact]
@@ -39,6 +45,14 @@ public sealed class SteamVdfFallbackTests
         Assert.Equal(expected, isShared);
     }
 
+    public void Dispose()
+    {
+        if (Directory.Exists(_steamRoot))
+        {
+            Directory.Delete(_steamRoot, recursive: true);
+        }
+    }
+
     private SteamVdfFallback CreateFallback()
     {
         var accessor = new PhysicalFileAccessor();
@@ -49,26 +63,22 @@ public sealed class SteamVdfFallbackTests
             new ValveBinaryVdfParser());
     }
 
-    private void EnsureAppInfoFixture()
+    private static void CopyDirectory(string sourceDirectory, string destinationDirectory)
     {
-        var appCacheDirectory = Path.Combine(_steamRoot, "appcache");
-        Directory.CreateDirectory(appCacheDirectory);
+        Directory.CreateDirectory(destinationDirectory);
 
-        var appInfoPath = Path.Combine(appCacheDirectory, "appinfo.vdf");
-        if (File.Exists(appInfoPath))
+        foreach (var file in Directory.GetFiles(sourceDirectory))
         {
-            var existingBytes = File.ReadAllBytes(appInfoPath);
-            if (existingBytes.AsSpan().SequenceEqual(AppInfoFixtureBytes))
-            {
-                return;
-            }
+            var target = Path.Combine(destinationDirectory, Path.GetFileName(file)!);
+            File.Copy(file, target, overwrite: true);
         }
 
-        File.WriteAllBytes(appInfoPath, AppInfoFixtureBytes);
+        foreach (var directory in Directory.GetDirectories(sourceDirectory))
+        {
+            var name = Path.GetFileName(directory)!;
+            CopyDirectory(directory, Path.Combine(destinationDirectory, name));
+        }
     }
-
-    private static readonly byte[] AppInfoFixtureBytes = Convert.FromBase64String(
-        "CgAAAFcAAAAIAAAAAAAAAAAAAAAAAAAAAAECAwQFBgcICQoLDA0ODxAREhMBAAAAAGV4dGVuZGVkAAJJc1N1YnNjcmliZWRGcm9tRmFtaWx5U2hhcmluZwAAAAAACAgUAAAAVwAAAAgAAAAAAAAAAAAAAAAAAAAAAQIDBAUGBwgJCgsMDQ4PEBESEwIAAAAAZXh0ZW5kZWQAAklzU3Vic2NyaWJlZEZyb21GYW1pbHlTaGFyaW5nAAEAAAAICAAAAAAAAAAAAAA=");
 
     private sealed class PhysicalFileAccessor : IFileAccessor
     {

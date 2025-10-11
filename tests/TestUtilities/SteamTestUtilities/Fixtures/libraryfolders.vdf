@@ -1,0 +1,13 @@
+"LibraryFolders"
+{
+    "contentstatsid"  "-1234567890123456789"
+    "1"
+    {
+        "path"      "/fake/drive/SteamLibrary"
+        "label"     "Secondary"
+    }
+    "2"
+    {
+        "path"      "/external/storage/SteamLibrary"
+    }
+}

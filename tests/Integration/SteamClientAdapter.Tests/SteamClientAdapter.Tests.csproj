@@ -8,14 +8,11 @@
   <ItemGroup>
     <ProjectReference Include="../../../src/Integration/SteamClientAdapter/SteamClientAdapter.csproj" />
     <ProjectReference Include="../../../src/Integration/ValveFormatParser/ValveFormatParser.csproj" />
+    <ProjectReference Include="../../TestUtilities/SteamTestUtilities/SteamTestUtilities.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
     <PackageReference Include="xunit" Version="2.5.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.5.0" />
-    <PackageReference Include="Moq" Version="4.20.69" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Fixtures/**/*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

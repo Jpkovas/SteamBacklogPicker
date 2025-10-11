@@ -22,6 +22,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamBacklogPicker.UI", "sr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamBacklogPicker.UI.Tests", "tests/Presentation/SteamBacklogPicker.UI.Tests/SteamBacklogPicker.UI.Tests.csproj", "{60DA434B-205E-47EF-AFA8-82232CB58407}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamTestUtilities", "tests/TestUtilities/SteamTestUtilities/SteamTestUtilities.csproj", "{D0CE20DA-CC44-4F0E-9EC3-6F7545F9572F}"
+EndProject
 Global
     GlobalSection(SolutionConfigurationPlatforms) = preSolution
         Debug|Any CPU = Debug|Any CPU
@@ -68,6 +70,10 @@ Global
         {60DA434B-205E-47EF-AFA8-82232CB58407}.Debug|Any CPU.Build.0 = Debug|Any CPU
         {60DA434B-205E-47EF-AFA8-82232CB58407}.Release|Any CPU.ActiveCfg = Release|Any CPU
         {60DA434B-205E-47EF-AFA8-82232CB58407}.Release|Any CPU.Build.0 = Release|Any CPU
+        {D0CE20DA-CC44-4F0E-9EC3-6F7545F9572F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {D0CE20DA-CC44-4F0E-9EC3-6F7545F9572F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {D0CE20DA-CC44-4F0E-9EC3-6F7545F9572F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {D0CE20DA-CC44-4F0E-9EC3-6F7545F9572F}.Release|Any CPU.Build.0 = Release|Any CPU
     EndGlobalSection
     GlobalSection(SolutionProperties) = preSolution
         HideSolutionNode = FALSE

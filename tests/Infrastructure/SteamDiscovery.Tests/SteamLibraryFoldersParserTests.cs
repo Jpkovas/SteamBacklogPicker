@@ -10,7 +10,7 @@ public sealed class SteamLibraryFoldersParserTests
     [Fact]
     public void Parse_ReturnsEmpty_WhenLibraryFoldersSectionIsMissing()
     {
-        const string content = "\"OtherSection\" { \"0\" \"C:\\\\Steam\" }";
+        const string content = "\"OtherSection\" { \"0\" \"C:\\Steam\" }";
 
         var result = _parser.Parse(content);
 
@@ -20,10 +20,13 @@ public sealed class SteamLibraryFoldersParserTests
     [Fact]
     public void Parse_ReturnsLegacyPaths()
     {
-        const string content = "\"LibraryFolders\"\n{" +
-                                "\n    \"0\" \"C:\\\\Program Files (x86)\\\\Steam\"" +
-                                "\n    \"1\" \"D:\\\\SteamLibrary\"" +
-                                "\n}";
+        const string content = """
+"LibraryFolders"
+{
+    "0" "C:\\Program Files (x86)\\Steam"
+    "1" "D:\\SteamLibrary"
+}
+""";
 
         var result = _parser.Parse(content);
 
@@ -35,10 +38,20 @@ public sealed class SteamLibraryFoldersParserTests
     [Fact]
     public void Parse_ReturnsPathsFromObjectNotation()
     {
-        const string content = "\"LibraryFolders\"\n{" +
-                                "\n    \"0\"\n    {\n        \"path\" \"C:\\\\Steam\"\n    }" +
-                                "\n    \"1\"\n    {\n        \"path\" \"D:\\\\Games\\\\Steam\"\n        \"label\" \"Secondary\"\n    }" +
-                                "\n}";
+        const string content = """
+"LibraryFolders"
+{
+    "0"
+    {
+        "path" "C:\\Steam"
+    }
+    "1"
+    {
+        "path" "D:\\Games\\Steam"
+        "label" "Secondary"
+    }
+}
+""";
 
         var result = _parser.Parse(content);
 
@@ -50,9 +63,15 @@ public sealed class SteamLibraryFoldersParserTests
     [Fact]
     public void Parse_UsesContentPathFallback()
     {
-        const string content = "\"LibraryFolders\"\n{" +
-                                "\n    \"2\"\n    {\n        \"contentpath\" \"E:\\\\SteamContent\"\n    }" +
-                                "\n}";
+        const string content = """
+"LibraryFolders"
+{
+    "2"
+    {
+        "contentpath" "E:\\SteamContent"
+    }
+}
+""";
 
         var result = _parser.Parse(content);
 
@@ -63,11 +82,14 @@ public sealed class SteamLibraryFoldersParserTests
     [Fact]
     public void Parse_IgnoresMetadataEntries()
     {
-        const string content = "\"LibraryFolders\"\n{" +
-                                "\n    \"TimeNextStatsReport\" \"12345\"" +
-                                "\n    \"ContentStatsID\" \"67890\"" +
-                                "\n    \"1\" \"E:\\\\SteamLibrary\"" +
-                                "\n}";
+        const string content = """
+"LibraryFolders"
+{
+    "TimeNextStatsReport" "12345"
+    "ContentStatsID" "67890"
+    "1" "E:\\SteamLibrary"
+}
+""";
 
         var result = _parser.Parse(content);
 
@@ -78,12 +100,18 @@ public sealed class SteamLibraryFoldersParserTests
     [Fact]
     public void Parse_TrimsAndDeduplicatesPaths()
     {
-        const string content = "\"LibraryFolders\"\n{" +
-                                "\n    \"0\" \" C:\\\\Steam \\"" +
-                                "\n    \"1\"\n    {\n        \"path\" \"C:\\\\Steam\"\n    }" +
-                                "\n    \"2\" \"D:\\\\SteamLibrary\"" +
-                                "\n    \"path\" \"D:\\\\SteamLibrary\"" +
-                                "\n}";
+        const string content = """
+"LibraryFolders"
+{
+    "0" " C:\\Steam "
+    "1"
+    {
+        "path" "C:\\Steam"
+    }
+    "2" "D:\\SteamLibrary"
+    "path" "D:\\SteamLibrary"
+}
+""";
 
         var result = _parser.Parse(content);
 
@@ -95,10 +123,13 @@ public sealed class SteamLibraryFoldersParserTests
     [Fact]
     public void Parse_IgnoresComments()
     {
-        const string content = "\"LibraryFolders\"\n{" +
-                                "\n    // Primary library" +
-                                "\n    \"0\" \"C:\\\\Steam\"" +
-                                "\n}";
+        const string content = """
+"LibraryFolders"
+{
+    // Primary library
+    "0" "C:\\Steam"
+}
+""";
 
         var result = _parser.Parse(content);
 
@@ -109,9 +140,12 @@ public sealed class SteamLibraryFoldersParserTests
     [Fact]
     public void Parse_SupportsEscapedCharacters()
     {
-        const string content = "\"LibraryFolders\"\n{" +
-                                "\n    \"0\" \"C:\\\\Games\\\\Steam\\\\\\\"Quotes\\\\Folder\"" +
-                                "\n}";
+        const string content = """
+"LibraryFolders"
+{
+    "0" "C:\\Games\\Steam\\\"Quotes\\Folder"
+}
+""";
 
         var result = _parser.Parse(content);
 

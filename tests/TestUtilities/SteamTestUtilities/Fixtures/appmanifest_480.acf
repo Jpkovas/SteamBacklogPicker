@@ -1,0 +1,16 @@
+"AppState"
+{
+    "appid"        "480"
+    "Universe"     "1"
+    "name"         "Spacewar"
+    "StateFlags"   "4"
+    "installdir"   "Spacewar"
+    "LastUpdated"  "1620000000"
+    "SizeOnDisk"   "1234567"
+    "buildid"      "12345"
+    "LastOwner"    "76561198000000000"
+    "BytesToDownload" "0"
+    "BytesDownloaded" "0"
+    "BytesToStage" "0"
+    "BytesStaged" "0"
+}
