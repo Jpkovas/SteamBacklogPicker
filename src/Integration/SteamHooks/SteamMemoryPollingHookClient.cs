@@ -78,7 +78,7 @@ public sealed class SteamMemoryPollingHookClient : ISteamHookClient
         }
     }
 
-    private sealed class SteamProcessAccessor : IDisposable
+    public sealed class SteamProcessAccessor : IDisposable
     {
         private readonly SafeProcessHandle _processHandle;
 
