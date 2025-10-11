@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using CommunityToolkit.WinUI.Notifications;
 using Domain;
+using Windows.UI.Notifications;
 
 namespace SteamBacklogPicker.UI.Services;
 
@@ -22,7 +23,13 @@ public sealed class ToastNotificationService : IToastNotificationService
                 builder.AddInlineImage(new Uri(imagePath));
             }
 
-            builder.Show(toast => toast.ExpirationTime = DateTimeOffset.Now.AddMinutes(5));
+            var toastContent = builder.GetToastContent();
+            var notification = new ToastNotification(toastContent.GetXml())
+            {
+                ExpirationTime = DateTimeOffset.Now.AddMinutes(5),
+            };
+
+            ToastNotificationManagerCompat.CreateToastNotifier().Show(notification);
         }
         catch
         {
