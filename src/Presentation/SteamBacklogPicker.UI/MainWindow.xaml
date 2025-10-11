@@ -45,8 +45,8 @@
                          AutomationProperties.Name="Tags obrigatórias"
                          AutomationProperties.HelpText="Separe múltiplas tags com vírgula"
                          Margin="0,0,0,8" />
-                <StackPanel Orientation="Horizontal" Margin="0,8,0,8" Spacing="12">
-                    <StackPanel Width="140">
+                <StackPanel Orientation="Horizontal" Margin="0,8,0,8">
+                    <StackPanel Width="140" Margin="0,0,12,0">
                         <TextBlock Text="Tamanho mínimo (GB)"
                                    FontWeight="SemiBold"
                                    Margin="0,0,0,4" />
@@ -119,11 +119,11 @@
                            AutomationProperties.Name="Capa do jogo selecionado" />
                 </Border>
 
-                <StackPanel Grid.Row="2" Orientation="Vertical" Spacing="8">
+                <StackPanel Grid.Row="2" Orientation="Vertical">
                     <TextBlock Text="{Binding SelectedGame.InstallationStatus}"
                                FontSize="16"
                                AutomationProperties.Name="Estado de instalação do jogo" />
-                    <StackPanel Orientation="Horizontal" Spacing="8">
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,8">
                         <Button Content="Jogar"
                                 Command="{Binding LaunchCommand}"
                                 IsEnabled="{Binding SelectedGame.CanLaunch}"
@@ -135,14 +135,17 @@
                                 IsEnabled="{Binding SelectedGame.CanInstall}"
                                 Width="140"
                                 Height="40"
+                                Margin="8,0,0,0"
                                 AutomationProperties.Name="Instalar jogo no Steam" />
                         <ToggleButton Content="Favorito"
                                       IsChecked="{Binding SelectedGame.IsFavorite, Mode=TwoWay}"
                                       Width="140"
                                       Height="40"
+                                      Margin="8,0,0,0"
                                       AutomationProperties.Name="Marcar jogo como favorito" />
                     </StackPanel>
-                    <ItemsControl ItemsSource="{Binding SelectedGame.Tags}">
+                    <ItemsControl ItemsSource="{Binding SelectedGame.Tags}"
+                                  Margin="0,8,0,0">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <WrapPanel ItemHeight="24" ItemWidth="Auto" />
