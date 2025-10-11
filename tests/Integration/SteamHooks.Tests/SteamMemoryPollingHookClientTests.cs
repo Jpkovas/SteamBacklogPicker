@@ -23,6 +23,7 @@ public sealed class SteamMemoryPollingHookClientTests
             BindingFlags.NonPublic | BindingFlags.Instance);
         Assert.NotNull(method);
 
+        var handle = process.SafeHandle;
         var parameters = new object?[] { null };
 
         // Act
@@ -30,6 +31,6 @@ public sealed class SteamMemoryPollingHookClientTests
 
         // Assert
         Assert.False(result);
-        Assert.True(process.SafeHandle.IsClosed);
+        Assert.True(handle.IsClosed);
     }
 }
