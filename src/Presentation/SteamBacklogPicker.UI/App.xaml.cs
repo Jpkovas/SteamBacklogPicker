@@ -1,5 +1,9 @@
+using System.Collections.Generic;
+using System.Reflection;
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
+using Serilog.Events;
+using Infrastructure.Telemetry;
 using SteamBacklogPicker.UI.Services;
 using SteamBacklogPicker.UI.ViewModels;
 using SteamClientAdapter;
@@ -19,6 +23,14 @@ public partial class App : Application
         _serviceProvider = BuildServices();
         var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
         mainWindow.Show();
+
+        if (_serviceProvider.GetService<ITelemetryClient>() is { } telemetryClient)
+        {
+            telemetryClient.TrackEvent("application_started", new Dictionary<string, object>
+            {
+                ["version"] = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown"
+            });
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)
@@ -27,6 +39,11 @@ public partial class App : Application
         if (_serviceProvider is null)
         {
             return;
+        }
+
+        if (_serviceProvider.GetService<ITelemetryClient>() is { } telemetryClient)
+        {
+            telemetryClient.TrackEvent("application_exited");
         }
 
         if (_serviceProvider.GetService<SteamAppManifestCache>() is { } cache)
@@ -40,11 +57,19 @@ public partial class App : Application
         }
 
         _serviceProvider.Dispose();
+        TelemetryBootstrapper.Shutdown();
     }
 
     private static ServiceProvider BuildServices()
     {
         var services = new ServiceCollection();
+
+        services.AddTelemetryInfrastructure(options =>
+        {
+            options.ApplicationName = "SteamBacklogPicker";
+            options.MinimumLogLevel = LogEventLevel.Information;
+            options.TelemetryEnabledByDefault = false;
+        });
 
         services.AddSingleton<ValveTextVdfParser>();
         services.AddSingleton<ValveBinaryVdfParser>();
