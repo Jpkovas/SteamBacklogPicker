@@ -46,12 +46,48 @@ public sealed class ValveBinaryVdfParser
                 break;
             }
 
+            if (size > int.MaxValue)
+            {
+                // The payload is too large to buffer in memory. Stop parsing to avoid
+                // attempting to allocate an excessively large array.
+                break;
+            }
+
+            if (stream.CanSeek)
+            {
+                var remaining = stream.Length - stream.Position;
+                if (size > remaining)
+                {
+                    // The declared size would read past the end of the stream. Treat the
+                    // remainder of the file as truncated and stop parsing.
+                    break;
+                }
+            }
+
             var payload = reader.ReadBytes((int)size);
+            if (payload.Length != (int)size)
+            {
+                // The payload could not be read in full which indicates truncated data.
+                break;
+            }
             using var payloadStream = new MemoryStream(payload, writable: false);
             using var payloadReader = new BinaryReader(payloadStream, Encoding.UTF8);
-            SkipAppInfoMetadata(payloadReader, appId, size);
-            var node = ParseNode(payloadReader);
-            result[appId] = node;
+            try
+            {
+                SkipAppInfoMetadata(payloadReader, appId, size);
+                var node = ParseNode(payloadReader);
+                result[appId] = node;
+            }
+            catch (EndOfStreamException)
+            {
+                // Individual entries in appinfo.vdf can become truncated. Skip the
+                // affected entry and continue parsing any remaining ones.
+            }
+            catch (InvalidDataException)
+            {
+                // Ignore malformed entries so that valid application data can still be
+                // returned to callers.
+            }
         }
 
         return result;
