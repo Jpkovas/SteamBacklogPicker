@@ -31,39 +31,58 @@ public sealed class SteamNamedPipeHookClient : ISteamHookClient
             }
 
             Debug.Assert(_pipe is not null, "Pipe should be connected");
-            using var reader = new StreamReader(_pipe, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 4096, leaveOpen: true);
-            using var writer = new StreamWriter(_pipe, Encoding.UTF8, bufferSize: 256, leaveOpen: true) { AutoFlush = true };
-
-            if (!string.IsNullOrEmpty(_options.HandshakePayload))
+            try
             {
-                await writer.WriteLineAsync(_options.HandshakePayload).ConfigureAwait(false);
+                using var reader = new StreamReader(
+                    _pipe!,
+                    Encoding.UTF8,
+                    detectEncodingFromByteOrderMarks: true,
+                    bufferSize: 4096,
+                    leaveOpen: true);
+                using var writer = new StreamWriter(
+                    _pipe!,
+                    Encoding.UTF8,
+                    bufferSize: 256,
+                    leaveOpen: true)
+                {
+                    AutoFlush = true,
+                };
+
+                if (!string.IsNullOrEmpty(_options.HandshakePayload))
+                {
+                    await writer.WriteLineAsync(_options.HandshakePayload).ConfigureAwait(false);
+                }
+
+                while (!cancellationToken.IsCancellationRequested && _pipe!.IsConnected)
+                {
+                    string? line;
+                    try
+                    {
+                        line = await reader.ReadLineAsync().WaitAsync(cancellationToken).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        yield break;
+                    }
+                    catch (IOException)
+                    {
+                        break;
+                    }
+
+                    if (line is null)
+                    {
+                        break;
+                    }
+
+                    if (TryParseEvent(line, out var downloadEvent))
+                    {
+                        yield return downloadEvent;
+                    }
+                }
             }
-
-            while (!cancellationToken.IsCancellationRequested && _pipe.IsConnected)
+            finally
             {
-                string? line;
-                try
-                {
-                    line = await reader.ReadLineAsync().WaitAsync(cancellationToken).ConfigureAwait(false);
-                }
-                catch (OperationCanceledException)
-                {
-                    yield break;
-                }
-                catch (IOException)
-                {
-                    break;
-                }
-
-                if (line is null)
-                {
-                    break;
-                }
-
-                if (TryParseEvent(line, out var downloadEvent))
-                {
-                    yield return downloadEvent;
-                }
+                DisposePipe();
             }
 
             await Task.Delay(_options.ReconnectDelay, cancellationToken).ConfigureAwait(false);
@@ -79,7 +98,7 @@ public sealed class SteamNamedPipeHookClient : ISteamHookClient
         }
 
         _disposed = true;
-        _pipe?.Dispose();
+        DisposePipe();
         return ValueTask.CompletedTask;
     }
 
@@ -87,6 +106,8 @@ public sealed class SteamNamedPipeHookClient : ISteamHookClient
     {
         try
         {
+            DisposePipe();
+
             _pipe = new NamedPipeClientStream(
                 ".",
                 _options.PipeName,
@@ -99,16 +120,30 @@ public sealed class SteamNamedPipeHookClient : ISteamHookClient
         }
         catch (TimeoutException)
         {
+            DisposePipe();
             return false;
         }
         catch (IOException)
         {
+            DisposePipe();
             return false;
         }
         catch (OperationCanceledException)
         {
+            DisposePipe();
             return false;
         }
+    }
+
+    private void DisposePipe()
+    {
+        if (_pipe is null)
+        {
+            return;
+        }
+
+        _pipe.Dispose();
+        _pipe = null;
     }
 
     private bool TryParseEvent(string line, out SteamDownloadEvent downloadEvent)
