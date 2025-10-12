@@ -38,6 +38,11 @@ public sealed class ValveBinaryVdfParser
 
         while (stream.Position < stream.Length)
         {
+            if (stream.Length - stream.Position < sizeof(uint) * 2)
+            {
+                break;
+            }
+
             var appId = reader.ReadUInt32();
             var size = reader.ReadUInt32();
 
@@ -53,6 +58,8 @@ public sealed class ValveBinaryVdfParser
                 break;
             }
 
+            var payloadStart = stream.Position;
+
             if (stream.CanSeek)
             {
                 var remaining = stream.Length - stream.Position;
@@ -60,6 +67,7 @@ public sealed class ValveBinaryVdfParser
                 {
                     // The declared size would read past the end of the stream. Treat the
                     // remainder of the file as truncated and stop parsing.
+                    stream.Seek(stream.Length, SeekOrigin.Begin);
                     break;
                 }
             }
@@ -68,6 +76,17 @@ public sealed class ValveBinaryVdfParser
             if (payload.Length != (int)size)
             {
                 // The payload could not be read in full which indicates truncated data.
+                if (stream.CanSeek)
+                {
+                    var nextEntryPosition = payloadStart + size;
+                    if (nextEntryPosition > stream.Length)
+                    {
+                        nextEntryPosition = stream.Length;
+                    }
+
+                    stream.Seek(nextEntryPosition, SeekOrigin.Begin);
+                }
+
                 break;
             }
             using var payloadStream = new MemoryStream(payload, writable: false);
@@ -81,12 +100,22 @@ public sealed class ValveBinaryVdfParser
             catch (EndOfStreamException)
             {
                 // Individual entries in appinfo.vdf can become truncated. Skip the
-                // affected entry and continue parsing any remaining ones.
+                // affected entry and continue parsing any remaining ones. Ensure the
+                // main stream advances to the declared end of the payload so that the
+                // next entry can be read correctly.
+                if (stream.CanSeek)
+                {
+                    stream.Seek(payloadStart + size, SeekOrigin.Begin);
+                }
             }
             catch (InvalidDataException)
             {
                 // Ignore malformed entries so that valid application data can still be
                 // returned to callers.
+                if (stream.CanSeek)
+                {
+                    stream.Seek(payloadStart + size, SeekOrigin.Begin);
+                }
             }
         }
 
