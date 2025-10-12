@@ -185,12 +185,8 @@ public sealed class SteamAppManifestCache : IDisposable
                 ownershipType = OwnershipType.FamilyShared;
             }
 
-            var installState = InstallState.Available;
-            if (isFamilyShared)
-            {
-                installState = InstallState.Shared;
-            }
-            else if (installedSet.Contains(appId))
+            var installState = isFamilyShared ? InstallState.Shared : InstallState.Available;
+            if (!isFamilyShared && installedSet.Contains(appId))
             {
                 installState = InstallState.Installed;
             }

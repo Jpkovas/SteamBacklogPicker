@@ -1,0 +1,64 @@
+# Build outputs
+[Bb]in/
+[Oo]bj/
+[Rr]elease/
+[Dd]ebug/
+[Pp]ublish/
+[Aa]rtifacts/
+TestResults/
+
+# IDE caches and user-specific settings
+.vs/
+.vscode/
+*.suo
+*.user
+*.rsuser
+*.userprefs
+*.sln.docstates
+*.code-workspace
+*.ncrunchproject
+*.ncrunchsolution
+_ReSharper*/
+
+# JetBrains Rider
+.idea/
+*.sln.iml
+
+# Tooling and coverage assets
+coverage/
+*.coverage
+*.coveragexml
+*.opencover.xml
+*.dotCover
+
+# Installer and package artifacts
+*.msix
+*.msixbundle
+*.appx
+*.appxbundle
+*.appxupload
+*.msixupload
+*.nupkg
+*.snupkg
+
+# Certificates and signing material
+*.pfx
+*.p12
+*.pem
+*.cer
+*.key
+
+# Operating system clutter
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*$py.class
+
+# Transient editor files
+*.swp
+*.swo
+*.tmp
+*.bak
+*.orig
+*.rej

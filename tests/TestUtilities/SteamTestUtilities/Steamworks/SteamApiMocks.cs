@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using SteamClientAdapter;
 
 namespace SteamTestUtilities.Steamworks;
@@ -106,14 +107,33 @@ public sealed class SteamApiMocks
 
     public sealed class FakeFallback : ISteamVdfFallback
     {
-        private readonly IReadOnlyCollection<uint> _appIds;
+        private readonly Dictionary<uint, SteamAppDefinition> _apps;
 
         public FakeFallback(IReadOnlyCollection<uint> appIds)
         {
-            _appIds = appIds ?? throw new ArgumentNullException(nameof(appIds));
+            if (appIds is null)
+            {
+                throw new ArgumentNullException(nameof(appIds));
+            }
+
+            _apps = appIds.ToDictionary(
+                id => id,
+                id => new SteamAppDefinition(id, $"App {id}", IsInstalled: true, Collections: Array.Empty<string>()));
         }
 
-        public IReadOnlyCollection<uint> GetInstalledAppIds() => _appIds;
+        public IReadOnlyCollection<uint> GetInstalledAppIds() => _apps.Values.Where(app => app.IsInstalled).Select(app => app.AppId).ToArray();
+
+        public IReadOnlyDictionary<uint, SteamAppDefinition> GetKnownApps() => _apps;
+
+        public void SetAppDefinition(SteamAppDefinition definition)
+        {
+            if (definition is null)
+            {
+                throw new ArgumentNullException(nameof(definition));
+            }
+
+            _apps[definition.AppId] = definition;
+        }
 
         public Func<uint, bool>? FamilySharingPredicate { get; set; }
 
