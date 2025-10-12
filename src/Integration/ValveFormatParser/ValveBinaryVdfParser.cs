@@ -87,7 +87,7 @@ public sealed class ValveBinaryVdfParser
                     stream.Seek(nextEntryPosition, SeekOrigin.Begin);
                 }
 
-                break;
+                continue;
             }
             using var payloadStream = new MemoryStream(payload, writable: false);
             using var payloadReader = new BinaryReader(payloadStream, Encoding.UTF8);
@@ -107,6 +107,7 @@ public sealed class ValveBinaryVdfParser
                 {
                     stream.Seek(payloadStart + size, SeekOrigin.Begin);
                 }
+                continue;
             }
             catch (InvalidDataException)
             {
@@ -116,6 +117,7 @@ public sealed class ValveBinaryVdfParser
                 {
                     stream.Seek(payloadStart + size, SeekOrigin.Begin);
                 }
+                continue;
             }
         }
 
