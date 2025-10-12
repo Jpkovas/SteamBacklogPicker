@@ -4,4 +4,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="ValveKeyValue" Version="0.20.0.417" />
+  </ItemGroup>
 </Project>

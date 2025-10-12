@@ -1,13 +1,17 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
+using ValveKeyValue;
 
 namespace ValveFormatParser;
 
 public sealed class ValveBinaryVdfParser
 {
+    private const uint ExpectedMagic = 0x075644;
+
     private enum ValveBinaryType : byte
     {
         Child = 0,
@@ -33,6 +37,192 @@ public sealed class ValveBinaryVdfParser
             throw new ArgumentNullException(nameof(stream));
         }
 
+        if (!stream.CanSeek)
+        {
+            using var buffer = new MemoryStream();
+            stream.CopyTo(buffer);
+            buffer.Position = 0;
+            return ParseAppInfo(buffer);
+        }
+
+        var origin = stream.Position;
+        var reader = new BinaryReader(stream, Encoding.UTF8, leaveOpen: true);
+
+        IDictionary<uint, ValveKeyValueNode>? result = null;
+
+        if (stream.Length - stream.Position >= sizeof(uint))
+        {
+            var raw = reader.ReadUInt32();
+            stream.Position = origin;
+
+            var magicWithoutVersion = raw >> 8;
+            if (magicWithoutVersion == ExpectedMagic)
+            {
+                result = ParseModernAppInfo(stream);
+            }
+        }
+
+        if (result is null)
+        {
+            stream.Position = origin;
+            result = ParseLegacyAppInfo(stream);
+        }
+
+        return result;
+    }
+
+    private static IDictionary<uint, ValveKeyValueNode> ParseModernAppInfo(Stream stream)
+    {
+        var reader = new BinaryReader(stream, Encoding.UTF8, leaveOpen: true);
+        var result = new Dictionary<uint, ValveKeyValueNode>();
+
+        if (!TryReadHeader(reader, out var version, out var options))
+        {
+            return result;
+        }
+
+        var serializer = KVSerializer.Create(KVSerializationFormat.KeyValues1Binary);
+
+        while (stream.Position < stream.Length)
+        {
+            if (!TryReadEntry(reader, version, options, serializer, out var appId, out var node))
+            {
+                break;
+            }
+
+            if (node is not null)
+            {
+                result[appId] = node;
+            }
+        }
+
+        return result;
+    }
+
+    private static bool TryReadHeader(BinaryReader reader, out byte version, out KVSerializerOptions options)
+    {
+        options = new KVSerializerOptions();
+        version = 0;
+
+        if (reader.BaseStream.Length - reader.BaseStream.Position < sizeof(uint) + sizeof(uint))
+        {
+            return false;
+        }
+
+        var magic = reader.ReadUInt32();
+        version = (byte)(magic & 0xFF);
+        magic >>= 8;
+
+        if (magic != ExpectedMagic)
+        {
+            throw new InvalidDataException($"Unknown appinfo header magic: 0x{magic:X}");
+        }
+
+        if (version is < 39 or > 41)
+        {
+            throw new InvalidDataException($"Unsupported appinfo header version: {version}");
+        }
+
+        // Universe (unused)
+        reader.ReadUInt32();
+
+        if (version >= 41)
+        {
+            var stringTableOffset = reader.ReadInt64();
+            var returnPosition = reader.BaseStream.Position;
+
+            reader.BaseStream.Position = stringTableOffset;
+            var stringCount = reader.ReadUInt32();
+            var strings = new string[stringCount];
+            for (var i = 0; i < stringCount; i++)
+            {
+                strings[i] = ReadNullTerminatedUtf8String(reader.BaseStream);
+            }
+
+            options.StringTable = new StringTable(strings);
+            reader.BaseStream.Position = returnPosition;
+        }
+
+        return true;
+    }
+
+    private static bool TryReadEntry(
+        BinaryReader reader,
+        byte version,
+        KVSerializerOptions options,
+        KVSerializer serializer,
+        out uint appId,
+        out ValveKeyValueNode? node)
+    {
+        node = null;
+        appId = 0;
+
+        if (reader.BaseStream.Length - reader.BaseStream.Position < sizeof(uint) * 2)
+        {
+            return false;
+        }
+
+        appId = reader.ReadUInt32();
+        var size = reader.ReadUInt32();
+
+        if (appId == 0 && size == 0)
+        {
+            return false;
+        }
+
+        var endPosition = reader.BaseStream.Position + size;
+        if (reader.BaseStream.Length < endPosition)
+        {
+            reader.BaseStream.Position = reader.BaseStream.Length;
+            return false;
+        }
+
+        try
+        {
+            ReadEntryMetadata(reader, version);
+
+            var kvObject = serializer.Deserialize(reader.BaseStream, options);
+            node = ConvertToNode(kvObject);
+        }
+        catch (Exception ex) when (ex is EndOfStreamException or InvalidDataException or IOException)
+        {
+            // Skip malformed entries to preserve compatibility with truncated appinfo caches.
+        }
+        finally
+        {
+            reader.BaseStream.Position = endPosition;
+        }
+
+        return true;
+    }
+
+    private static void ReadEntryMetadata(BinaryReader reader, byte version)
+    {
+        reader.ReadUInt32(); // info state
+        reader.ReadUInt32(); // last updated
+        reader.ReadUInt64(); // access token
+
+        const int checksumLength = 20;
+        var checksum = reader.ReadBytes(checksumLength);
+        if (checksum.Length != checksumLength)
+        {
+            throw new EndOfStreamException("Incomplete appinfo entry checksum.");
+        }
+
+        reader.ReadUInt32(); // change number
+
+        if (version >= 40)
+        {
+            var binaryHash = reader.ReadBytes(checksumLength);
+            if (binaryHash.Length != checksumLength)
+            {
+                throw new EndOfStreamException("Incomplete appinfo entry binary hash.");
+            }
+        }
+    }
+
+    private static IDictionary<uint, ValveKeyValueNode> ParseLegacyAppInfo(Stream stream)
+    {
         var reader = new BinaryReader(stream, Encoding.UTF8, leaveOpen: true);
         var result = new Dictionary<uint, ValveKeyValueNode>();
 
@@ -53,8 +243,6 @@ public sealed class ValveBinaryVdfParser
 
             if (size > int.MaxValue)
             {
-                // The payload is too large to buffer in memory. Stop parsing to avoid
-                // attempting to allocate an excessively large array.
                 break;
             }
 
@@ -65,8 +253,6 @@ public sealed class ValveBinaryVdfParser
                 var remaining = stream.Length - stream.Position;
                 if (size > remaining)
                 {
-                    // The declared size would read past the end of the stream. Treat the
-                    // remainder of the file as truncated and stop parsing.
                     stream.Seek(stream.Length, SeekOrigin.Begin);
                     break;
                 }
@@ -75,7 +261,6 @@ public sealed class ValveBinaryVdfParser
             var payload = reader.ReadBytes((int)size);
             if (payload.Length != (int)size)
             {
-                // The payload could not be read in full which indicates truncated data.
                 if (stream.CanSeek)
                 {
                     var nextEntryPosition = payloadStart + size;
@@ -89,42 +274,35 @@ public sealed class ValveBinaryVdfParser
 
                 continue;
             }
+
             using var payloadStream = new MemoryStream(payload, writable: false);
             using var payloadReader = new BinaryReader(payloadStream, Encoding.UTF8);
             try
             {
-                SkipAppInfoMetadata(payloadReader, appId, size);
-                var node = ParseNode(payloadReader);
+                SkipLegacyMetadata(payloadReader, appId, size);
+                var node = ParseLegacyNode(payloadReader);
                 result[appId] = node;
             }
             catch (EndOfStreamException)
             {
-                // Individual entries in appinfo.vdf can become truncated. Skip the
-                // affected entry and continue parsing any remaining ones. Ensure the
-                // main stream advances to the declared end of the payload so that the
-                // next entry can be read correctly.
                 if (stream.CanSeek)
                 {
                     stream.Seek(payloadStart + size, SeekOrigin.Begin);
                 }
-                continue;
             }
             catch (InvalidDataException)
             {
-                // Ignore malformed entries so that valid application data can still be
-                // returned to callers.
                 if (stream.CanSeek)
                 {
                     stream.Seek(payloadStart + size, SeekOrigin.Begin);
                 }
-                continue;
             }
         }
 
         return result;
     }
 
-    private static void SkipAppInfoMetadata(BinaryReader reader, uint appId, uint size)
+    private static void SkipLegacyMetadata(BinaryReader reader, uint appId, uint size)
     {
         const int checksumLength = 20;
         const int metadataLength = sizeof(uint) + sizeof(uint) + sizeof(ulong) + checksumLength + sizeof(uint);
@@ -147,14 +325,14 @@ public sealed class ValveBinaryVdfParser
         reader.ReadUInt32(); // change number
     }
 
-    private static ValveKeyValueNode ParseNode(BinaryReader reader)
+    private static ValveKeyValueNode ParseLegacyNode(BinaryReader reader)
     {
         var root = ValveKeyValueNode.CreateObject("appinfo");
-        ReadChildren(reader, root);
+        ReadLegacyChildren(reader, root);
         return root;
     }
 
-    private static void ReadChildren(BinaryReader reader, ValveKeyValueNode parent)
+    private static void ReadLegacyChildren(BinaryReader reader, ValveKeyValueNode parent)
     {
         while (true)
         {
@@ -164,18 +342,18 @@ public sealed class ValveBinaryVdfParser
                 return;
             }
 
-            var key = ReadNullTerminatedString(reader);
+            var key = ReadLegacyNullTerminatedString(reader);
             switch (type)
             {
                 case ValveBinaryType.Child:
-                    {
-                        var child = ValveKeyValueNode.CreateObject(key);
-                        parent.AddChild(child);
-                        ReadChildren(reader, child);
-                        break;
-                    }
+                {
+                    var child = ValveKeyValueNode.CreateObject(key);
+                    parent.AddChild(child);
+                    ReadLegacyChildren(reader, child);
+                    break;
+                }
                 case ValveBinaryType.String:
-                    parent.AddChild(ValveKeyValueNode.CreateValue(key, ReadNullTerminatedString(reader)));
+                    parent.AddChild(ValveKeyValueNode.CreateValue(key, ReadLegacyNullTerminatedString(reader)));
                     break;
                 case ValveBinaryType.Int32:
                     parent.AddChild(ValveKeyValueNode.CreateValue(key, reader.ReadInt32().ToString(CultureInfo.InvariantCulture)));
@@ -196,41 +374,58 @@ public sealed class ValveBinaryVdfParser
                     parent.AddChild(ValveKeyValueNode.CreateValue(key, reader.ReadUInt32().ToString(CultureInfo.InvariantCulture)));
                     break;
                 case ValveBinaryType.WideString:
-                    parent.AddChild(ValveKeyValueNode.CreateValue(key, ReadWideString(reader)));
+                    parent.AddChild(ValveKeyValueNode.CreateValue(key, ReadLegacyWideString(reader)));
                     break;
                 case ValveBinaryType.Color:
                     parent.AddChild(ValveKeyValueNode.CreateValue(key, reader.ReadUInt32().ToString(CultureInfo.InvariantCulture)));
                     break;
                 case ValveBinaryType.BinaryBlob:
+                {
+                    var length = reader.ReadInt32();
+                    if (length < 0)
                     {
-                        var length = reader.ReadInt32();
-                        if (length < 0)
-                        {
-                            throw new InvalidDataException($"Binary data for key '{key}' has a negative length ({length}).");
-                        }
-
-                        var bytes = reader.ReadBytes(length);
-                        if (bytes.Length != length)
-                        {
-                            throw new EndOfStreamException($"Unexpected end of stream while reading binary data for key '{key}'.");
-                        }
-
-                        parent.AddChild(ValveKeyValueNode.CreateValue(key, Convert.ToBase64String(bytes)));
-                        break;
+                        throw new InvalidDataException($"Binary data for key '{key}' has a negative length ({length}).");
                     }
+
+                    var bytes = reader.ReadBytes(length);
+                    if (bytes.Length != length)
+                    {
+                        throw new EndOfStreamException($"Unexpected end of stream while reading binary data for key '{key}'.");
+                    }
+
+                    parent.AddChild(ValveKeyValueNode.CreateValue(key, Convert.ToBase64String(bytes)));
+                    break;
+                }
                 case ValveBinaryType.Boolean:
-                    {
-                        var value = reader.ReadByte();
-                        parent.AddChild(ValveKeyValueNode.CreateValue(key, value != 0 ? "1" : "0"));
-                        break;
-                    }
+                {
+                    var value = reader.ReadByte();
+                    parent.AddChild(ValveKeyValueNode.CreateValue(key, value != 0 ? "1" : "0"));
+                    break;
+                }
                 default:
                     throw new InvalidDataException($"Unsupported Valve binary type: {type}.");
             }
         }
     }
 
-    private static string ReadNullTerminatedString(BinaryReader reader)
+    private static ValveKeyValueNode ConvertToNode(KVObject kvObject)
+    {
+        if (kvObject.Value.ValueType is KVValueType.Collection or KVValueType.Array)
+        {
+            var node = ValveKeyValueNode.CreateObject(kvObject.Name);
+            foreach (var child in kvObject.Children)
+            {
+                node.AddChild(ConvertToNode(child));
+            }
+
+            return node;
+        }
+
+        var value = kvObject.Value.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
+        return ValveKeyValueNode.CreateValue(kvObject.Name, value);
+    }
+
+    private static string ReadLegacyNullTerminatedString(BinaryReader reader)
     {
         var bytes = new List<byte>();
         byte value;
@@ -242,7 +437,7 @@ public sealed class ValveBinaryVdfParser
         return Encoding.UTF8.GetString(bytes.ToArray());
     }
 
-    private static string ReadWideString(BinaryReader reader)
+    private static string ReadLegacyWideString(BinaryReader reader)
     {
         var sb = new StringBuilder();
         while (true)
@@ -257,5 +452,40 @@ public sealed class ValveBinaryVdfParser
         }
 
         return sb.ToString();
+    }
+
+    private static string ReadNullTerminatedUtf8String(Stream stream)
+    {
+        var buffer = ArrayPool<byte>.Shared.Rent(32);
+
+        try
+        {
+            var length = 0;
+
+            while (true)
+            {
+                var next = stream.ReadByte();
+                if (next <= 0)
+                {
+                    break;
+                }
+
+                if (length >= buffer.Length)
+                {
+                    var newBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length * 2);
+                    Buffer.BlockCopy(buffer, 0, newBuffer, 0, buffer.Length);
+                    ArrayPool<byte>.Shared.Return(buffer);
+                    buffer = newBuffer;
+                }
+
+                buffer[length++] = (byte)next;
+            }
+
+            return Encoding.UTF8.GetString(buffer, 0, length);
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
     }
 }

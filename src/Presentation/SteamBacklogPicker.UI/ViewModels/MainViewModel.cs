@@ -36,6 +36,7 @@ public sealed class MainViewModel : ObservableObject
         Preferences = new SelectionPreferencesViewModel(_selectionEngine);
         Preferences.PreferencesChanged += OnPreferencesChanged;
 
+        RefreshCommand = new AsyncRelayCommand(RefreshLibraryAsync);
         DrawCommand = new AsyncRelayCommand(DrawAsync, () => _library.Count > 0);
         LaunchCommand = new RelayCommand(LaunchGame, () => SelectedGame.CanLaunch);
         InstallCommand = new RelayCommand(InstallGame, () => SelectedGame.CanInstall);
@@ -44,6 +45,7 @@ public sealed class MainViewModel : ObservableObject
     public SelectionPreferencesViewModel Preferences { get; }
 
     public AsyncRelayCommand DrawCommand { get; }
+    public AsyncRelayCommand RefreshCommand { get; }
 
     public RelayCommand LaunchCommand { get; }
 

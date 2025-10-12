@@ -200,7 +200,7 @@ public sealed class SelectionEngine : ISelectionEngine
                 continue;
             }
 
-            if (filters.RequireInstalled && game.InstallState != InstallState.Installed)
+            if (filters.RequireInstalled && game.InstallState is not (InstallState.Installed or InstallState.Shared))
             {
                 continue;
             }
