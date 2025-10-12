@@ -15,6 +15,14 @@ public sealed class ValveBinaryVdfParserTests
         var fixturePath = Path.Combine(VdfFixtureLoader.RootDirectory, "steam", "appcache", "appinfo.vdf");
         var bytes = File.ReadAllBytes(fixturePath);
 
+        // Guard against line ending normalization corrupting the binary fixture when
+        // the repository is checked out on Windows runners. The binary header stores
+        // the application identifier and payload size as little-endian 32-bit
+        // integers. If Git converts the file to CRLF the header bytes change and the
+        // parser will observe nonsense values, leading to empty results.
+        Assert.Equal(10u, BitConverter.ToUInt32(bytes, 0));
+        Assert.Equal(87u, BitConverter.ToUInt32(bytes, sizeof(uint)));
+
         var firstPayloadSize = (int)BitConverter.ToUInt32(bytes, 4);
         var firstEntryLength = Math.Min(bytes.Length, sizeof(uint) + sizeof(uint) + firstPayloadSize);
 

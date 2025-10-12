@@ -1,6 +1,11 @@
-# Normalize text files and explicitly mark Valve Data Format fixtures as text.
+# Normalize text files.
 * text=auto
 
-# Ensure Valve Data Format fixtures are treated as text so they diff correctly
-*.acf text working-tree-encoding=UTF-8 diff
-*.vdf text working-tree-encoding=UTF-8 diff
+# Ensure Valve Data Format fixtures use appropriate attributes.
+tests/TestUtilities/SteamTestUtilities/Fixtures/*.acf text working-tree-encoding=UTF-8 diff
+tests/TestUtilities/SteamTestUtilities/Fixtures/*.vdf text working-tree-encoding=UTF-8 diff
+tests/TestUtilities/SteamTestUtilities/Fixtures/steam/config/*.vdf text working-tree-encoding=UTF-8 diff
+tests/TestUtilities/SteamTestUtilities/Fixtures/steam/userdata/**/*.vdf text working-tree-encoding=UTF-8 diff
+
+# Binary Valve Data Format dumps from Steam's appcache should never be normalized.
+tests/TestUtilities/SteamTestUtilities/Fixtures/steam/appcache/*.vdf binary
