@@ -1,0 +1,54 @@
+"UserRoamingConfigStore"
+{
+    "tags"
+    {
+        "0"
+        {
+            "tag"   "Favoritos"
+        }
+        "1"
+        {
+            "tag"   "Cooperativo"
+        }
+        "2"
+        {
+            "tag"   "Backlog"
+        }
+    }
+    "Software"
+    {
+        "Valve"
+        {
+            "Steam"
+            {
+                "apps"
+                {
+                    "10"
+                    {
+                        "tags"
+                        {
+                            "0"
+                            {
+                                "tag"   "Favoritos"
+                            }
+                        }
+                    }
+                    "20"
+                    {
+                        "tags"
+                        {
+                            "1"
+                        }
+                    }
+                    "30"
+                    {
+                        "tags"
+                        {
+                            "2"    "Backlog"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
