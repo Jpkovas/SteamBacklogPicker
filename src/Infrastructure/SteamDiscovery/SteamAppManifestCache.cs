@@ -185,14 +185,10 @@ public sealed class SteamAppManifestCache : IDisposable
                 ownershipType = OwnershipType.FamilyShared;
             }
 
-            var installState = InstallState.Installed;
-            if (isFamilyShared)
+            var installState = isFamilyShared ? InstallState.Shared : InstallState.Available;
+            if (!isFamilyShared && installedSet.Contains(appId))
             {
-                installState = InstallState.Shared;
-            }
-            else if (installedSet.Count > 0 && !installedSet.Contains(appId))
-            {
-                installState = InstallState.Available;
+                installState = InstallState.Installed;
             }
 
             var sizeOnDisk = TryParseLong(appState, "SizeOnDisk");
