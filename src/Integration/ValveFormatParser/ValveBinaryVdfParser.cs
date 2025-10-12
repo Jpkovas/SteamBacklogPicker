@@ -1,16 +1,22 @@
 using System;
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.IO.Hashing;
 using System.Text;
 using ValveKeyValue;
+using ZstdSharp;
 
 namespace ValveFormatParser;
 
 public sealed class ValveBinaryVdfParser
 {
     private const uint ExpectedMagic = 0x075644;
+    private const uint ValveZstdMagic = 0x615A5356; // VSZa
+    private const int ValveZstdHeaderLength = 8;
+    private const int ValveZstdFooterLength = 15;
 
     private enum ValveBinaryType : byte
     {
@@ -118,7 +124,7 @@ public sealed class ValveBinaryVdfParser
             throw new InvalidDataException($"Unknown appinfo header magic: 0x{magic:X}");
         }
 
-        if (version is < 39 or > 41)
+        if (version is < 39 or > 42)
         {
             throw new InvalidDataException($"Unsupported appinfo header version: {version}");
         }
@@ -181,10 +187,34 @@ public sealed class ValveBinaryVdfParser
         {
             ReadEntryMetadata(reader, version);
 
-            var kvObject = serializer.Deserialize(reader.BaseStream, options);
-            node = ConvertToNode(kvObject);
+            var payloadLength = (int)(endPosition - reader.BaseStream.Position);
+            if (payloadLength < 0)
+            {
+                throw new InvalidDataException($"App {appId} payload length is negative.");
+            }
+
+            if (payloadLength == 0)
+            {
+                return true;
+            }
+
+            var buffer = ArrayPool<byte>.Shared.Rent(payloadLength);
+            try
+            {
+                var bytesRead = reader.Read(buffer, 0, payloadLength);
+                if (bytesRead != payloadLength)
+                {
+                    throw new EndOfStreamException($"Unexpected end of stream while reading app {appId} payload.");
+                }
+
+                node = DeserializePayload(buffer, payloadLength, serializer, options);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
         }
-        catch (Exception ex) when (ex is EndOfStreamException or InvalidDataException or IOException)
+        catch (Exception ex) when (ex is EndOfStreamException or InvalidDataException or IOException or KeyValueException or ZstdException)
         {
             // Skip malformed entries to preserve compatibility with truncated appinfo caches.
         }
@@ -194,6 +224,130 @@ public sealed class ValveBinaryVdfParser
         }
 
         return true;
+    }
+
+    private static ValveKeyValueNode? DeserializePayload(
+        byte[] buffer,
+        int length,
+        KVSerializer serializer,
+        KVSerializerOptions options)
+    {
+        if (length == 0)
+        {
+            return null;
+        }
+
+        if (IsValveZstdPayload(buffer, length))
+        {
+            return DeserializeValveZstdPayload(buffer, length, serializer, options);
+        }
+
+        using var payloadStream = new MemoryStream(buffer, 0, length, writable: false, publiclyVisible: true);
+        var kvObject = serializer.Deserialize(payloadStream, options);
+        return ConvertToNode(kvObject);
+    }
+
+    private static bool IsValveZstdPayload(byte[] buffer, int length)
+    {
+        if (length < ValveZstdHeaderLength)
+        {
+            return false;
+        }
+
+        var magic = BinaryPrimitives.ReadUInt32LittleEndian(new ReadOnlySpan<byte>(buffer, 0, sizeof(uint)));
+        return magic == ValveZstdMagic;
+    }
+
+    private static ValveKeyValueNode DeserializeValveZstdPayload(
+        byte[] buffer,
+        int length,
+        KVSerializer serializer,
+        KVSerializerOptions options)
+    {
+        if (length < ValveZstdHeaderLength + ValveZstdFooterLength)
+        {
+            throw new InvalidDataException("Valve Zstd payload is too small to contain header and footer.");
+        }
+
+        var payload = new ReadOnlySpan<byte>(buffer, 0, length);
+        var footerOffset = length - ValveZstdFooterLength;
+        var footer = payload.Slice(footerOffset, ValveZstdFooterLength);
+
+        var expectedChecksum = BinaryPrimitives.ReadUInt32LittleEndian(payload.Slice(4, sizeof(uint)));
+        var footerChecksum = BinaryPrimitives.ReadUInt32LittleEndian(footer.Slice(0, sizeof(uint)));
+        if (expectedChecksum != footerChecksum)
+        {
+            throw new InvalidDataException("Valve Zstd payload checksum mismatch.");
+        }
+
+        if (footer[ValveZstdFooterLength - 3] != (byte)'z' ||
+            footer[ValveZstdFooterLength - 2] != (byte)'s' ||
+            footer[ValveZstdFooterLength - 1] != (byte)'v')
+        {
+            throw new InvalidDataException("Valve Zstd footer marker not found.");
+        }
+
+        var decompressedSize = BinaryPrimitives.ReadInt32LittleEndian(footer.Slice(4, sizeof(int)));
+        if (decompressedSize < 0)
+        {
+            throw new InvalidDataException("Valve Zstd payload reported a negative decompressed size.");
+        }
+
+        var decompressedBuffer = ArrayPool<byte>.Shared.Rent(decompressedSize);
+        try
+        {
+            var written = DecompressValveZstd(payload, decompressedBuffer.AsSpan(0, decompressedSize));
+            using var decompressedStream = new MemoryStream(decompressedBuffer, 0, written, writable: false, publiclyVisible: true);
+            var kvObject = serializer.Deserialize(decompressedStream, options);
+            return ConvertToNode(kvObject);
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(decompressedBuffer);
+        }
+    }
+
+    private static int DecompressValveZstd(ReadOnlySpan<byte> payload, Span<byte> destination)
+    {
+        if (payload.Length < ValveZstdHeaderLength + ValveZstdFooterLength)
+        {
+            throw new InvalidDataException("Valve Zstd payload is too small.");
+        }
+
+        var magic = BinaryPrimitives.ReadUInt32LittleEndian(payload.Slice(0, sizeof(uint)));
+        if (magic != ValveZstdMagic)
+        {
+            throw new InvalidDataException("Valve Zstd header magic mismatch.");
+        }
+
+        var footer = payload.Slice(payload.Length - ValveZstdFooterLength, ValveZstdFooterLength);
+        var expectedSize = BinaryPrimitives.ReadInt32LittleEndian(footer.Slice(4, sizeof(int)));
+        if (expectedSize < 0)
+        {
+            throw new InvalidDataException("Valve Zstd payload reports a negative size.");
+        }
+
+        if (destination.Length < expectedSize)
+        {
+            throw new ArgumentException("Destination buffer is smaller than the expected decompressed size.", nameof(destination));
+        }
+
+        var compressed = payload.Slice(ValveZstdHeaderLength, payload.Length - (ValveZstdHeaderLength + ValveZstdFooterLength));
+
+        using var decompressor = new Decompressor();
+        if (!decompressor.TryUnwrap(compressed, destination, out var written) || written != expectedSize)
+        {
+            throw new InvalidDataException($"Failed to decompress Valve Zstd payload (expected {expectedSize} bytes, got {written}).");
+        }
+
+        var expectedChecksum = BinaryPrimitives.ReadUInt32LittleEndian(footer.Slice(0, sizeof(uint)));
+        var actualChecksum = Crc32.HashToUInt32(destination.Slice(0, written));
+        if (expectedChecksum != actualChecksum)
+        {
+            throw new InvalidDataException("Valve Zstd payload checksum validation failed.");
+        }
+
+        return written;
     }
 
     private static void ReadEntryMetadata(BinaryReader reader, byte version)
