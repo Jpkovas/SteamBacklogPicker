@@ -19,6 +19,7 @@ public sealed class ValveBinaryVdfParser
         Color = 6,
         UInt64 = 7,
         End = 8,
+        ProbablyBinary = 9,
         Int64 = 0x0A,
         AlternateEnd = 0x0B,
         UInt32 = 0x0C,
@@ -202,10 +203,10 @@ public sealed class ValveBinaryVdfParser
                     parent.AddChild(ValveKeyValueNode.CreateValue(key, reader.ReadUInt32().ToString(CultureInfo.InvariantCulture)));
                     break;
                 case ValveBinaryType.BinaryBlob:
+                {
+                    var length = reader.ReadInt32();
+                    if (length < 0)
                     {
-                        var length = reader.ReadInt32();
-                        if (length < 0)
-                        {
                             throw new InvalidDataException($"Binary data for key '{key}' has a negative length ({length}).");
                         }
 
@@ -215,9 +216,26 @@ public sealed class ValveBinaryVdfParser
                             throw new EndOfStreamException($"Unexpected end of stream while reading binary data for key '{key}'.");
                         }
 
-                        parent.AddChild(ValveKeyValueNode.CreateValue(key, Convert.ToBase64String(bytes)));
-                        break;
+                    parent.AddChild(ValveKeyValueNode.CreateValue(key, Convert.ToBase64String(bytes)));
+                    break;
+                }
+                case ValveBinaryType.ProbablyBinary:
+                {
+                    var length = reader.ReadInt32();
+                    if (length < 0)
+                    {
+                        throw new InvalidDataException($"Binary data for key '{key}' has a negative length ({length}).");
                     }
+
+                    var bytes = reader.ReadBytes(length);
+                    if (bytes.Length != length)
+                    {
+                        throw new EndOfStreamException($"Unexpected end of stream while reading binary data for key '{key}'.");
+                    }
+
+                    parent.AddChild(ValveKeyValueNode.CreateValue(key, Convert.ToBase64String(bytes)));
+                    break;
+                }
                 case ValveBinaryType.Boolean:
                     {
                         var value = reader.ReadByte();
