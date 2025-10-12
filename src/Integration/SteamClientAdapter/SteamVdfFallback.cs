@@ -5,6 +5,8 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using ValveFormatParser;
+using ValveKeyValue;
+using ZstdSharp;
 
 namespace SteamClientAdapter;
 
@@ -301,22 +303,31 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
             return;
         }
 
-        using var stream = _files.OpenRead(appInfoPath);
-        var entries = _binaryParser.ParseAppInfo(stream);
-        foreach (var (appId, node) in entries)
+        try
         {
-            if (TryGetFamilySharingFlag(node, out var flag))
+            using var stream = _files.OpenRead(appInfoPath);
+            var entries = _binaryParser.ParseAppInfo(stream);
+            foreach (var (appId, node) in entries)
             {
-                _familySharingCache[appId] = flag;
-            }
+                if (TryGetFamilySharingFlag(node, out var flag))
+                {
+                    _familySharingCache[appId] = flag;
+                }
 
-            if (TryGetAppName(node, out var appName))
-            {
-                _appNames[appId] = appName;
+                if (TryGetAppName(node, out var appName))
+                {
+                    _appNames[appId] = appName;
+                }
             }
         }
-
-        _appInfoLoaded = true;
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or KeyValueException or ZstdException)
+        {
+            // Ignore appinfo parsing errors and continue with limited metadata.
+        }
+        finally
+        {
+            _appInfoLoaded = true;
+        }
     }
 
     private static bool TryGetFamilySharingFlag(ValveKeyValueNode node, out bool flag)

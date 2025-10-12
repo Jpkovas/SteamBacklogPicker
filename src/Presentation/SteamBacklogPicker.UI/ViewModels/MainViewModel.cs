@@ -96,12 +96,22 @@ public sealed class MainViewModel : ObservableObject
     {
         StatusMessage = "Carregando biblioteca...";
         _library.Clear();
-        var games = await _libraryService.GetLibraryAsync().ConfigureAwait(true);
-        _library.AddRange(games.OrderBy(game => game.Title, StringComparer.CurrentCultureIgnoreCase));
-        StatusMessage = _library.Count == 0
-            ? "Nenhum jogo encontrado nos diretórios configurados."
-            : $"{_library.Count} jogos disponíveis para sorteio.";
-        DrawCommand.RaiseCanExecuteChanged();
+        try
+        {
+            var games = await _libraryService.GetLibraryAsync().ConfigureAwait(true);
+            _library.AddRange(games.OrderBy(game => game.Title, StringComparer.CurrentCultureIgnoreCase));
+            StatusMessage = _library.Count == 0
+                ? "Nenhum jogo encontrado nos diretórios configurados."
+                : $"{_library.Count} jogos disponíveis para sorteio.";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = ex.Message;
+        }
+        finally
+        {
+            DrawCommand.RaiseCanExecuteChanged();
+        }
     }
 
     private async Task DrawAsync()
