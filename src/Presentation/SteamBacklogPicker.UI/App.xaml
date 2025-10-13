@@ -124,8 +124,8 @@
                                 </Trigger>
                                 <Trigger Property="IsPressed" Value="True">
                                     <Setter TargetName="border" Property="Background" Value="{StaticResource AccentBrushPressed}" />
-                                    <Setter TargetName="border" Property="RenderTransform.(ScaleTransform.ScaleX)" Value="0.98" />
-                                    <Setter TargetName="border" Property="RenderTransform.(ScaleTransform.ScaleY)" Value="0.98" />
+                                    <Setter TargetName="scale" Property="ScaleX" Value="0.98" />
+                                    <Setter TargetName="scale" Property="ScaleY" Value="0.98" />
                                 </Trigger>
                                 <Trigger Property="IsEnabled" Value="False">
                                     <Setter Property="Opacity" Value="0.5" />
