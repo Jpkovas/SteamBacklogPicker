@@ -52,6 +52,22 @@ public sealed class SelectionPreferencesViewModelTests
         viewModel.CollectionOptions.Should().Contain("Multijogador");
     }
 
+    [Fact]
+    public void UpdateCollections_ShouldPreserveSelectedCollectionCasingWhenMatchingIgnoreCase()
+    {
+        var engine = new FakeSelectionEngine(new SelectionPreferences());
+        var viewModel = new SelectionPreferencesViewModel(engine);
+        viewModel.UpdateCollections(new[] { "Jogáveis no Deck", "Favoritos" });
+
+        var originalSelection = "Jogáveis no Deck";
+        viewModel.SelectedCollection = originalSelection;
+
+        viewModel.UpdateCollections(new[] { "jogáveis no deck", "Favoritos" });
+
+        viewModel.SelectedCollection.Should().Be(originalSelection);
+        viewModel.SelectedCollection.Should().NotBe(viewModel.CollectionOptions[0]);
+    }
+
     private sealed class FakeSelectionEngine : ISelectionEngine
     {
         private SelectionPreferences _preferences;
