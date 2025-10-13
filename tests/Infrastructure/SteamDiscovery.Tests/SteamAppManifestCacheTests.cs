@@ -87,6 +87,20 @@ public sealed class SteamAppManifestCacheTests
     }
 
     [Fact]
+    public void GetInstalledGames_ShouldPreferManifestEvidence_WhenAdapterOmitsAppId()
+    {
+        using var environment = new ManifestTestEnvironment();
+        environment.WriteManifest(303, "Unreported Game", 500_000_000, 0);
+
+        using var cache = environment.CreateCache(new[] { 999u }, Array.Empty<uint>());
+        var games = cache.GetInstalledGames();
+
+        var game = Assert.Single(games);
+        Assert.Equal(InstallState.Installed, game.InstallState);
+        Assert.Equal(500_000_000, game.SizeOnDisk);
+    }
+
+    [Fact]
     public void Cache_UpdatesIncrementally_OnManifestChange()
     {
         using var environment = new ManifestTestEnvironment();

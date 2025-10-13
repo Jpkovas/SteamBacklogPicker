@@ -188,9 +188,17 @@ public sealed class SteamAppManifestCache : IDisposable
             var ownershipType = isFamilyShared ? OwnershipType.FamilyShared : OwnershipType.Owned;
 
             var installState = isFamilyShared ? InstallState.Shared : InstallState.Installed;
-            if (!isFamilyShared && installedSet.Count > 0 && !installedSet.Contains(appId))
+            if (!isFamilyShared)
             {
-                installState = InstallState.Available;
+                var isReportedInstalled = installedSet.Count == 0 || installedSet.Contains(appId);
+                if (!isReportedInstalled)
+                {
+                    var manifestSuggestsInstalled = sizeOnDisk.HasValue && sizeOnDisk.Value > 0;
+                    if (!manifestSuggestsInstalled)
+                    {
+                        installState = InstallState.Available;
+                    }
+                }
             }
 
             var lastPlayed = ParseLastPlayed(appState.FindPath("UserConfig", "LastPlayed"));
