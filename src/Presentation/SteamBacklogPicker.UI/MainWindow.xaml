@@ -3,170 +3,518 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:SteamBacklogPicker.UI"
         mc:Ignorable="d"
         Title="Steam Backlog Picker"
         Width="1200"
         Height="720"
         MinWidth="960"
         MinHeight="600"
-        Background="#FF1C1C1C"
+        FontFamily="Segoe UI"
+        Background="#0B0E13"
         Foreground="White">
-    <Grid Margin="24">
+    <Window.Resources>
+        <SolidColorBrush x:Key="SurfaceBrush" Color="#141921" />
+        <SolidColorBrush x:Key="SurfaceAltBrush" Color="#1B232E" />
+        <SolidColorBrush x:Key="SurfaceBorderBrush" Color="#262F3D" />
+        <SolidColorBrush x:Key="AccentBrush" Color="#4CB0FF" />
+        <SolidColorBrush x:Key="AccentBrushDeep" Color="#2C8AE8" />
+        <SolidColorBrush x:Key="AccentForegroundBrush" Color="#0B0E13" />
+        <SolidColorBrush x:Key="MutedForegroundBrush" Color="#9AA5B5" />
+        <SolidColorBrush x:Key="TagBrush" Color="#223344" />
+        <SolidColorBrush x:Key="TagBorderBrush" Color="#2E4258" />
+
+        <Style x:Key="CardBorderStyle" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+            <Setter Property="Padding" Value="28" />
+            <Setter Property="CornerRadius" Value="18" />
+            <Setter Property="BorderBrush" Value="{StaticResource SurfaceBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+        </Style>
+
+        <Style x:Key="SectionTitleTextStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="24" />
+            <Setter Property="FontWeight" Value="Bold" />
+        </Style>
+
+        <Style x:Key="SectionLabelTextStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{StaticResource MutedForegroundBrush}" />
+            <Setter Property="Margin" Value="0,20,0,6" />
+        </Style>
+
+        <Style x:Key="BaseButtonStyle" TargetType="Button">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Background" Value="{StaticResource SurfaceAltBrush}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="14,10" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonRoot"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="10">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonRoot"
+                                        Property="Background"
+                                        Value="{StaticResource AccentBrush}" />
+                                <Setter Property="Foreground"
+                                        Value="{StaticResource AccentForegroundBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonRoot"
+                                        Property="Background"
+                                        Value="{StaticResource AccentBrushDeep}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="ButtonRoot" Property="Opacity" Value="0.35" />
+                                <Setter Property="Foreground" Value="{StaticResource MutedForegroundBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="PrimaryButtonStyle"
+               TargetType="Button"
+               BasedOn="{StaticResource BaseButtonStyle}">
+            <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource AccentForegroundBrush}" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="FontSize" Value="18" />
+            <Setter Property="Padding" Value="18,12" />
+        </Style>
+
+        <Style x:Key="ComboBoxToggleButtonStyle" TargetType="ToggleButton">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="BorderBrush" Value="{x:Null}" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Grid>
+                            <Border Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="10" />
+                            <Path x:Name="Arrow"
+                                  Data="M 0 0 L 6 6 L 12 0"
+                                  Stroke="{StaticResource MutedForegroundBrush}"
+                                  StrokeThickness="2"
+                                  StrokeLineJoin="Round"
+                                  StrokeEndLineCap="Round"
+                                  StrokeStartLineCap="Round"
+                                  VerticalAlignment="Center"
+                                  HorizontalAlignment="Right"
+                                  Margin="0,0,18,0" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Arrow"
+                                        Property="Stroke"
+                                        Value="{StaticResource AccentBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Arrow"
+                                        Property="Stroke"
+                                        Value="{StaticResource AccentBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Arrow" Property="Opacity" Value="0.4" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SurfaceComboBoxItemStyle" TargetType="ComboBoxItem">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Padding" Value="12,6" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBoxItem">
+                        <Border x:Name="BackgroundBorder"
+                                Background="Transparent"
+                                CornerRadius="8"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Left"
+                                              VerticalAlignment="Center"
+                                              TextElement.Foreground="{TemplateBinding Foreground}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="BackgroundBorder"
+                                        Property="Background"
+                                        Value="{StaticResource AccentBrush}" />
+                                <Setter Property="Foreground"
+                                        Value="{StaticResource AccentForegroundBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="BackgroundBorder"
+                                        Property="Background"
+                                        Value="{StaticResource AccentBrushDeep}" />
+                                <Setter Property="Foreground"
+                                        Value="{StaticResource AccentForegroundBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="BackgroundBorder" Property="Opacity" Value="0.35" />
+                                <Setter Property="Foreground" Value="{StaticResource MutedForegroundBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SurfaceComboBoxStyle" TargetType="ComboBox">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Background" Value="{StaticResource SurfaceAltBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource SurfaceBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="12,8" />
+            <Setter Property="MinHeight" Value="40" />
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
+            <Setter Property="ItemContainerStyle" Value="{StaticResource SurfaceComboBoxItemStyle}" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <Border x:Name="BackgroundBorder"
+                                    Grid.ColumnSpan="2"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="10" />
+
+                            <ContentPresenter x:Name="ContentPresenter"
+                                              Grid.Column="0"
+                                              Margin="{TemplateBinding Padding}"
+                                              VerticalAlignment="Center"
+                                              HorizontalAlignment="Left"
+                                              Content="{TemplateBinding SelectionBoxItem}"
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                              TextElement.Foreground="{TemplateBinding Foreground}"
+                                              RecognizesAccessKey="True" />
+
+                            <ToggleButton x:Name="ToggleButton"
+                                          Grid.ColumnSpan="2"
+                                          Style="{StaticResource ComboBoxToggleButtonStyle}"
+                                          Background="Transparent"
+                                          BorderThickness="0"
+                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" />
+
+                            <Popup x:Name="PART_Popup"
+                                   Placement="Bottom"
+                                   IsOpen="{TemplateBinding IsDropDownOpen}"
+                                   PlacementTarget="{Binding ElementName=ToggleButton}"
+                                   AllowsTransparency="True"
+                                   Focusable="False"
+                                   PopupAnimation="Slide">
+                                <Border Background="{StaticResource SurfaceAltBrush}"
+                                        BorderBrush="{StaticResource SurfaceBorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="12"
+                                        Margin="0,8,0,0"
+                                        SnapsToDevicePixels="True"
+                                        MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}">
+                                    <ScrollViewer Margin="4"
+                                                  CanContentScroll="True"
+                                                  VerticalScrollBarVisibility="Auto"
+                                                  HorizontalScrollBarVisibility="Disabled">
+                                        <ItemsPresenter />
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger SourceName="PART_Popup"
+                                     Property="HasDropShadow"
+                                     Value="True">
+                                <Setter TargetName="PART_Popup" Property="PopupAnimation" Value="Fade" />
+                            </Trigger>
+                            <Trigger Property="IsDropDownOpen" Value="True">
+                                <Setter TargetName="BackgroundBorder"
+                                        Property="BorderBrush"
+                                        Value="{StaticResource AccentBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="BackgroundBorder"
+                                        Property="BorderBrush"
+                                        Value="{StaticResource AccentBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="{StaticResource MutedForegroundBrush}" />
+                                <Setter TargetName="BackgroundBorder" Property="Opacity" Value="0.4" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <ControlTemplate x:Key="MinimalCheckBoxTemplate" TargetType="CheckBox">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border x:Name="Box"
+                        Width="18"
+                        Height="18"
+                        Background="Transparent"
+                        BorderBrush="{StaticResource SurfaceBorderBrush}"
+                        BorderThickness="1.5"
+                        CornerRadius="5" />
+                <Path x:Name="CheckMark"
+                      Grid.Column="0"
+                      Margin="3"
+                      Stroke="{StaticResource AccentForegroundBrush}"
+                      StrokeThickness="2.2"
+                      StrokeEndLineCap="Round"
+                      StrokeStartLineCap="Round"
+                      StrokeLineJoin="Round"
+                      Data="M 2 9 L 7 14 L 15 4"
+                      Visibility="Collapsed" />
+                <ContentPresenter Grid.Column="1"
+                                  Margin="12,0,0,0"
+                                  VerticalAlignment="Center"
+                                  RecognizesAccessKey="True" />
+            </Grid>
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter TargetName="Box" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter TargetName="Box" Property="Background" Value="{StaticResource SurfaceAltBrush}" />
+                </Trigger>
+                <Trigger Property="IsChecked" Value="True">
+                    <Setter TargetName="Box" Property="Background" Value="{StaticResource AccentBrush}" />
+                    <Setter TargetName="Box" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                    <Setter TargetName="CheckMark" Property="Visibility" Value="Visible" />
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter TargetName="Box" Property="Opacity" Value="0.35" />
+                    <Setter Property="Foreground" Value="{StaticResource MutedForegroundBrush}" />
+                </Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
+
+        <Style x:Key="FilterCheckBoxStyle" TargetType="CheckBox">
+            <Setter Property="Template" Value="{StaticResource MinimalCheckBoxTemplate}" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Margin" Value="0,0,0,8" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="32">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="360" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <Border Background="#FF2A2A2A"
-                Padding="24"
-                CornerRadius="12"
-                BorderBrush="#22FFFFFF"
-                BorderThickness="1"
+        <Border Style="{StaticResource CardBorderStyle}"
                 AutomationProperties.Name="Painel de filtros">
             <StackPanel>
                 <TextBlock Text="Filtros"
-                           FontSize="24"
-                           FontWeight="Bold"
-                           Margin="0,0,0,16" />
+                           Style="{StaticResource SectionTitleTextStyle}" />
+
                 <CheckBox Content="Somente instalados"
+                          Style="{StaticResource FilterCheckBoxStyle}"
                           IsChecked="{Binding Preferences.RequireInstalled, Mode=TwoWay}"
-                          Margin="0,0,0,8"
                           AutomationProperties.Name="Filtrar apenas jogos instalados" />
-                <TextBlock Text="Tipos de conteúdo"
-                           FontWeight="SemiBold"
-                           Margin="0,16,0,4" />
+
+                <TextBlock Text="TIPOS DE CONTEÚDO"
+                           Style="{StaticResource SectionLabelTextStyle}" />
+
                 <StackPanel>
                     <CheckBox Content="Jogos"
+                              Style="{StaticResource FilterCheckBoxStyle}"
                               IsChecked="{Binding Preferences.IncludeGames, Mode=TwoWay}"
-                              Margin="0,0,0,4"
                               AutomationProperties.Name="Incluir jogos" />
                     <CheckBox Content="Trilhas sonoras"
+                              Style="{StaticResource FilterCheckBoxStyle}"
                               IsChecked="{Binding Preferences.IncludeSoundtracks, Mode=TwoWay}"
-                              Margin="0,0,0,4"
                               AutomationProperties.Name="Incluir trilhas sonoras" />
                     <CheckBox Content="Softwares"
+                              Style="{StaticResource FilterCheckBoxStyle}"
                               IsChecked="{Binding Preferences.IncludeSoftware, Mode=TwoWay}"
-                              Margin="0,0,0,4"
                               AutomationProperties.Name="Incluir softwares" />
                     <CheckBox Content="Ferramentas"
+                              Style="{StaticResource FilterCheckBoxStyle}"
                               IsChecked="{Binding Preferences.IncludeTools, Mode=TwoWay}"
-                              Margin="0,0,0,4"
                               AutomationProperties.Name="Incluir ferramentas" />
                     <CheckBox Content="Vídeos"
+                              Style="{StaticResource FilterCheckBoxStyle}"
                               IsChecked="{Binding Preferences.IncludeVideos, Mode=TwoWay}"
-                              Margin="0,0,0,4"
                               AutomationProperties.Name="Incluir vídeos" />
                     <CheckBox Content="Outros conteúdos"
+                              Style="{StaticResource FilterCheckBoxStyle}"
                               IsChecked="{Binding Preferences.IncludeOther, Mode=TwoWay}"
-                              Margin="0,0,0,4"
                               AutomationProperties.Name="Incluir outros conteúdos" />
                 </StackPanel>
-                <TextBlock Text="Coleção"
-                           FontWeight="SemiBold"
-                           Margin="0,16,0,4" />
+
+                <TextBlock Text="COLEÇÃO"
+                           Style="{StaticResource SectionLabelTextStyle}" />
+
                 <ComboBox ItemsSource="{Binding Preferences.CollectionOptions}"
                           SelectedItem="{Binding Preferences.SelectedCollection, Mode=TwoWay}"
-                          Margin="0,0,0,12"
+                          Style="{StaticResource SurfaceComboBoxStyle}"
                           AutomationProperties.Name="Selecionar coleção"
                           AutomationProperties.HelpText="Escolha uma coleção personalizada para filtrar" />
+
                 <Button Content="Atualizar biblioteca"
+                        Style="{StaticResource BaseButtonStyle}"
                         Command="{Binding RefreshCommand}"
-                        Height="40"
-                        Margin="0,0,0,12"
-                        Background="#FF3C3F41"
-                        Foreground="White"
-                        FontWeight="SemiBold"
+                        Margin="0,12,0,0"
+                        Height="44"
                         AutomationProperties.Name="Atualizar biblioteca" />
+
                 <Button x:Name="DrawButton"
                         Content="Sortear"
+                        Style="{StaticResource PrimaryButtonStyle}"
                         Command="{Binding DrawCommand}"
-                        Height="48"
-                        Margin="0,16,0,0"
-                        FontSize="18"
-                        FontWeight="Bold"
-                        Background="#FF66C0F4"
-                        Foreground="Black"
+                        Margin="0,20,0,0"
+                        Height="52"
                         AutomationProperties.Name="Sortear jogo"
-                        AutomationProperties.HelpText="Seleciona um jogo aleatório aplicando os filtros"
-                        HorizontalAlignment="Stretch" />
+                        AutomationProperties.HelpText="Seleciona um jogo aleatório aplicando os filtros" />
+
                 <TextBlock Text="{Binding StatusMessage}"
-                           Margin="0,12,0,0"
-                           Foreground="#FFB0BEC5"
+                           Margin="0,16,0,0"
+                           Foreground="{StaticResource MutedForegroundBrush}"
                            TextWrapping="Wrap"
                            AutomationProperties.LiveSetting="Assertive" />
             </StackPanel>
         </Border>
 
         <Border Grid.Column="1"
-                Margin="32,0,0,0"
-                Background="#FF2A2A2A"
-                Padding="24"
-                CornerRadius="12"
-                BorderBrush="#22FFFFFF"
-                BorderThickness="1"
+                Margin="28,0,0,0"
+                Style="{StaticResource CardBorderStyle}"
+                Background="{StaticResource SurfaceAltBrush}"
                 AutomationProperties.Name="Painel de detalhes do jogo">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
                 <StackPanel>
                     <TextBlock Text="Próximo jogo"
-                               FontSize="24"
-                               FontWeight="Bold" />
+                               Style="{StaticResource SectionTitleTextStyle}" />
                     <TextBlock Text="{Binding SelectedGame.Title}"
                                FontSize="20"
                                FontWeight="SemiBold"
-                               Margin="0,4,0,12"
+                               Margin="0,8,0,0"
+                               TextWrapping="Wrap"
                                AutomationProperties.Name="Título do jogo selecionado" />
                 </StackPanel>
 
                 <Border Grid.Row="1"
-                        Height="360"
-                        CornerRadius="12"
-                        Margin="0,0,0,16"
-                        Background="#FF1F1F1F">
-                    <Image Source="{Binding SelectedGame.CoverImagePath}"
-                           Stretch="UniformToFill"
-                           AutomationProperties.Name="Capa do jogo selecionado" />
+                        Margin="0,24,0,24"
+                        CornerRadius="14"
+                        Background="#0F131A"
+                        BorderBrush="{StaticResource SurfaceBorderBrush}"
+                        BorderThickness="1">
+                    <Grid>
+                        <Image Source="{Binding SelectedGame.CoverImagePath}"
+                               Stretch="UniformToFill"
+                               SnapsToDevicePixels="True"
+                               AutomationProperties.Name="Capa do jogo selecionado" />
+                        <TextBlock Text="Nenhum jogo selecionado"
+                                   Foreground="{StaticResource MutedForegroundBrush}"
+                                   FontStyle="Italic"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SelectedGame.Title}" Value="">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding SelectedGame.Title}" Value="{x:Null}">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Grid>
                 </Border>
 
-                <StackPanel Grid.Row="2" Orientation="Vertical">
+                <StackPanel Grid.Row="2">
                     <TextBlock Text="{Binding SelectedGame.InstallationStatus}"
                                FontSize="16"
+                               FontWeight="SemiBold"
                                AutomationProperties.Name="Estado de instalação do jogo" />
-                    <StackPanel Orientation="Horizontal" Margin="0,8,0,8">
-                        <Button Content="Jogar"
+
+                    <Grid Margin="0,12,0,20">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <Button Grid.Column="0"
+                                Content="Jogar"
+                                MinHeight="48"
+                                Margin="0,0,8,0"
+                                HorizontalAlignment="Stretch"
+                                Style="{StaticResource BaseButtonStyle}"
                                 Command="{Binding LaunchCommand}"
                                 IsEnabled="{Binding SelectedGame.CanLaunch}"
-                                Width="140"
-                                Height="40"
                                 AutomationProperties.Name="Abrir jogo no Steam" />
-                        <Button Content="Instalar"
+
+                        <Button Grid.Column="1"
+                                Content="Instalar"
+                                MinHeight="48"
+                                Margin="8,0,0,0"
+                                HorizontalAlignment="Stretch"
+                                Style="{StaticResource BaseButtonStyle}"
                                 Command="{Binding InstallCommand}"
                                 IsEnabled="{Binding SelectedGame.CanInstall}"
-                                Width="140"
-                                Height="40"
-                                Margin="8,0,0,0"
                                 AutomationProperties.Name="Instalar jogo no Steam" />
-                    </StackPanel>
-                    <ItemsControl ItemsSource="{Binding SelectedGame.Tags}"
-                                  Margin="0,8,0,0">
+                    </Grid>
+
+                    <ItemsControl ItemsSource="{Binding SelectedGame.Tags}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <WrapPanel ItemHeight="24" ItemWidth="Auto" />
+                                <WrapPanel Margin="0,-6,0,0" />
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Background="#FF37474F"
-                                        Padding="6,2"
-                                        Margin="0,0,6,6"
-                                        CornerRadius="8">
-                                    <TextBlock Text="{Binding}" FontSize="12" />
+                                <Border Background="{StaticResource TagBrush}"
+                                        BorderBrush="{StaticResource TagBorderBrush}"
+                                        BorderThickness="1"
+                                        Padding="10,4"
+                                        CornerRadius="10"
+                                        Margin="0,6,6,0">
+                                    <TextBlock Text="{Binding}"
+                                               FontSize="12"
+                                               Foreground="{StaticResource MutedForegroundBrush}" />
                                 </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
