@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO.Pipes;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -171,7 +172,8 @@ public sealed class SteamNamedPipeHookClient : ISteamHookClient
             }
         }
 
-        if (!payload.TryGetValue("appid", out var appIdRaw) || !int.TryParse(appIdRaw, out var appId))
+        if (!payload.TryGetValue("appid", out var appIdRaw)
+            || !int.TryParse(appIdRaw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var appId))
         {
             return false;
         }
@@ -186,9 +188,19 @@ public sealed class SteamNamedPipeHookClient : ISteamHookClient
             return false;
         }
 
-        int? depotId = int.TryParse(depotRaw, out var parsedDepot) ? parsedDepot : null;
-        double? progress = double.TryParse(progressRaw, out var parsedProgress) ? parsedProgress : null;
-        long? bytes = long.TryParse(bytesRaw, out var parsedBytes) ? parsedBytes : null;
+        int? depotId = int.TryParse(depotRaw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedDepot)
+            ? parsedDepot
+            : null;
+        double? progress = double.TryParse(
+            progressRaw,
+            NumberStyles.Float | NumberStyles.AllowThousands,
+            CultureInfo.InvariantCulture,
+            out var parsedProgress)
+            ? parsedProgress
+            : null;
+        long? bytes = long.TryParse(bytesRaw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedBytes)
+            ? parsedBytes
+            : null;
         var status = string.IsNullOrWhiteSpace(statusRaw) ? "unknown" : statusRaw;
 
         downloadEvent = new SteamDownloadEvent(DateTimeOffset.UtcNow, appId, depotId, status, progress, bytes);
