@@ -17,9 +17,21 @@ public sealed class ToastNotificationService : IToastNotificationService
                 .AddText("Jogo sorteado!")
                 .AddText(game.Title);
 
-            if (!string.IsNullOrWhiteSpace(imagePath) && File.Exists(imagePath))
+            if (!string.IsNullOrWhiteSpace(imagePath) &&
+                TryCreateImageUri(imagePath, out var imageUri) &&
+                imageUri is not null)
             {
-                builder.AddInlineImage(new Uri(imagePath));
+                if (imageUri.IsFile)
+                {
+                    if (File.Exists(imageUri.LocalPath))
+                    {
+                        builder.AddInlineImage(imageUri);
+                    }
+                }
+                else
+                {
+                    builder.AddInlineImage(imageUri);
+                }
             }
 
             builder.Show(toast => toast.ExpirationTime = DateTimeOffset.Now.AddMinutes(5));
@@ -28,5 +40,23 @@ public sealed class ToastNotificationService : IToastNotificationService
         {
             // Toast notifications are optional; swallow exceptions in environments that do not support them.
         }
+    }
+
+    private static bool TryCreateImageUri(string value, out Uri? uri)
+    {
+        if (Uri.TryCreate(value, UriKind.Absolute, out var created))
+        {
+            uri = created;
+            return true;
+        }
+
+        if (Path.IsPathRooted(value))
+        {
+            uri = new Uri(value);
+            return true;
+        }
+
+        uri = null;
+        return false;
     }
 }

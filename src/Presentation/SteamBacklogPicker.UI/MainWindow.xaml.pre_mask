@@ -492,12 +492,10 @@
                                 <BeginStoryboard Storyboard="{StaticResource CoverRevealStoryboard}" />
                             </EventTrigger>
                         </Grid.Triggers>
-                        <Border x:Name="CoverImageContainer"
-                                Margin="2"
+                        <Border Margin="2"
                                 CornerRadius="16"
                                 Background="Black"
-                                SnapsToDevicePixels="True"
-                                SizeChanged="OnCoverContainerSizeChanged">
+                                ClipToBounds="True">
                             <Image x:Name="CoverImage"
                                    Source="{Binding SelectedGame.CoverImagePath, NotifyOnTargetUpdated=True}"
                                    Stretch="UniformToFill"
@@ -506,7 +504,12 @@
                                    SnapsToDevicePixels="True"
                                    RenderOptions.BitmapScalingMode="HighQuality"
                                    TargetUpdated="OnCoverImageTargetUpdated"
-                                   ImageFailed="OnCoverImageFailed" />
+                                   ImageFailed="OnCoverImageFailed">
+                                <Image.Clip>
+                                    <RectangleGeometry RadiusX="16" RadiusY="16"
+                                                       Rect="0,0,1200,360" />
+                                </Image.Clip>
+                            </Image>
                         </Border>
 
                         <Rectangle Margin="2"

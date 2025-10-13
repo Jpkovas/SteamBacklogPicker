@@ -20,7 +20,14 @@ public sealed class SteamGameArtLocator : IGameArtLocator
             return null;
         }
 
-        var fileName = $"{appId}_library_600x900.jpg";
+        var candidateFiles = new[]
+        {
+            $"{appId}_header.jpg",
+            $"{appId}_capsule_616x353.jpg",
+            $"{appId}_library_hero.jpg",
+            $"{appId}_library_600x900.jpg"
+        };
+
         foreach (var library in _libraryLocator.GetLibraryFolders())
         {
             if (string.IsNullOrWhiteSpace(library))
@@ -28,13 +35,19 @@ public sealed class SteamGameArtLocator : IGameArtLocator
                 continue;
             }
 
-            var cachePath = Path.Combine(library, "appcache", "librarycache", fileName);
-            if (File.Exists(cachePath))
+            foreach (var candidate in candidateFiles)
             {
-                return cachePath;
+                var cachePath = Path.Combine(library, "appcache", "librarycache", candidate);
+                if (File.Exists(cachePath))
+                {
+                    return cachePath;
+                }
             }
         }
 
-        return null;
+        return BuildCdnUri(appId);
     }
+
+    private static string BuildCdnUri(uint appId)
+        => $"https://cdn.cloudflare.steamstatic.com/steam/apps/{appId}/header.jpg";
 }

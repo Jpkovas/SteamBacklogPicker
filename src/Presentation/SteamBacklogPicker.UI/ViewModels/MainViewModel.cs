@@ -19,6 +19,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly List<GameEntry> _library = new();
     private int _eligibleGameCount;
     private GameDetailsViewModel _selectedGame = GameDetailsViewModel.Empty;
+    private bool _isDrawing;
 
     public MainViewModel(
         ISelectionEngine selectionEngine,
@@ -64,6 +65,7 @@ public sealed class MainViewModel : ObservableObject
             OnPropertyChanged();
             LaunchCommand.RaiseCanExecuteChanged();
             InstallCommand.RaiseCanExecuteChanged();
+            OnPropertyChanged(nameof(HasSelection));
         }
     }
 
@@ -73,6 +75,14 @@ public sealed class MainViewModel : ObservableObject
     {
         get => _statusMessage;
         set => SetProperty(ref _statusMessage, value);
+    }
+
+    public bool HasSelection => SelectedGame != GameDetailsViewModel.Empty;
+
+    public bool IsDrawing
+    {
+        get => _isDrawing;
+        private set => SetProperty(ref _isDrawing, value);
     }
 
     public async Task InitializeAsync()
@@ -116,6 +126,11 @@ public sealed class MainViewModel : ObservableObject
 
         try
         {
+            IsDrawing = true;
+            SelectedGame = GameDetailsViewModel.Empty;
+            StatusMessage = "Sorteando...";
+            await Task.Delay(850).ConfigureAwait(true);
+
             var game = _selectionEngine.PickNext(_library);
             ApplySelection(game);
             StatusMessage = $"Jogo sorteado: {game.Title}";
@@ -123,6 +138,10 @@ public sealed class MainViewModel : ObservableObject
         catch (Exception ex)
         {
             StatusMessage = ex.Message;
+        }
+        finally
+        {
+            IsDrawing = false;
         }
     }
 
