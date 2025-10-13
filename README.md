@@ -17,22 +17,6 @@ SteamBacklogPicker is a Windows desktop application that helps you decide what t
 2. Double-click the package and follow the Windows installation prompt.
 3. Allow the installer to run with the displayed AuthentiCode certificate issued to your organisation.
 
-### Using Squirrel auto-updates
-
-1. Download `Setup.exe` from the Squirrel `releases` feed published with each release.
-2. Run the bootstrapper to install SteamBacklogPicker into `%LOCALAPPDATA%\SteamBacklogPicker`.
-3. The app checks the feed at start-up and applies delta updates automatically when telemetry consent permits update checks.
-
-### Package managers
-
-SteamBacklogPicker is published to [Winget](https://learn.microsoft.com/windows/package-manager/winget/) after each release:
-
-```powershell
-winget install Contoso.SteamBacklogPicker
-```
-
-The Winget manifest references the signed MSIX produced by the CI pipeline.
-
 ## Functional scope
 
 - Discover Steam libraries by reading Steam installation paths and `libraryfolders.vdf` metadata.
