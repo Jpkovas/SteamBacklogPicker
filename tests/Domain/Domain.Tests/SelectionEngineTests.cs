@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Domain;
@@ -114,6 +114,59 @@ public sealed class SelectionEngineTests
         {
             Cleanup(firstSettings);
             Cleanup(secondSettings);
+        }
+    }
+
+    [Fact]
+    public void PickNext_ShouldResumeSeededSequenceAcrossSessions()
+    {
+        var games = new[]
+        {
+            new GameEntry { AppId = 10, Title = "First", InstallState = InstallState.Installed, OwnershipType = OwnershipType.Owned },
+            new GameEntry { AppId = 20, Title = "Second", InstallState = InstallState.Installed, OwnershipType = OwnershipType.Owned },
+            new GameEntry { AppId = 30, Title = "Third", InstallState = InstallState.Installed, OwnershipType = OwnershipType.Owned },
+            new GameEntry { AppId = 40, Title = "Fourth", InstallState = InstallState.Installed, OwnershipType = OwnershipType.Owned },
+        };
+
+        var preferences = new SelectionPreferences
+        {
+            Seed = 13579,
+            HistoryLimit = 20,
+            RecentGameExclusionCount = 0,
+        };
+
+        var settingsPath = CreateSettingsPath();
+
+        try
+        {
+            var firstEngine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
+            firstEngine.UpdatePreferences(preferences);
+
+            const int firstBatchSize = 6;
+            const int secondBatchSize = 4;
+
+            var firstBatch = new List<uint>();
+            for (var i = 0; i < firstBatchSize; i++)
+            {
+                firstBatch.Add(firstEngine.PickNext(games).AppId);
+            }
+
+            var resumedEngine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
+
+            var resumedBatch = new List<uint>();
+            for (var i = 0; i < secondBatchSize; i++)
+            {
+                resumedBatch.Add(resumedEngine.PickNext(games).AppId);
+            }
+
+            var expectedSequence = ComputeUniformSequence(preferences.Seed!.Value, games, firstBatchSize + secondBatchSize);
+            var actualSequence = firstBatch.Concat(resumedBatch).ToList();
+
+            actualSequence.Should().Equal(expectedSequence);
+        }
+        finally
+        {
+            Cleanup(settingsPath);
         }
     }
 
@@ -304,6 +357,26 @@ public sealed class SelectionEngineTests
         foreach (var _ in Enumerable.Range(0, picks))
         {
             results.Add(engine.PickNext(games).AppId);
+        }
+
+        return results;
+    }
+
+    private static IReadOnlyList<uint> ComputeUniformSequence(int seed, IReadOnlyList<GameEntry> games, int picks)
+    {
+        var random = new Random(seed);
+        var results = new List<uint>(picks);
+
+        for (var i = 0; i < picks; i++)
+        {
+            var threshold = random.NextDouble() * games.Count;
+            var index = (int)Math.Floor(threshold);
+            if (index >= games.Count)
+            {
+                index = games.Count - 1;
+            }
+
+            results.Add(games[index].AppId);
         }
 
         return results;

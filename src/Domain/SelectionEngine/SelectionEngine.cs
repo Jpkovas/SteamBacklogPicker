@@ -11,6 +11,9 @@ public sealed class SelectionEngine : ISelectionEngine
     private readonly object _syncRoot = new();
     private SelectionSettings _state;
     private static readonly HashSet<uint> EmptyExcludedIds = new();
+    private Random? _seededRandom;
+    private int? _seededRandomSeed;
+    private int _seededRandomPosition;
 
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
@@ -22,6 +25,7 @@ public sealed class SelectionEngine : ISelectionEngine
         _settingsPath = settingsPath ?? BuildDefaultSettingsPath();
         _clock = clock ?? (() => DateTimeOffset.UtcNow);
         _state = LoadSettings();
+        RefreshSeededRandomFromState();
     }
 
     public SelectionPreferences GetPreferences()
@@ -46,6 +50,7 @@ public sealed class SelectionEngine : ISelectionEngine
             if (previousSeed != cloned.Seed)
             {
                 _state.RandomPosition = 0;
+                RefreshSeededRandomFromState();
             }
 
             TrimHistory();
@@ -303,17 +308,15 @@ public sealed class SelectionEngine : ISelectionEngine
     {
         if (_state.Preferences.Seed is int seed)
         {
-            var random = new Random(seed);
-            for (var i = 0; i < _state.RandomPosition; i++)
-            {
-                _ = random.NextDouble();
-            }
+            EnsureSeededRandomInitialized(seed);
 
-            var value = random.NextDouble();
-            _state.RandomPosition++;
+            var value = _seededRandom!.NextDouble();
+            _seededRandomPosition++;
+            _state.RandomPosition = _seededRandomPosition;
             return value;
         }
 
+        ResetSeededRandom();
         return Random.Shared.NextDouble();
     }
 
@@ -341,5 +344,65 @@ public sealed class SelectionEngine : ISelectionEngine
                 SelectedAt = _clock(),
             });
         }
+    }
+
+    private void EnsureSeededRandomInitialized(int seed)
+    {
+        if (_seededRandom is null || _seededRandomSeed != seed)
+        {
+            RefreshSeededRandomFromState();
+        }
+        else if (_seededRandomPosition < _state.RandomPosition)
+        {
+            AdvanceSeededRandomTo(_state.RandomPosition);
+        }
+        else if (_seededRandomPosition > _state.RandomPosition)
+        {
+            _seededRandom = new Random(seed);
+            _seededRandomSeed = seed;
+            _seededRandomPosition = 0;
+            AdvanceSeededRandomTo(_state.RandomPosition);
+        }
+    }
+
+    private void RefreshSeededRandomFromState()
+    {
+        if (_state.Preferences.Seed is int seed)
+        {
+            _seededRandom = new Random(seed);
+            _seededRandomSeed = seed;
+            _seededRandomPosition = 0;
+            AdvanceSeededRandomTo(_state.RandomPosition);
+        }
+        else
+        {
+            ResetSeededRandom();
+        }
+    }
+
+    private void AdvanceSeededRandomTo(int targetPosition)
+    {
+        if (_seededRandom is null)
+        {
+            return;
+        }
+
+        if (targetPosition < 0)
+        {
+            targetPosition = 0;
+        }
+
+        while (_seededRandomPosition < targetPosition)
+        {
+            _seededRandom.NextDouble();
+            _seededRandomPosition++;
+        }
+    }
+
+    private void ResetSeededRandom()
+    {
+        _seededRandom = null;
+        _seededRandomSeed = null;
+        _seededRandomPosition = 0;
     }
 }
