@@ -198,7 +198,7 @@ public sealed class SteamGameLibraryServiceTests
             sharedAppIds: Array.Empty<uint>(),
             collections: new[]
             {
-                new SteamCollectionDefinition("deck", "Jogáveis no Deck", Array.Empty<uint>(), filterSpec)
+                new SteamCollectionDefinition("deck", "Jog\u00E1veis no Deck", Array.Empty<uint>(), filterSpec)
             });
 
         using var cache = new SteamAppManifestCache(locator, adapter, fallback, new ValveTextVdfParser());
@@ -207,7 +207,7 @@ public sealed class SteamGameLibraryServiceTests
         var results = await service.GetLibraryAsync();
 
         var entry = results.Should().ContainSingle(game => game.AppId == appId).Subject;
-        entry.Tags.Should().Contain("Jogáveis no Deck");
+        entry.Tags.Should().Contain("Jog\u00E1veis no Deck");
     }
 }
 
