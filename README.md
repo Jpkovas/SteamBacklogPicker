@@ -32,7 +32,7 @@ SteamBacklogPicker is a Windows desktop app that helps you pick the next game fr
 1. Install the .NET 8 SDK and Visual Studio 2022 with WPF tools.
 2. Clone the repository and restore dependencies:
    ```powershell
-   git clone https://github.com/your-org/SteamBacklogPicker.git
+   git clone https://github.com/Jpkovas/SteamBacklogPicker.git
    cd SteamBacklogPicker
    dotnet restore
    ```
