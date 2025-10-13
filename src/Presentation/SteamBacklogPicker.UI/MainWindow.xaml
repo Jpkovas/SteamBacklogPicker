@@ -10,169 +10,225 @@
         Height="720"
         MinWidth="960"
         MinHeight="600"
-        Background="#FF1C1C1C"
-        Foreground="White">
-    <Grid Margin="24">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="360" />
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
+        Background="{StaticResource WindowBackgroundBrush}"
+        Foreground="{StaticResource PrimaryTextBrush}"
+        FontFamily="Segoe UI"
+        FontSize="14"
+        WindowStartupLocation="CenterScreen">
+    <Grid>
+        <Grid.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#101A33" Offset="0" />
+                <GradientStop Color="#0B1220" Offset="1" />
+            </LinearGradientBrush>
+        </Grid.Background>
 
-        <Border Background="#FF2A2A2A"
-                Padding="24"
-                CornerRadius="12"
-                BorderBrush="#22FFFFFF"
-                BorderThickness="1"
-                AutomationProperties.Name="Painel de filtros">
-            <StackPanel>
-                <TextBlock Text="Filtros"
-                           FontSize="24"
-                           FontWeight="Bold"
-                           Margin="0,0,0,16" />
-                <CheckBox Content="Somente instalados"
-                          IsChecked="{Binding Preferences.RequireInstalled, Mode=TwoWay}"
-                          Margin="0,0,0,8"
-                          AutomationProperties.Name="Filtrar apenas jogos instalados" />
-                <TextBlock Text="Tipos de conteúdo"
-                           FontWeight="SemiBold"
-                           Margin="0,16,0,4" />
-                <StackPanel>
-                    <CheckBox Content="Jogos"
-                              IsChecked="{Binding Preferences.IncludeGames, Mode=TwoWay}"
-                              Margin="0,0,0,4"
-                              AutomationProperties.Name="Incluir jogos" />
-                    <CheckBox Content="Trilhas sonoras"
-                              IsChecked="{Binding Preferences.IncludeSoundtracks, Mode=TwoWay}"
-                              Margin="0,0,0,4"
-                              AutomationProperties.Name="Incluir trilhas sonoras" />
-                    <CheckBox Content="Softwares"
-                              IsChecked="{Binding Preferences.IncludeSoftware, Mode=TwoWay}"
-                              Margin="0,0,0,4"
-                              AutomationProperties.Name="Incluir softwares" />
-                    <CheckBox Content="Ferramentas"
-                              IsChecked="{Binding Preferences.IncludeTools, Mode=TwoWay}"
-                              Margin="0,0,0,4"
-                              AutomationProperties.Name="Incluir ferramentas" />
-                    <CheckBox Content="Vídeos"
-                              IsChecked="{Binding Preferences.IncludeVideos, Mode=TwoWay}"
-                              Margin="0,0,0,4"
-                              AutomationProperties.Name="Incluir vídeos" />
-                    <CheckBox Content="Outros conteúdos"
-                              IsChecked="{Binding Preferences.IncludeOther, Mode=TwoWay}"
-                              Margin="0,0,0,4"
-                              AutomationProperties.Name="Incluir outros conteúdos" />
-                </StackPanel>
-                <TextBlock Text="Coleção"
-                           FontWeight="SemiBold"
-                           Margin="0,16,0,4" />
-                <ComboBox ItemsSource="{Binding Preferences.CollectionOptions}"
-                          SelectedItem="{Binding Preferences.SelectedCollection, Mode=TwoWay}"
-                          Margin="0,0,0,12"
-                          AutomationProperties.Name="Selecionar coleção"
-                          AutomationProperties.HelpText="Escolha uma coleção personalizada para filtrar" />
-                <Button Content="Atualizar biblioteca"
-                        Command="{Binding RefreshCommand}"
-                        Height="40"
-                        Margin="0,0,0,12"
-                        Background="#FF3C3F41"
-                        Foreground="White"
-                        FontWeight="SemiBold"
-                        AutomationProperties.Name="Atualizar biblioteca" />
-                <Button x:Name="DrawButton"
-                        Content="Sortear"
-                        Command="{Binding DrawCommand}"
-                        Height="48"
-                        Margin="0,16,0,0"
-                        FontSize="18"
-                        FontWeight="Bold"
-                        Background="#FF66C0F4"
-                        Foreground="Black"
-                        AutomationProperties.Name="Sortear jogo"
-                        AutomationProperties.HelpText="Seleciona um jogo aleatório aplicando os filtros"
-                        HorizontalAlignment="Stretch" />
-                <TextBlock Text="{Binding StatusMessage}"
-                           Margin="0,12,0,0"
-                           Foreground="#FFB0BEC5"
-                           TextWrapping="Wrap"
-                           AutomationProperties.LiveSetting="Assertive" />
-            </StackPanel>
-        </Border>
+        <Grid Margin="32,28">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="360" />
+                <ColumnDefinition Width="24" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
 
-        <Border Grid.Column="1"
-                Margin="32,0,0,0"
-                Background="#FF2A2A2A"
-                Padding="24"
-                CornerRadius="12"
-                BorderBrush="#22FFFFFF"
-                BorderThickness="1"
-                AutomationProperties.Name="Painel de detalhes do jogo">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="*" />
-                </Grid.RowDefinitions>
+            <!-- Filter panel -->
+            <Border Grid.Column="0"
+                    Background="{StaticResource SurfaceBrush}"
+                    BorderBrush="{StaticResource StrokeBrush}"
+                    BorderThickness="1"
+                    CornerRadius="20"
+                    Padding="28"
+                    AutomationProperties.Name="Painel de filtros">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="22" ShadowDepth="0" Opacity="0.35" Color="#66000000" />
+                </Border.Effect>
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel>
+                        <StackPanel>
+                            <TextBlock Text="Steam Backlog Picker"
+                                       Style="{StaticResource HeadingTextStyle}" />
+                            <TextBlock Text="Refine os filtros e deixe o app escolher por você"
+                                       Margin="0,4,0,16"
+                                       Foreground="{StaticResource SecondaryTextBrush}" />
+                        </StackPanel>
 
-                <StackPanel>
-                    <TextBlock Text="Próximo jogo"
-                               FontSize="24"
-                               FontWeight="Bold" />
-                    <TextBlock Text="{Binding SelectedGame.Title}"
-                               FontSize="20"
-                               FontWeight="SemiBold"
-                               Margin="0,4,0,12"
-                               AutomationProperties.Name="Título do jogo selecionado" />
-                </StackPanel>
+                        <Border Height="1" Background="{StaticResource StrokeBrush}" Opacity="0.5" Margin="0,0,0,20" />
 
-                <Border Grid.Row="1"
-                        Height="360"
-                        CornerRadius="12"
-                        Margin="0,0,0,16"
-                        Background="#FF1F1F1F">
-                    <Image Source="{Binding SelectedGame.CoverImagePath}"
-                           Stretch="UniformToFill"
-                           AutomationProperties.Name="Capa do jogo selecionado" />
-                </Border>
+                        <TextBlock Text="Filtros rápidos" Style="{StaticResource SectionLabelTextStyle}" Margin="0,0,0,8" />
+                        <CheckBox Content="Somente instalados"
+                                  Style="{StaticResource FilterCheckBoxStyle}"
+                                  IsChecked="{Binding Preferences.RequireInstalled, Mode=TwoWay}"
+                                  AutomationProperties.Name="Filtrar apenas jogos instalados" />
 
-                <StackPanel Grid.Row="2" Orientation="Vertical">
-                    <TextBlock Text="{Binding SelectedGame.InstallationStatus}"
-                               FontSize="16"
-                               AutomationProperties.Name="Estado de instalação do jogo" />
-                    <StackPanel Orientation="Horizontal" Margin="0,8,0,8">
-                        <Button Content="Jogar"
-                                Command="{Binding LaunchCommand}"
-                                IsEnabled="{Binding SelectedGame.CanLaunch}"
-                                Width="140"
-                                Height="40"
-                                AutomationProperties.Name="Abrir jogo no Steam" />
-                        <Button Content="Instalar"
-                                Command="{Binding InstallCommand}"
-                                IsEnabled="{Binding SelectedGame.CanInstall}"
-                                Width="140"
-                                Height="40"
-                                Margin="8,0,0,0"
-                                AutomationProperties.Name="Instalar jogo no Steam" />
+                        <TextBlock Text="Tipos de conteúdo" Style="{StaticResource SectionLabelTextStyle}" />
+                        <StackPanel>
+                            <CheckBox Content="Jogos"
+                                      Style="{StaticResource FilterCheckBoxStyle}"
+                                      IsChecked="{Binding Preferences.IncludeGames, Mode=TwoWay}"
+                                      AutomationProperties.Name="Incluir jogos" />
+                            <CheckBox Content="Trilhas sonoras"
+                                      Style="{StaticResource FilterCheckBoxStyle}"
+                                      IsChecked="{Binding Preferences.IncludeSoundtracks, Mode=TwoWay}"
+                                      AutomationProperties.Name="Incluir trilhas sonoras" />
+                            <CheckBox Content="Softwares"
+                                      Style="{StaticResource FilterCheckBoxStyle}"
+                                      IsChecked="{Binding Preferences.IncludeSoftware, Mode=TwoWay}"
+                                      AutomationProperties.Name="Incluir softwares" />
+                            <CheckBox Content="Ferramentas"
+                                      Style="{StaticResource FilterCheckBoxStyle}"
+                                      IsChecked="{Binding Preferences.IncludeTools, Mode=TwoWay}"
+                                      AutomationProperties.Name="Incluir ferramentas" />
+                            <CheckBox Content="Vídeos"
+                                      Style="{StaticResource FilterCheckBoxStyle}"
+                                      IsChecked="{Binding Preferences.IncludeVideos, Mode=TwoWay}"
+                                      AutomationProperties.Name="Incluir vídeos" />
+                            <CheckBox Content="Outros conteúdos"
+                                      Style="{StaticResource FilterCheckBoxStyle}"
+                                      IsChecked="{Binding Preferences.IncludeOther, Mode=TwoWay}"
+                                      AutomationProperties.Name="Incluir outros conteúdos" />
+                        </StackPanel>
+
+                        <TextBlock Text="Coleção" Style="{StaticResource SectionLabelTextStyle}" />
+                        <ComboBox ItemsSource="{Binding Preferences.CollectionOptions}"
+                                  SelectedItem="{Binding Preferences.SelectedCollection, Mode=TwoWay}"
+                                  Style="{StaticResource InputComboBoxStyle}"
+                                  AutomationProperties.Name="Selecionar coleção"
+                                  AutomationProperties.HelpText="Escolha uma coleção personalizada para filtrar" />
+
+                        <StackPanel Orientation="Vertical" Margin="0,24,0,0">
+                            <Button Content="Atualizar biblioteca"
+                                    Style="{StaticResource SecondaryButtonStyle}"
+                                    Command="{Binding RefreshCommand}"
+                                    Height="44"
+                                    AutomationProperties.Name="Atualizar biblioteca" />
+                            <Button x:Name="DrawButton"
+                                    Content="Sortear"
+                                    Margin="0,16,0,0"
+                                    Style="{StaticResource PrimaryButtonStyle}"
+                                    Height="52"
+                                    FontSize="18"
+                                    Command="{Binding DrawCommand}"
+                                    AutomationProperties.Name="Sortear jogo"
+                                    AutomationProperties.HelpText="Seleciona um jogo aleatório aplicando os filtros" />
+                        </StackPanel>
+
+                        <Border Margin="0,24,0,0"
+                                Background="#14213D"
+                                BorderBrush="#223051"
+                                BorderThickness="1"
+                                CornerRadius="12"
+                                Padding="16">
+                            <StackPanel>
+                                <TextBlock Text="Status"
+                                           FontWeight="SemiBold"
+                                           Foreground="{StaticResource SecondaryTextBrush}" />
+                                <TextBlock Text="{Binding StatusMessage}"
+                                           Margin="0,6,0,0"
+                                           TextWrapping="Wrap"
+                                           Foreground="{StaticResource PrimaryTextBrush}"
+                                           AutomationProperties.LiveSetting="Assertive" />
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
-                    <ItemsControl ItemsSource="{Binding SelectedGame.Tags}"
-                                  Margin="0,8,0,0">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel ItemHeight="24" ItemWidth="Auto" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Background="#FF37474F"
-                                        Padding="6,2"
-                                        Margin="0,0,6,6"
-                                        CornerRadius="8">
-                                    <TextBlock Text="{Binding}" FontSize="12" />
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
-            </Grid>
-        </Border>
+                </ScrollViewer>
+            </Border>
+
+            <!-- Game detail panel -->
+            <Border Grid.Column="2"
+                    Background="{StaticResource SurfaceBrush}"
+                    BorderBrush="{StaticResource StrokeBrush}"
+                    BorderThickness="1"
+                    CornerRadius="20"
+                    Padding="32"
+                    AutomationProperties.Name="Painel de detalhes do jogo">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="22" ShadowDepth="0" Opacity="0.35" Color="#66000000" />
+                </Border.Effect>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Orientation="Vertical">
+                        <TextBlock Text="Próximo jogo"
+                                   Style="{StaticResource HeadingTextStyle}" />
+                        <TextBlock Text="{Binding SelectedGame.Title}"
+                                   FontSize="22"
+                                   FontWeight="SemiBold"
+                                   Margin="0,6,0,18"
+                                   AutomationProperties.Name="Título do jogo selecionado" />
+                    </StackPanel>
+
+                    <Border Grid.Row="1"
+                            Height="360"
+                            CornerRadius="16"
+                            Background="{StaticResource SurfaceElevatedBrush}"
+                            BorderBrush="#223051"
+                            BorderThickness="1"
+                            Margin="0,0,0,24">
+                        <Grid>
+                            <Image Source="{Binding SelectedGame.CoverImagePath}"
+                                   Stretch="UniformToFill"
+                                   AutomationProperties.Name="Capa do jogo selecionado"
+                                   ClipToBounds="True"
+                                   Opacity="0.95" />
+                            <Border Background="#33000000" CornerRadius="16" />
+                        </Grid>
+                    </Border>
+
+                    <StackPanel Grid.Row="2" Orientation="Vertical">
+                        <Border Background="#14213D"
+                                BorderBrush="#223051"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                Padding="12"
+                                Margin="0,0,0,16">
+                            <TextBlock Text="{Binding SelectedGame.InstallationStatus}"
+                                       FontSize="16"
+                                       AutomationProperties.Name="Estado de instalação do jogo" />
+                        </Border>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                            <Button Content="Jogar"
+                                    Width="160"
+                                    Height="44"
+                                    Margin="0,0,12,0"
+                                    Style="{StaticResource PrimaryButtonStyle}"
+                                    Command="{Binding LaunchCommand}"
+                                    IsEnabled="{Binding SelectedGame.CanLaunch}"
+                                    AutomationProperties.Name="Abrir jogo no Steam" />
+                            <Button Content="Instalar"
+                                    Width="160"
+                                    Height="44"
+                                    Style="{StaticResource SecondaryButtonStyle}"
+                                    Command="{Binding InstallCommand}"
+                                    IsEnabled="{Binding SelectedGame.CanInstall}"
+                                    AutomationProperties.Name="Instalar jogo no Steam" />
+                        </StackPanel>
+
+                        <TextBlock Text="Tags"
+                                   Style="{StaticResource SectionLabelTextStyle}"
+                                   Margin="0,0,0,8" />
+                        <ItemsControl ItemsSource="{Binding SelectedGame.Tags}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel ItemHeight="Auto"
+                                               ItemWidth="Auto" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource TagBorderStyle}">
+                                        <TextBlock Text="{Binding}" FontSize="12" Foreground="{StaticResource SecondaryTextBrush}" />
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
     </Grid>
 </Window>
