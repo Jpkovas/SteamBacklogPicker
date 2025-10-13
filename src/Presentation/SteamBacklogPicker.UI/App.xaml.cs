@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System.Reflection;
 using System.Windows;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog.Events;
 using Infrastructure.Telemetry;
@@ -16,11 +18,13 @@ namespace SteamBacklogPicker.UI;
 public partial class App : Application
 {
     private ServiceProvider? _serviceProvider;
+    private CancellationTokenSource? _updateCancellation;
 
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
         _serviceProvider = BuildServices();
+        _updateCancellation = new CancellationTokenSource();
         var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
         mainWindow.Show();
 
@@ -31,11 +35,17 @@ public partial class App : Application
                 ["version"] = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown"
             });
         }
+
+        if (_serviceProvider.GetService<IAppUpdateService>() is { } updateService)
+        {
+            _ = Task.Run(() => updateService.CheckForUpdatesAsync(_updateCancellation.Token));
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
         base.OnExit(e);
+        _updateCancellation?.Cancel();
         if (_serviceProvider is null)
         {
             return;
@@ -102,6 +112,7 @@ public partial class App : Application
         services.AddSingleton<IGameLibraryService, SteamGameLibraryService>();
         services.AddSingleton<IGameArtLocator, SteamGameArtLocator>();
         services.AddSingleton<IToastNotificationService, ToastNotificationService>();
+        services.AddSingleton<IAppUpdateService, SquirrelUpdateService>();
         services.AddSingleton<MainViewModel>();
         services.AddTransient<MainWindow>();
 
