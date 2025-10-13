@@ -108,6 +108,7 @@ public sealed class SteamApiMocks
     public sealed class FakeFallback : ISteamVdfFallback
     {
         private readonly Dictionary<uint, SteamAppDefinition> _apps;
+        private readonly List<SteamCollectionDefinition> _collections = new();
 
         public FakeFallback(IReadOnlyCollection<uint> appIds)
         {
@@ -118,12 +119,16 @@ public sealed class SteamApiMocks
 
             _apps = appIds.ToDictionary(
                 id => id,
-                id => new SteamAppDefinition(id, $"App {id}", IsInstalled: true, Collections: Array.Empty<string>()));
+                id => new SteamAppDefinition(id, $"App {id}", IsInstalled: true, Type: "game", Collections: Array.Empty<string>()));
         }
+
+        public string? CurrentSteamId { get; set; } = "76561198000000000";
 
         public IReadOnlyCollection<uint> GetInstalledAppIds() => _apps.Values.Where(app => app.IsInstalled).Select(app => app.AppId).ToArray();
 
         public IReadOnlyDictionary<uint, SteamAppDefinition> GetKnownApps() => _apps;
+
+        public IReadOnlyList<SteamCollectionDefinition> GetCollections() => _collections;
 
         public void SetAppDefinition(SteamAppDefinition definition)
         {
@@ -138,5 +143,7 @@ public sealed class SteamApiMocks
         public Func<uint, bool>? FamilySharingPredicate { get; set; }
 
         public bool IsSubscribedFromFamilySharing(uint appId) => FamilySharingPredicate?.Invoke(appId) ?? false;
+
+        public string? GetCurrentUserSteamId() => CurrentSteamId;
     }
 }

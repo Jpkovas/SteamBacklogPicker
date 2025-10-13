@@ -54,4 +54,20 @@ public sealed class MainWindowAccessibilityTests
         statusText!.Attribute(XName.Get("AutomationProperties.LiveSetting"))
             ?.Value.Should().Be("Assertive");
     }
+
+    [Fact]
+    public void CollectionComboBox_IsAccessible()
+    {
+        var document = XDocument.Load(GetMainWindowPath());
+        var comboBox = document
+            .Descendants(PresentationNamespace + "ComboBox")
+            .FirstOrDefault(element => string.Equals(
+                (string?)element.Attribute(XName.Get("AutomationProperties.Name")),
+                "Selecionar coleção",
+                StringComparison.Ordinal));
+
+        comboBox.Should().NotBeNull();
+        comboBox!.Attribute(XName.Get("AutomationProperties.HelpText"))
+            ?.Value.Should().Contain("coleção", "o menu deve orientar o usuário sobre sua função");
+    }
 }

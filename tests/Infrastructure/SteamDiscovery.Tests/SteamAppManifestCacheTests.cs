@@ -46,6 +46,34 @@ public sealed class SteamAppManifestCacheTests
     }
 
     [Fact]
+    public void GetInstalledGames_ClassifiesFamilySharing_ByManifestOwner()
+    {
+        using var environment = new ManifestTestEnvironment();
+        environment.WriteManifest(150, "Borrowed Game", 200, 0, lastOwner: "76561198000009999");
+
+        using var cache = environment.CreateCache(new[] { 150u }, Array.Empty<uint>());
+        var games = cache.GetInstalledGames();
+
+        var game = Assert.Single(games);
+        Assert.Equal(OwnershipType.FamilyShared, game.OwnershipType);
+        Assert.Equal(InstallState.Shared, game.InstallState);
+    }
+
+    [Fact]
+    public void GetInstalledGames_MarksInstalled_WhenManifestIndicatesSize()
+    {
+        using var environment = new ManifestTestEnvironment();
+        environment.WriteManifest(123, "Sized Game", 1_000_000_000, 0);
+
+        using var cache = environment.CreateCache(Array.Empty<uint>(), Array.Empty<uint>());
+        var games = cache.GetInstalledGames();
+
+        var game = Assert.Single(games);
+        Assert.Equal(InstallState.Installed, game.InstallState);
+        Assert.Equal(1_000_000_000, game.SizeOnDisk);
+    }
+
+    [Fact]
     public void Cache_UpdatesIncrementally_OnManifestChange()
     {
         using var environment = new ManifestTestEnvironment();
@@ -91,6 +119,7 @@ public sealed class SteamAppManifestCacheTests
         private readonly string _root;
         private readonly FakeLibraryLocator _locator;
         private readonly ValveTextVdfParser _parser = new();
+        private readonly string _steamId = "76561198000000000";
 
         public ManifestTestEnvironment()
         {
@@ -101,15 +130,18 @@ public sealed class SteamAppManifestCacheTests
 
         public string SteamAppsPath => Path.Combine(_root, "steamapps");
 
-        public void WriteManifest(uint appId, string title, long sizeOnDisk, long lastPlayedSeconds)
+        public void WriteManifest(uint appId, string title, long sizeOnDisk, long lastPlayedSeconds, string? lastOwner = null)
         {
             var manifestPath = GetManifestPath(appId);
             Directory.CreateDirectory(Path.GetDirectoryName(manifestPath)!);
+
+            lastOwner ??= _steamId;
 
             var content = "\"AppState\"\n{" +
                           $"\n    \"appid\" \"{appId}\"" +
                           $"\n    \"name\" \"{title}\"" +
                           $"\n    \"SizeOnDisk\" \"{sizeOnDisk}\"" +
+                          $"\n    \"LastOwner\" \"{lastOwner}\"" +
                           "\n    \"UserConfig\"\n    {" +
                           $"\n        \"name\" \"{title}\"" +
                           $"\n        \"LastPlayed\" \"{lastPlayedSeconds}\"" +
@@ -125,7 +157,8 @@ public sealed class SteamAppManifestCacheTests
         public SteamAppManifestCache CreateCache(IEnumerable<uint> installed, IEnumerable<uint> shared)
         {
             var adapter = new FakeSteamClientAdapter(installed, shared);
-            return new SteamAppManifestCache(_locator, adapter, _parser);
+            var fallback = new FakeSteamVdfFallback(_steamId);
+            return new SteamAppManifestCache(_locator, adapter, fallback, _parser);
         }
 
         public void Dispose()
@@ -142,6 +175,26 @@ public sealed class SteamAppManifestCacheTests
                 // ignore cleanup errors
             }
         }
+    }
+
+    private sealed class FakeSteamVdfFallback : ISteamVdfFallback
+    {
+        private readonly string steamId;
+
+        public FakeSteamVdfFallback(string steamId)
+        {
+            this.steamId = steamId;
+        }
+
+        public IReadOnlyCollection<uint> GetInstalledAppIds() => Array.Empty<uint>();
+
+        public bool IsSubscribedFromFamilySharing(uint appId) => false;
+
+        public IReadOnlyDictionary<uint, SteamAppDefinition> GetKnownApps() => new Dictionary<uint, SteamAppDefinition>();
+
+        public string? GetCurrentUserSteamId() => steamId;
+
+        public IReadOnlyList<SteamCollectionDefinition> GetCollections() => Array.Empty<SteamCollectionDefinition>();
     }
 
     private sealed class FakeLibraryLocator : ISteamLibraryLocator
@@ -182,3 +235,6 @@ public sealed class SteamAppManifestCacheTests
         }
     }
 }
+
+
+

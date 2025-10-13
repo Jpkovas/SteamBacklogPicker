@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
@@ -18,7 +17,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly IGameArtLocator _artLocator;
     private readonly IToastNotificationService _toastNotificationService;
     private readonly List<GameEntry> _library = new();
-    private SelectionPreferences _currentPreferences;
+    private int _eligibleGameCount;
     private GameDetailsViewModel _selectedGame = GameDetailsViewModel.Empty;
 
     public MainViewModel(
@@ -32,12 +31,11 @@ public sealed class MainViewModel : ObservableObject
         _artLocator = artLocator ?? throw new ArgumentNullException(nameof(artLocator));
         _toastNotificationService = toastNotificationService ?? throw new ArgumentNullException(nameof(toastNotificationService));
 
-        _currentPreferences = _selectionEngine.GetPreferences();
         Preferences = new SelectionPreferencesViewModel(_selectionEngine);
         Preferences.PreferencesChanged += OnPreferencesChanged;
 
         RefreshCommand = new AsyncRelayCommand(RefreshLibraryAsync);
-        DrawCommand = new AsyncRelayCommand(DrawAsync, () => _library.Count > 0);
+        DrawCommand = new AsyncRelayCommand(DrawAsync, () => _eligibleGameCount > 0);
         LaunchCommand = new RelayCommand(LaunchGame, () => SelectedGame.CanLaunch);
         InstallCommand = new RelayCommand(InstallGame, () => SelectedGame.CanInstall);
     }
@@ -61,16 +59,7 @@ public sealed class MainViewModel : ObservableObject
                 return;
             }
 
-            if (_selectedGame is not null)
-            {
-                _selectedGame.PropertyChanged -= OnSelectedGamePropertyChanged;
-            }
-
             _selectedGame = value;
-            if (_selectedGame is not null)
-            {
-                _selectedGame.PropertyChanged += OnSelectedGamePropertyChanged;
-            }
 
             OnPropertyChanged();
             LaunchCommand.RaiseCanExecuteChanged();
@@ -89,7 +78,6 @@ public sealed class MainViewModel : ObservableObject
     public async Task InitializeAsync()
     {
         await RefreshLibraryAsync().ConfigureAwait(true);
-        UpdateSelectedGameFavoriteState();
     }
 
     private async Task RefreshLibraryAsync()
@@ -100,13 +88,14 @@ public sealed class MainViewModel : ObservableObject
         {
             var games = await _libraryService.GetLibraryAsync().ConfigureAwait(true);
             _library.AddRange(games.OrderBy(game => game.Title, StringComparer.CurrentCultureIgnoreCase));
-            StatusMessage = _library.Count == 0
-                ? "Nenhum jogo encontrado nos diretórios configurados."
-                : $"{_library.Count} jogos disponíveis para sorteio.";
+            Preferences.UpdateCollections(GetAvailableCollections());
+            UpdateEligibilitySummary();
         }
         catch (Exception ex)
         {
+            _eligibleGameCount = 0;
             StatusMessage = ex.Message;
+            Preferences.UpdateCollections(Array.Empty<string>());
         }
         finally
         {
@@ -140,8 +129,7 @@ public sealed class MainViewModel : ObservableObject
     private void ApplySelection(GameEntry game)
     {
         var coverPath = _artLocator.FindHeroImage(game.AppId);
-        var isFavorite = _currentPreferences.GameWeights.TryGetValue(game.AppId, out var weight) && weight > 1.0;
-        var details = GameDetailsViewModel.FromGame(game, coverPath, isFavorite);
+        var details = GameDetailsViewModel.FromGame(game, coverPath);
         SelectedGame = details;
         _toastNotificationService.ShowGameSelected(game, coverPath);
     }
@@ -180,47 +168,61 @@ public sealed class MainViewModel : ObservableObject
 
     private void OnPreferencesChanged(object? sender, SelectionPreferences preferences)
     {
-        _currentPreferences = preferences;
-        UpdateSelectedGameFavoriteState();
+        UpdateEligibilitySummary();
     }
 
-    private void UpdateSelectedGameFavoriteState()
+    private IEnumerable<string> GetAvailableCollections()
     {
-        if (SelectedGame == GameDetailsViewModel.Empty)
-        {
-            return;
-        }
-
-        var isFavorite = _currentPreferences.GameWeights.TryGetValue(SelectedGame.AppId, out var weight) && weight > 1.0;
-        SelectedGame.IsFavorite = isFavorite;
+        return _library
+            .SelectMany(game => game.Tags ?? Array.Empty<string>())
+            .Where(tag => !string.IsNullOrWhiteSpace(tag))
+            .Distinct(StringComparer.OrdinalIgnoreCase);
     }
 
-    private void OnSelectedGamePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    private void UpdateEligibilitySummary()
     {
-        if (!string.Equals(e.PropertyName, nameof(GameDetailsViewModel.IsFavorite), StringComparison.Ordinal))
+        IReadOnlyList<GameEntry> eligibleGames;
+        try
         {
+            eligibleGames = _selectionEngine.FilterGames(_library);
+        }
+        catch (Exception ex)
+        {
+            _eligibleGameCount = 0;
+            StatusMessage = ex.Message;
+            DrawCommand.RaiseCanExecuteChanged();
             return;
         }
 
-        if (SelectedGame == GameDetailsViewModel.Empty)
+        _eligibleGameCount = eligibleGames.Count;
+        var total = _library.Count;
+
+        if (SelectedGame != GameDetailsViewModel.Empty &&
+            !eligibleGames.Any(game => game.AppId == SelectedGame.AppId))
         {
-            return;
+            SelectedGame = GameDetailsViewModel.Empty;
         }
 
-        var preferences = _selectionEngine.GetPreferences();
-        if (SelectedGame.IsFavorite)
+        if (total == 0)
         {
-            preferences.GameWeights[SelectedGame.AppId] = Math.Max(
-                preferences.GameWeights.TryGetValue(SelectedGame.AppId, out var currentWeight) ? currentWeight : 0.0,
-                2.0);
+            StatusMessage = "Nenhum jogo encontrado nos diretórios configurados.";
+        }
+        else if (_eligibleGameCount == 0)
+        {
+            StatusMessage = $"Nenhum jogo corresponde aos filtros atuais (0 de {FormatGameCount(total)}).";
+        }
+        else if (_eligibleGameCount == total)
+        {
+            StatusMessage = $"{FormatGameCount(total)} disponíveis para sorteio.";
         }
         else
         {
-            preferences.GameWeights.Remove(SelectedGame.AppId);
+            StatusMessage = $"{FormatGameCount(_eligibleGameCount)} disponíveis após aplicar os filtros (de {FormatGameCount(total)}).";
         }
 
-        _selectionEngine.UpdatePreferences(preferences);
-        _currentPreferences = preferences;
-        Preferences.Apply(preferences);
+        DrawCommand.RaiseCanExecuteChanged();
     }
+
+    private static string FormatGameCount(int count)
+        => count == 1 ? "1 jogo" : $"{count} jogos";
 }

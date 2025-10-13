@@ -1,31 +1,41 @@
+using System.Collections.Generic;
+using System.Linq;
+
 namespace Domain.Selection;
 
 public sealed class SelectionFilters
 {
     public bool RequireInstalled { get; set; }
 
-    public bool IncludeFamilyShared { get; set; } = true;
+    public string? RequiredCollection { get; set; }
 
-    public List<string> RequiredTags { get; set; } = new();
-
-    public long? MinimumSizeOnDisk { get; set; }
-
-    public long? MaximumSizeOnDisk { get; set; }
+    public List<ProductCategory> IncludedCategories { get; set; } = new() { ProductCategory.Game };
 
     public SelectionFilters Clone()
     {
         return new SelectionFilters
         {
             RequireInstalled = RequireInstalled,
-            IncludeFamilyShared = IncludeFamilyShared,
-            RequiredTags = RequiredTags is null ? new List<string>() : new List<string>(RequiredTags),
-            MinimumSizeOnDisk = MinimumSizeOnDisk,
-            MaximumSizeOnDisk = MaximumSizeOnDisk,
+            RequiredCollection = RequiredCollection,
+            IncludedCategories = IncludedCategories is null ? new List<ProductCategory>() : new List<ProductCategory>(IncludedCategories),
         };
     }
 
     internal void Normalize()
     {
-        RequiredTags ??= new List<string>();
+        RequiredCollection = string.IsNullOrWhiteSpace(RequiredCollection)
+            ? null
+            : RequiredCollection.Trim();
+        IncludedCategories ??= new List<ProductCategory>();
+        if (IncludedCategories.Count == 0)
+        {
+            IncludedCategories.Add(ProductCategory.Game);
+        }
+        else
+        {
+            IncludedCategories = IncludedCategories
+                .Distinct()
+                .ToList();
+        }
     }
 }

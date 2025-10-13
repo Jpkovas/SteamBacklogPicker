@@ -33,36 +33,43 @@
                           IsChecked="{Binding Preferences.RequireInstalled, Mode=TwoWay}"
                           Margin="0,0,0,8"
                           AutomationProperties.Name="Filtrar apenas jogos instalados" />
-                <CheckBox Content="Incluir compartilhados pela família"
-                          IsChecked="{Binding Preferences.IncludeFamilyShared, Mode=TwoWay}"
-                          Margin="0,0,0,8"
-                          AutomationProperties.Name="Incluir biblioteca da família" />
-                <TextBlock Text="Tags obrigatórias"
+                <TextBlock Text="Tipos de conteúdo"
                            FontWeight="SemiBold"
                            Margin="0,16,0,4" />
-                <TextBox Text="{Binding Preferences.RequiredTags, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                         ToolTip="Separe múltiplas tags com vírgula"
-                         AutomationProperties.Name="Tags obrigatórias"
-                         AutomationProperties.HelpText="Separe múltiplas tags com vírgula"
-                         Margin="0,0,0,8" />
-                <StackPanel Orientation="Horizontal" Margin="0,8,0,8">
-                    <StackPanel Width="140" Margin="0,0,12,0">
-                        <TextBlock Text="Tamanho mínimo (GB)"
-                                   FontWeight="SemiBold"
-                                   Margin="0,0,0,4" />
-                        <TextBox Text="{Binding Preferences.MinimumSizeGb, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                 AutomationProperties.Name="Tamanho mínimo em gigabytes"
-                                 Margin="0,0,0,8" />
-                    </StackPanel>
-                    <StackPanel Width="140">
-                        <TextBlock Text="Tamanho máximo (GB)"
-                                   FontWeight="SemiBold"
-                                   Margin="0,0,0,4" />
-                        <TextBox Text="{Binding Preferences.MaximumSizeGb, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                 AutomationProperties.Name="Tamanho máximo em gigabytes"
-                                 Margin="0,0,0,8" />
-                    </StackPanel>
+                <StackPanel>
+                    <CheckBox Content="Jogos"
+                              IsChecked="{Binding Preferences.IncludeGames, Mode=TwoWay}"
+                              Margin="0,0,0,4"
+                              AutomationProperties.Name="Incluir jogos" />
+                    <CheckBox Content="Trilhas sonoras"
+                              IsChecked="{Binding Preferences.IncludeSoundtracks, Mode=TwoWay}"
+                              Margin="0,0,0,4"
+                              AutomationProperties.Name="Incluir trilhas sonoras" />
+                    <CheckBox Content="Softwares"
+                              IsChecked="{Binding Preferences.IncludeSoftware, Mode=TwoWay}"
+                              Margin="0,0,0,4"
+                              AutomationProperties.Name="Incluir softwares" />
+                    <CheckBox Content="Ferramentas"
+                              IsChecked="{Binding Preferences.IncludeTools, Mode=TwoWay}"
+                              Margin="0,0,0,4"
+                              AutomationProperties.Name="Incluir ferramentas" />
+                    <CheckBox Content="Vídeos"
+                              IsChecked="{Binding Preferences.IncludeVideos, Mode=TwoWay}"
+                              Margin="0,0,0,4"
+                              AutomationProperties.Name="Incluir vídeos" />
+                    <CheckBox Content="Outros conteúdos"
+                              IsChecked="{Binding Preferences.IncludeOther, Mode=TwoWay}"
+                              Margin="0,0,0,4"
+                              AutomationProperties.Name="Incluir outros conteúdos" />
                 </StackPanel>
+                <TextBlock Text="Coleção"
+                           FontWeight="SemiBold"
+                           Margin="0,16,0,4" />
+                <ComboBox ItemsSource="{Binding Preferences.CollectionOptions}"
+                          SelectedItem="{Binding Preferences.SelectedCollection, Mode=TwoWay}"
+                          Margin="0,0,0,12"
+                          AutomationProperties.Name="Selecionar coleção"
+                          AutomationProperties.HelpText="Escolha uma coleção personalizada para filtrar" />
                 <Button Content="Atualizar biblioteca"
                         Command="{Binding RefreshCommand}"
                         Height="40"
@@ -145,12 +152,6 @@
                                 Height="40"
                                 Margin="8,0,0,0"
                                 AutomationProperties.Name="Instalar jogo no Steam" />
-                        <ToggleButton Content="Favorito"
-                                      IsChecked="{Binding SelectedGame.IsFavorite, Mode=TwoWay}"
-                                      Width="140"
-                                      Height="40"
-                                      Margin="8,0,0,0"
-                                      AutomationProperties.Name="Marcar jogo como favorito" />
                     </StackPanel>
                     <ItemsControl ItemsSource="{Binding SelectedGame.Tags}"
                                   Margin="0,8,0,0">

@@ -96,6 +96,16 @@ public sealed class SelectionEngine : ISelectionEngine
         }
     }
 
+    public IReadOnlyList<GameEntry> FilterGames(IEnumerable<GameEntry> games)
+    {
+        ArgumentNullException.ThrowIfNull(games);
+
+        lock (_syncRoot)
+        {
+            return ApplyFilters(games);
+        }
+    }
+
     private SelectionSettings LoadSettings()
     {
         try
@@ -190,7 +200,10 @@ public sealed class SelectionEngine : ISelectionEngine
         var filters = _state.Preferences.Filters;
         var excludedIds = GetExcludedAppIds();
         var skipExclusionCheck = excludedIds.Count == 0;
-        var requiredTags = filters.RequiredTags;
+        var allowedCategories = filters.IncludedCategories ?? new List<ProductCategory> { ProductCategory.Game };
+        var filterByCategory = allowedCategories.Count > 0;
+        var requiredCollection = filters.RequiredCollection;
+        var filterByCollection = !string.IsNullOrWhiteSpace(requiredCollection);
         var results = new List<GameEntry>();
 
         foreach (var game in games)
@@ -205,32 +218,21 @@ public sealed class SelectionEngine : ISelectionEngine
                 continue;
             }
 
-            if (!filters.IncludeFamilyShared && game.OwnershipType == OwnershipType.FamilyShared)
+            var category = game.ProductCategory;
+            if (category == ProductCategory.Unknown)
+            {
+                category = ProductCategory.Game;
+            }
+
+            if (filterByCategory && !allowedCategories.Contains(category))
             {
                 continue;
             }
 
-            if (requiredTags.Count > 0)
+            if (filterByCollection)
             {
-                var tags = game.Tags ?? Array.Empty<string>();
-                var hasAllTags = requiredTags.All(tag => tags.Any(gameTag => string.Equals(gameTag, tag, StringComparison.OrdinalIgnoreCase)));
-                if (!hasAllTags)
-                {
-                    continue;
-                }
-            }
-
-            if (filters.MinimumSizeOnDisk is long minimum)
-            {
-                if (game.SizeOnDisk is not long size || size < minimum)
-                {
-                    continue;
-                }
-            }
-
-            if (filters.MaximumSizeOnDisk is long maximum)
-            {
-                if (game.SizeOnDisk is not long size || size > maximum)
+                var tags = game.Tags;
+                if (tags is null || !tags.Any(tag => string.Equals(tag, requiredCollection, StringComparison.OrdinalIgnoreCase)))
                 {
                     continue;
                 }
@@ -295,15 +297,7 @@ public sealed class SelectionEngine : ISelectionEngine
         return candidates[^1];
     }
 
-    private double GetWeight(GameEntry game)
-    {
-        if (_state.Preferences.GameWeights.TryGetValue(game.AppId, out var weight))
-        {
-            return weight;
-        }
-
-        return 1d;
-    }
+    private static double GetWeight(GameEntry game) => 1d;
 
     private double NextRandom()
     {

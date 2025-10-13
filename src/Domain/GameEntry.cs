@@ -15,6 +15,17 @@ public enum InstallState
     Shared = 3,
 }
 
+public enum ProductCategory
+{
+    Unknown = 0,
+    Game = 1,
+    Soundtrack = 2,
+    Software = 3,
+    Tool = 4,
+    Video = 5,
+    Other = 6,
+}
+
 public sealed record class GameEntry
 {
     public uint AppId { get; init; }
@@ -25,9 +36,15 @@ public sealed record class GameEntry
 
     public InstallState InstallState { get; init; } = InstallState.Unknown;
 
+    public ProductCategory ProductCategory { get; init; } = ProductCategory.Game;
+
     public long? SizeOnDisk { get; init; }
 
     public DateTimeOffset? LastPlayed { get; init; }
 
     public IReadOnlyCollection<string> Tags { get; init; } = Array.Empty<string>();
+
+    public IReadOnlyCollection<int> StoreCategoryIds { get; init; } = Array.Empty<int>();
+
+    public SteamDeckCompatibility DeckCompatibility { get; init; } = SteamDeckCompatibility.Unknown;
 }
