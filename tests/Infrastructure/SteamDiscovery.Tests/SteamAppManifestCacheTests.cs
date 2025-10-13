@@ -32,6 +32,19 @@ public sealed class SteamAppManifestCacheTests
     }
 
     [Fact]
+    public void GetInstalledGames_TreatsManifestAsInstalled_WhenAdapterReturnsEmptySet()
+    {
+        using var environment = new ManifestTestEnvironment();
+        environment.WriteManifest(101, "Offline Game", 2_000_000_000, 0);
+
+        using var cache = environment.CreateCache(Array.Empty<uint>(), Array.Empty<uint>());
+        var games = cache.GetInstalledGames();
+
+        var game = Assert.Single(games);
+        Assert.Equal(InstallState.Installed, game.InstallState);
+    }
+
+    [Fact]
     public void GetInstalledGames_ClassifiesFamilySharing()
     {
         using var environment = new ManifestTestEnvironment();
