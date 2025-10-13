@@ -148,11 +148,12 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
             IncludeVideos = categories.Contains(ProductCategory.Video);
             IncludeOther = categories.Contains(ProductCategory.Other);
 
-             var requiredCollection = preferences.Filters.RequiredCollection;
-             if (!string.IsNullOrWhiteSpace(requiredCollection) && !_collectionOptions.Contains(requiredCollection))
-             {
-                 _collectionOptions.Add(requiredCollection);
-             }
+            var requiredCollection = preferences.Filters.RequiredCollection;
+            if (!string.IsNullOrWhiteSpace(requiredCollection) &&
+                !_collectionOptions.Any(option => string.Equals(option, requiredCollection, StringComparison.OrdinalIgnoreCase)))
+            {
+                _collectionOptions.Add(requiredCollection);
+            }
 
              SelectedCollection = string.IsNullOrWhiteSpace(requiredCollection)
                  ? NoCollectionOption
@@ -239,9 +240,17 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
                 _collectionOptions.Add(name);
             }
 
-            if (!_collectionOptions.Contains(_selectedCollection))
+            var matchingSelection = _collectionOptions
+                .FirstOrDefault(option => string.Equals(option, _selectedCollection, StringComparison.OrdinalIgnoreCase));
+
+            if (matchingSelection is null)
             {
                 _selectedCollection = NoCollectionOption;
+                OnPropertyChanged(nameof(SelectedCollection));
+            }
+            else if (!string.Equals(matchingSelection, _selectedCollection, StringComparison.Ordinal))
+            {
+                _selectedCollection = matchingSelection;
                 OnPropertyChanged(nameof(SelectedCollection));
             }
         }
