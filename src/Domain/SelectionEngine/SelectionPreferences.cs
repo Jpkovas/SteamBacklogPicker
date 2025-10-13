@@ -4,8 +4,6 @@ public sealed class SelectionPreferences
 {
     public SelectionFilters Filters { get; set; } = new();
 
-    public Dictionary<uint, double> GameWeights { get; set; } = new();
-
     public int? Seed { get; set; }
 
     public int RecentGameExclusionCount { get; set; }
@@ -17,7 +15,6 @@ public sealed class SelectionPreferences
         return new SelectionPreferences
         {
             Filters = (Filters ?? new SelectionFilters()).Clone(),
-            GameWeights = GameWeights is null ? new Dictionary<uint, double>() : new Dictionary<uint, double>(GameWeights),
             Seed = Seed,
             RecentGameExclusionCount = RecentGameExclusionCount,
             HistoryLimit = HistoryLimit,
@@ -28,7 +25,6 @@ public sealed class SelectionPreferences
     {
         Filters ??= new SelectionFilters();
         Filters.Normalize();
-        GameWeights ??= new Dictionary<uint, double>();
         if (HistoryLimit < 0)
         {
             HistoryLimit = 0;

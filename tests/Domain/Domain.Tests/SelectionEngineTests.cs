@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using System.Collections.Generic;
+using System.Linq;
 using Domain;
 using Domain.Selection;
 using FluentAssertions;
@@ -19,10 +22,7 @@ public sealed class SelectionEngineTests
                 Filters = new SelectionFilters
                 {
                     RequireInstalled = true,
-                    IncludeFamilyShared = false,
-                    RequiredTags = new List<string> { "Indie" },
-                    MinimumSizeOnDisk = 10,
-                    MaximumSizeOnDisk = 20,
+                    IncludedCategories = new List<ProductCategory> { ProductCategory.Game },
                 },
                 HistoryLimit = 10,
                 RecentGameExclusionCount = 0,
@@ -37,7 +37,7 @@ public sealed class SelectionEngineTests
                     InstallState = InstallState.Installed,
                     OwnershipType = OwnershipType.Owned,
                     SizeOnDisk = 15,
-                    Tags = new[] { "Indie", "Roguelike" },
+                    ProductCategory = ProductCategory.Game,
                 },
                 new GameEntry
                 {
@@ -46,34 +46,25 @@ public sealed class SelectionEngineTests
                     InstallState = InstallState.Available,
                     OwnershipType = OwnershipType.Owned,
                     SizeOnDisk = 15,
-                    Tags = new[] { "Indie" },
+                    ProductCategory = ProductCategory.Game,
                 },
                 new GameEntry
                 {
                     AppId = 3,
-                    Title = "Family Shared",
+                    Title = "Different Category",
                     InstallState = InstallState.Installed,
-                    OwnershipType = OwnershipType.FamilyShared,
-                    SizeOnDisk = 15,
-                    Tags = new[] { "Indie" },
+                    OwnershipType = OwnershipType.Owned,
+                    SizeOnDisk = 25,
+                    ProductCategory = ProductCategory.Soundtrack,
                 },
                 new GameEntry
                 {
                     AppId = 4,
-                    Title = "Missing Tag",
-                    InstallState = InstallState.Installed,
-                    OwnershipType = OwnershipType.Owned,
-                    SizeOnDisk = 15,
-                    Tags = new[] { "Action" },
-                },
-                new GameEntry
-                {
-                    AppId = 5,
-                    Title = "Too Large",
-                    InstallState = InstallState.Installed,
-                    OwnershipType = OwnershipType.Owned,
-                    SizeOnDisk = 25,
-                    Tags = new[] { "Indie" },
+                    Title = "Family Shared Available",
+                    InstallState = InstallState.Available,
+                    OwnershipType = OwnershipType.FamilyShared,
+                    SizeOnDisk = 10,
+                    ProductCategory = ProductCategory.Game,
                 },
             };
 
@@ -106,7 +97,6 @@ public sealed class SelectionEngineTests
             Filters = new SelectionFilters
             {
                 RequireInstalled = false,
-                IncludeFamilyShared = true,
             },
         };
 
@@ -124,6 +114,184 @@ public sealed class SelectionEngineTests
         {
             Cleanup(firstSettings);
             Cleanup(secondSettings);
+        }
+    }
+
+    [Fact]
+    public void FilterGames_ShouldRespectInstallationFilter()
+    {
+        var settingsPath = CreateSettingsPath();
+        try
+        {
+            var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
+            engine.UpdatePreferences(new SelectionPreferences
+            {
+                Filters = new SelectionFilters
+                {
+                    RequireInstalled = true,
+                },
+                HistoryLimit = 10,
+            });
+
+            var games = new[]
+            {
+                new GameEntry
+                {
+                    AppId = 1,
+                    Title = "Owned Installed",
+                    InstallState = InstallState.Installed,
+                    OwnershipType = OwnershipType.Owned,
+                    ProductCategory = ProductCategory.Game,
+                },
+                new GameEntry
+                {
+                    AppId = 2,
+                    Title = "Family Ownership",
+                    InstallState = InstallState.Installed,
+                    OwnershipType = OwnershipType.FamilyShared,
+                    ProductCategory = ProductCategory.Game,
+                },
+                new GameEntry
+                {
+                    AppId = 3,
+                    Title = "Shared InstallState",
+                    InstallState = InstallState.Shared,
+                    OwnershipType = OwnershipType.Owned,
+                    ProductCategory = ProductCategory.Game,
+                },
+                new GameEntry
+                {
+                    AppId = 4,
+                    Title = "Available Only",
+                    InstallState = InstallState.Available,
+                    OwnershipType = OwnershipType.Owned,
+                    ProductCategory = ProductCategory.Game,
+                },
+            };
+
+            var filtered = engine.FilterGames(games);
+
+            filtered.Select(game => game.AppId).Should().BeEquivalentTo(new[] { 1u, 2u, 3u });
+        }
+        finally
+        {
+            Cleanup(settingsPath);
+        }
+    }
+
+    [Fact]
+    public void FilterGames_ShouldRespectCategorySelection()
+    {
+        var settingsPath = CreateSettingsPath();
+        try
+        {
+            var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
+            engine.UpdatePreferences(new SelectionPreferences
+            {
+                Filters = new SelectionFilters
+                {
+                    RequireInstalled = false,
+                    IncludedCategories = new List<ProductCategory>
+                    {
+                        ProductCategory.Game,
+                        ProductCategory.Soundtrack
+                    },
+                },
+                HistoryLimit = 10,
+            });
+
+            var games = new[]
+            {
+                new GameEntry
+                {
+                    AppId = 1,
+                    Title = "Base Game",
+                    InstallState = InstallState.Installed,
+                    OwnershipType = OwnershipType.Owned,
+                    ProductCategory = ProductCategory.Game,
+                },
+                new GameEntry
+                {
+                    AppId = 2,
+                    Title = "OST",
+                    InstallState = InstallState.Installed,
+                    OwnershipType = OwnershipType.Owned,
+                    ProductCategory = ProductCategory.Soundtrack,
+                },
+                new GameEntry
+                {
+                    AppId = 3,
+                    Title = "Design Tool",
+                    InstallState = InstallState.Installed,
+                    OwnershipType = OwnershipType.Owned,
+                    ProductCategory = ProductCategory.Tool,
+                },
+            };
+
+            var filtered = engine.FilterGames(games);
+
+            filtered.Select(game => game.AppId).Should().BeEquivalentTo(new[] { 1u, 2u });
+        }
+        finally
+        {
+            Cleanup(settingsPath);
+        }
+    }
+
+    [Fact]
+    public void FilterGames_ShouldRespectCollectionSelection()
+    {
+        var settingsPath = CreateSettingsPath();
+        try
+        {
+            var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
+            engine.UpdatePreferences(new SelectionPreferences
+            {
+                Filters = new SelectionFilters
+                {
+                    RequiredCollection = "Jogáveis no Deck",
+                },
+                HistoryLimit = 10,
+            });
+
+            var games = new[]
+            {
+                new GameEntry
+                {
+                    AppId = 1,
+                    Title = "Deck Ready",
+                    InstallState = InstallState.Installed,
+                    OwnershipType = OwnershipType.Owned,
+                    ProductCategory = ProductCategory.Game,
+                    Tags = new[] { "Jogáveis no Deck", "Multijogador" },
+                },
+                new GameEntry
+                {
+                    AppId = 2,
+                    Title = "Only Multiplayer",
+                    InstallState = InstallState.Installed,
+                    OwnershipType = OwnershipType.Owned,
+                    ProductCategory = ProductCategory.Game,
+                    Tags = new[] { "Multijogador" },
+                },
+                new GameEntry
+                {
+                    AppId = 3,
+                    Title = "Deck Lowercase",
+                    InstallState = InstallState.Installed,
+                    OwnershipType = OwnershipType.Owned,
+                    ProductCategory = ProductCategory.Game,
+                    Tags = new[] { "jogáveis no deck" },
+                },
+            };
+
+            var filtered = engine.FilterGames(games);
+
+            filtered.Select(game => game.AppId).Should().BeEquivalentTo(new[] { 1u, 3u });
+        }
+        finally
+        {
+            Cleanup(settingsPath);
         }
     }
 

@@ -1,19 +1,27 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
+using Domain;
 using Domain.Selection;
 
 namespace SteamBacklogPicker.UI.ViewModels;
 
 public sealed class SelectionPreferencesViewModel : ObservableObject
 {
+    private const string NoCollectionOption = "Nenhuma coleção";
+
     private readonly ISelectionEngine _selectionEngine;
     private bool _requireInstalled;
-    private bool _includeFamilyShared = true;
-    private string? _requiredTags;
-    private string? _minimumSizeGb;
-    private string? _maximumSizeGb;
+    private bool _includeGames = true;
+    private bool _includeSoundtracks;
+    private bool _includeSoftware;
+    private bool _includeTools;
+    private bool _includeVideos;
+    private bool _includeOther;
     private bool _isHydrating;
+    private readonly ObservableCollection<string> _collectionOptions = new() { NoCollectionOption };
+    private string _selectedCollection = NoCollectionOption;
 
     public SelectionPreferencesViewModel(ISelectionEngine selectionEngine)
     {
@@ -36,53 +44,89 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
         }
     }
 
-    public bool IncludeFamilyShared
+    public bool IncludeGames
     {
-        get => _includeFamilyShared;
+        get => _includeGames;
         set
         {
-            if (SetProperty(ref _includeFamilyShared, value) && !_isHydrating)
+            if (SetProperty(ref _includeGames, value) && !_isHydrating)
             {
-                UpdatePreferences(p => p.Filters.IncludeFamilyShared = value);
+                UpdateCategoryPreferences();
             }
         }
     }
 
-    public string? RequiredTags
+    public bool IncludeSoundtracks
     {
-        get => _requiredTags;
+        get => _includeSoundtracks;
         set
         {
-            if (SetProperty(ref _requiredTags, value) && !_isHydrating)
+            if (SetProperty(ref _includeSoundtracks, value) && !_isHydrating)
             {
-                UpdatePreferences(p =>
-                {
-                    p.Filters.RequiredTags = ParseTags(value);
-                });
+                UpdateCategoryPreferences();
             }
         }
     }
 
-    public string? MinimumSizeGb
+    public bool IncludeSoftware
     {
-        get => _minimumSizeGb;
+        get => _includeSoftware;
         set
         {
-            if (SetProperty(ref _minimumSizeGb, value) && !_isHydrating)
+            if (SetProperty(ref _includeSoftware, value) && !_isHydrating)
             {
-                UpdatePreferences(p => p.Filters.MinimumSizeOnDisk = ParseSize(value));
+                UpdateCategoryPreferences();
             }
         }
     }
 
-    public string? MaximumSizeGb
+    public bool IncludeTools
     {
-        get => _maximumSizeGb;
+        get => _includeTools;
         set
         {
-            if (SetProperty(ref _maximumSizeGb, value) && !_isHydrating)
+            if (SetProperty(ref _includeTools, value) && !_isHydrating)
             {
-                UpdatePreferences(p => p.Filters.MaximumSizeOnDisk = ParseSize(value));
+                UpdateCategoryPreferences();
+            }
+        }
+    }
+
+    public bool IncludeVideos
+    {
+        get => _includeVideos;
+        set
+        {
+            if (SetProperty(ref _includeVideos, value) && !_isHydrating)
+            {
+                UpdateCategoryPreferences();
+            }
+        }
+    }
+
+    public bool IncludeOther
+    {
+        get => _includeOther;
+        set
+        {
+            if (SetProperty(ref _includeOther, value) && !_isHydrating)
+            {
+                UpdateCategoryPreferences();
+            }
+        }
+    }
+
+    public IReadOnlyList<string> CollectionOptions => _collectionOptions;
+
+    public string SelectedCollection
+    {
+        get => _selectedCollection;
+        set
+        {
+            var desired = string.IsNullOrWhiteSpace(value) ? NoCollectionOption : value;
+            if (SetProperty(ref _selectedCollection, desired) && !_isHydrating)
+            {
+                UpdatePreferences(p => p.Filters.RequiredCollection = desired == NoCollectionOption ? null : desired);
             }
         }
     }
@@ -95,10 +139,24 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
         try
         {
             RequireInstalled = preferences.Filters.RequireInstalled;
-            IncludeFamilyShared = preferences.Filters.IncludeFamilyShared;
-            RequiredTags = string.Join(", ", preferences.Filters.RequiredTags ?? Enumerable.Empty<string>());
-            MinimumSizeGb = FormatSize(preferences.Filters.MinimumSizeOnDisk);
-            MaximumSizeGb = FormatSize(preferences.Filters.MaximumSizeOnDisk);
+
+            var categories = preferences.Filters.IncludedCategories ?? new List<ProductCategory>();
+            IncludeGames = categories.Contains(ProductCategory.Game);
+            IncludeSoundtracks = categories.Contains(ProductCategory.Soundtrack);
+            IncludeSoftware = categories.Contains(ProductCategory.Software);
+            IncludeTools = categories.Contains(ProductCategory.Tool);
+            IncludeVideos = categories.Contains(ProductCategory.Video);
+            IncludeOther = categories.Contains(ProductCategory.Other);
+
+             var requiredCollection = preferences.Filters.RequiredCollection;
+             if (!string.IsNullOrWhiteSpace(requiredCollection) && !_collectionOptions.Contains(requiredCollection))
+             {
+                 _collectionOptions.Add(requiredCollection);
+             }
+
+             SelectedCollection = string.IsNullOrWhiteSpace(requiredCollection)
+                 ? NoCollectionOption
+                 : requiredCollection;
         }
         finally
         {
@@ -115,42 +173,81 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
         PreferencesChanged?.Invoke(this, preferences);
     }
 
-    private static List<string> ParseTags(string? value)
+    private void UpdateCategoryPreferences()
     {
-        if (string.IsNullOrWhiteSpace(value))
+        UpdatePreferences(p =>
         {
-            return new List<string>();
+            p.Filters.IncludedCategories = BuildSelectedCategories();
+        });
+    }
+
+    private List<ProductCategory> BuildSelectedCategories()
+    {
+        var categories = new List<ProductCategory>();
+        if (IncludeGames)
+        {
+            categories.Add(ProductCategory.Game);
         }
 
-        return value
-            .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+        if (IncludeSoundtracks)
+        {
+            categories.Add(ProductCategory.Soundtrack);
+        }
+
+        if (IncludeSoftware)
+        {
+            categories.Add(ProductCategory.Software);
+        }
+
+        if (IncludeTools)
+        {
+            categories.Add(ProductCategory.Tool);
+        }
+
+        if (IncludeVideos)
+        {
+            categories.Add(ProductCategory.Video);
+        }
+
+        if (IncludeOther)
+        {
+            categories.Add(ProductCategory.Other);
+        }
+
+        return categories;
+    }
+
+    public void UpdateCollections(IEnumerable<string> collections)
+    {
+        ArgumentNullException.ThrowIfNull(collections);
+
+        var normalized = collections
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Select(name => name.Trim())
             .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(name => name, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
-    }
 
-    private static long? ParseSize(string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
+        _isHydrating = true;
+        try
         {
-            return null;
-        }
+            _collectionOptions.Clear();
+            _collectionOptions.Add(NoCollectionOption);
 
-        if (double.TryParse(value, out var gigabytes) && gigabytes > 0)
+            foreach (var name in normalized)
+            {
+                _collectionOptions.Add(name);
+            }
+
+            if (!_collectionOptions.Contains(_selectedCollection))
+            {
+                _selectedCollection = NoCollectionOption;
+                OnPropertyChanged(nameof(SelectedCollection));
+            }
+        }
+        finally
         {
-            return (long)(gigabytes * 1024 * 1024 * 1024);
+            _isHydrating = false;
         }
-
-        return null;
-    }
-
-    private static string? FormatSize(long? bytes)
-    {
-        if (bytes is null || bytes <= 0)
-        {
-            return null;
-        }
-
-        var gigabytes = bytes.Value / (1024d * 1024d * 1024d);
-        return gigabytes.ToString("0.##");
     }
 }

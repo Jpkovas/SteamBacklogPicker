@@ -30,4 +30,24 @@
             }
         }
     }
+    "collections"
+    {
+        "deck"
+        {
+            "display_name" "Jogáveis no Deck"
+            "appids"
+            {
+                "0" "10"
+                "1" "30"
+            }
+        }
+        "vr_collection"
+        {
+            "name" "VR"
+            "added"
+            {
+                "0" "20"
+            }
+        }
+    }
 }

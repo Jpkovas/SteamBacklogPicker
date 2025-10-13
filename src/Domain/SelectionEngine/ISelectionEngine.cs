@@ -13,4 +13,6 @@ public interface ISelectionEngine
     void ClearHistory();
 
     GameEntry PickNext(IEnumerable<GameEntry> games);
+
+    IReadOnlyList<GameEntry> FilterGames(IEnumerable<GameEntry> games);
 }

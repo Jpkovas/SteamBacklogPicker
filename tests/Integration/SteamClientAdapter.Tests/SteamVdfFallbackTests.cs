@@ -71,6 +71,45 @@ public sealed class SteamVdfFallbackTests : IDisposable
     }
 
     [Fact]
+    public void IsSubscribedFromFamilySharing_FallsBackToLocalConfig()
+    {
+        var fallbackRoot = Path.Combine(AppContext.BaseDirectory, "steam-fixture-local");
+        if (Directory.Exists(fallbackRoot))
+        {
+            Directory.Delete(fallbackRoot, recursive: true);
+        }
+
+        CopyDirectory(Path.Combine(VdfFixtureLoader.RootDirectory, "steam"), fallbackRoot);
+        var appInfoPath = Path.Combine(fallbackRoot, "appcache", "appinfo.vdf");
+        if (File.Exists(appInfoPath))
+        {
+            File.Delete(appInfoPath);
+        }
+
+        try
+        {
+            var accessor = new PhysicalFileAccessor();
+            var fallback = new SteamVdfFallback(
+                fallbackRoot,
+                accessor,
+                new ValveTextVdfParser(),
+                new ValveBinaryVdfParser());
+
+            _ = fallback.GetKnownApps();
+
+            Assert.True(fallback.IsSubscribedFromFamilySharing(20u));
+            Assert.False(fallback.IsSubscribedFromFamilySharing(10u));
+        }
+        finally
+        {
+            if (Directory.Exists(fallbackRoot))
+            {
+                Directory.Delete(fallbackRoot, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
     public void GetKnownApps_ReturnsMetadataForAllDiscoveredTitles()
     {
         var fallback = CreateFallback();
@@ -83,16 +122,19 @@ public sealed class SteamVdfFallbackTests : IDisposable
         Assert.True(ownedInstalled.IsInstalled);
         Assert.Equal("Sample Game", ownedInstalled.Name);
         Assert.Contains("Favoritos", ownedInstalled.Collections);
+        Assert.Contains("Jogáveis no Deck", ownedInstalled.Collections);
 
         Assert.True(apps.TryGetValue(20u, out var familyShared));
         Assert.True(familyShared.IsInstalled);
         Assert.Equal("Family Shared Game", familyShared.Name);
         Assert.Contains("Cooperativo", familyShared.Collections);
+        Assert.Contains("VR", familyShared.Collections);
 
         Assert.True(apps.TryGetValue(30u, out var available));
         Assert.False(available.IsInstalled);
         Assert.Equal("Not Installed", available.Name);
         Assert.Contains("Backlog", available.Collections);
+        Assert.Contains("Jogáveis no Deck", available.Collections);
     }
 
     public void Dispose()

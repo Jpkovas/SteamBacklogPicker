@@ -11,6 +11,7 @@ public sealed class SteamAppManifestCache : IDisposable
 {
     private readonly ISteamLibraryLocator _libraryLocator;
     private readonly ISteamClientAdapter _clientAdapter;
+    private readonly ISteamVdfFallback _fallback;
     private readonly ValveTextVdfParser _parser;
     private readonly object _syncRoot = new();
     private readonly Dictionary<uint, GameEntry> _entries = new();
@@ -24,10 +25,12 @@ public sealed class SteamAppManifestCache : IDisposable
     public SteamAppManifestCache(
         ISteamLibraryLocator libraryLocator,
         ISteamClientAdapter clientAdapter,
+        ISteamVdfFallback fallback,
         ValveTextVdfParser parser)
     {
         _libraryLocator = libraryLocator ?? throw new ArgumentNullException(nameof(libraryLocator));
         _clientAdapter = clientAdapter ?? throw new ArgumentNullException(nameof(clientAdapter));
+        _fallback = fallback ?? throw new ArgumentNullException(nameof(fallback));
         _parser = parser ?? throw new ArgumentNullException(nameof(parser));
     }
 
@@ -178,12 +181,11 @@ public sealed class SteamAppManifestCache : IDisposable
                         appState.FindPath("UserConfig", "name")?.Value ??
                         $"App {appId}";
 
-            var ownershipType = OwnershipType.Owned;
-            var isFamilyShared = IsFamilyShared(appId);
-            if (isFamilyShared)
-            {
-                ownershipType = OwnershipType.FamilyShared;
-            }
+            var sizeOnDisk = TryParseLong(appState, "SizeOnDisk");
+            var lastOwner = GetString(appState, "LastOwner");
+            var isFamilyShared = IsFamilyShared(appId) || IsFamilySharedByOwner(lastOwner);
+
+            var ownershipType = isFamilyShared ? OwnershipType.FamilyShared : OwnershipType.Owned;
 
             var installState = isFamilyShared ? InstallState.Shared : InstallState.Installed;
             if (!isFamilyShared && installedSet.Count > 0 && !installedSet.Contains(appId))
@@ -191,7 +193,6 @@ public sealed class SteamAppManifestCache : IDisposable
                 installState = InstallState.Available;
             }
 
-            var sizeOnDisk = TryParseLong(appState, "SizeOnDisk");
             var lastPlayed = ParseLastPlayed(appState.FindPath("UserConfig", "LastPlayed"));
 
             entry = new GameEntry
@@ -271,6 +272,36 @@ public sealed class SteamAppManifestCache : IDisposable
         }
     }
 
+    private bool IsFamilySharedByOwner(string? lastOwner)
+    {
+        if (string.IsNullOrWhiteSpace(lastOwner))
+        {
+            return false;
+        }
+
+        var currentOwner = _fallback.GetCurrentUserSteamId();
+        if (string.IsNullOrWhiteSpace(currentOwner))
+        {
+            return false;
+        }
+
+        lastOwner = lastOwner.Trim();
+        currentOwner = currentOwner.Trim();
+
+        if (string.Equals(lastOwner, currentOwner, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (TryNormalizeSteamId(lastOwner, out var lastOwnerId) &&
+            TryNormalizeSteamId(currentOwner, out var currentOwnerId))
+        {
+            return lastOwnerId != currentOwnerId;
+        }
+
+        return !string.Equals(lastOwner, currentOwner, StringComparison.OrdinalIgnoreCase);
+    }
+
     private bool IsFamilyShared(uint appId)
     {
         try
@@ -281,6 +312,17 @@ public sealed class SteamAppManifestCache : IDisposable
         {
             return false;
         }
+    }
+
+    private static bool TryNormalizeSteamId(string value, out ulong id)
+    {
+        if (ulong.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out id))
+        {
+            return true;
+        }
+
+        id = 0;
+        return false;
     }
 
     private void RemoveEntryByPathNoLock(string manifestPath)

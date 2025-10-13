@@ -7,16 +7,13 @@ namespace SteamBacklogPicker.UI.ViewModels;
 
 public sealed class GameDetailsViewModel : ObservableObject
 {
-    private bool _isFavorite;
-
     private GameDetailsViewModel(
         uint appId,
         string title,
         string? coverImagePath,
         InstallState installState,
         OwnershipType ownershipType,
-        IReadOnlyList<string> tags,
-        bool isFavorite)
+        IReadOnlyList<string> tags)
     {
         AppId = appId;
         Title = title;
@@ -24,7 +21,6 @@ public sealed class GameDetailsViewModel : ObservableObject
         InstallState = installState;
         OwnershipType = ownershipType;
         Tags = tags;
-        _isFavorite = isFavorite;
     }
 
     public static GameDetailsViewModel Empty { get; } = new(
@@ -33,8 +29,7 @@ public sealed class GameDetailsViewModel : ObservableObject
         null,
         InstallState.Unknown,
         OwnershipType.Unknown,
-        Array.Empty<string>(),
-        false);
+        Array.Empty<string>());
 
     public uint AppId { get; }
 
@@ -47,12 +42,6 @@ public sealed class GameDetailsViewModel : ObservableObject
     public OwnershipType OwnershipType { get; }
 
     public IReadOnlyList<string> Tags { get; }
-
-    public bool IsFavorite
-    {
-        get => _isFavorite;
-        set => SetProperty(ref _isFavorite, value);
-    }
 
     public bool CanLaunch => InstallState == InstallState.Installed;
 
@@ -69,7 +58,7 @@ public sealed class GameDetailsViewModel : ObservableObject
         _ => "Estado de instalação desconhecido",
     };
 
-    public static GameDetailsViewModel FromGame(GameEntry game, string? coverPath, bool isFavorite)
+    public static GameDetailsViewModel FromGame(GameEntry game, string? coverPath)
     {
         ArgumentNullException.ThrowIfNull(game);
         var tags = game.Tags?.Where(tag => !string.IsNullOrWhiteSpace(tag)).Distinct(StringComparer.OrdinalIgnoreCase).ToArray()
@@ -80,7 +69,6 @@ public sealed class GameDetailsViewModel : ObservableObject
             coverPath,
             game.InstallState,
             game.OwnershipType,
-            tags,
-            isFavorite);
+            tags);
     }
 }
