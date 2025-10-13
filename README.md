@@ -11,27 +11,9 @@ SteamBacklogPicker is a Windows desktop application that helps you decide what t
 
 ## Installation
 
-### Using the MSIX installer
-
-1. Download the latest signed `SteamBacklogPicker.msix` from the [releases](https://example.com/releases) page.
-2. Double-click the package and follow the Windows installation prompt.
-3. Allow the installer to run with the displayed AuthentiCode certificate issued to your organisation.
-
-### Using Squirrel auto-updates
-
-1. Download `Setup.exe` from the Squirrel `releases` feed published with each release.
-2. Run the bootstrapper to install SteamBacklogPicker into `%LOCALAPPDATA%\SteamBacklogPicker`.
-3. The app checks the feed at start-up and applies delta updates automatically when telemetry consent permits update checks.
-
-### Package managers
-
-SteamBacklogPicker is published to [Winget](https://learn.microsoft.com/windows/package-manager/winget/) after each release:
-
-```powershell
-winget install Contoso.SteamBacklogPicker
-```
-
-The Winget manifest references the signed MSIX produced by the CI pipeline.
+1. Baixe `Setup.exe` na página de releases do SteamBacklogPicker.
+2. Execute o instalador. O Squirrel instalará o aplicativo em `%LOCALAPPDATA%\SteamBacklogPicker` e criará os atalhos.
+3. As atualizações futuras serão aplicadas automaticamente sempre que um novo release estiver disponível.
 
 ## Functional scope
 
@@ -55,9 +37,7 @@ The Winget manifest references the signed MSIX produced by the CI pipeline.
    ```powershell
    dotnet run --project src/Presentation/SteamBacklogPicker.UI/SteamBacklogPicker.UI.csproj
    ```
-4. Consult [`build/README.md`](build/README.md) for packaging and signing automation.
 
 ## Telemetry and privacy
 
 Telemetry is disabled by default. When a user enables telemetry, only anonymised usage events (such as application start, selection success, and unhandled exceptions) are captured. Logs are written locally under `%LOCALAPPDATA%\SteamBacklogPicker\logs` and can be purged by the user at any time.
-
