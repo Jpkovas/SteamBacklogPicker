@@ -234,12 +234,21 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
             _collectionOptions.Clear();
             _collectionOptions.Add(NoCollectionOption);
 
+            var previousSelection = _selectedCollection;
+
             foreach (var name in normalized)
             {
-                _collectionOptions.Add(name);
+                var option = string.Equals(name, previousSelection, StringComparison.OrdinalIgnoreCase)
+                    ? previousSelection
+                    : name;
+
+                _collectionOptions.Add(option);
             }
 
-            if (!_collectionOptions.Contains(_selectedCollection))
+            var hasSelection = _collectionOptions
+                .Any(option => string.Equals(option, previousSelection, StringComparison.OrdinalIgnoreCase));
+
+            if (!hasSelection)
             {
                 _selectedCollection = NoCollectionOption;
                 OnPropertyChanged(nameof(SelectedCollection));
