@@ -31,6 +31,9 @@ coverage/
 *.opencover.xml
 *.dotCover
 
+# Build tooling and packaging workspace
+build/
+
 # Installer and package artifacts
 *.msix
 *.msixbundle

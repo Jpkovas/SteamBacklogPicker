@@ -11,11 +11,9 @@ SteamBacklogPicker is a Windows desktop application that helps you decide what t
 
 ## Installation
 
-### Using the MSIX installer
-
-1. Download the latest signed `SteamBacklogPicker.msix` from the [releases](https://example.com/releases) page.
-2. Double-click the package and follow the Windows installation prompt.
-3. Allow the installer to run with the displayed AuthentiCode certificate issued to your organisation.
+1. Baixe `Setup.exe` na página de releases do SteamBacklogPicker.
+2. Execute o instalador. O Squirrel instalará o aplicativo em `%LOCALAPPDATA%\SteamBacklogPicker` e criará os atalhos.
+3. As atualizações futuras serão aplicadas automaticamente sempre que um novo release estiver disponível.
 
 ## Functional scope
 
@@ -39,9 +37,7 @@ SteamBacklogPicker is a Windows desktop application that helps you decide what t
    ```powershell
    dotnet run --project src/Presentation/SteamBacklogPicker.UI/SteamBacklogPicker.UI.csproj
    ```
-4. Consult [`build/README.md`](build/README.md) for packaging and signing automation.
 
 ## Telemetry and privacy
 
 Telemetry is disabled by default. When a user enables telemetry, only anonymised usage events (such as application start, selection success, and unhandled exceptions) are captured. Logs are written locally under `%LOCALAPPDATA%\SteamBacklogPicker\logs` and can be purged by the user at any time.
-
