@@ -4,6 +4,20 @@ public sealed class SelectionPreferences
 {
     public SelectionFilters Filters { get; set; } = new();
 
+    public bool ExcludeDeckUnsupported
+    {
+        get
+        {
+            Filters ??= new SelectionFilters();
+            return Filters.ExcludeDeckUnsupported;
+        }
+        set
+        {
+            Filters ??= new SelectionFilters();
+            Filters.ExcludeDeckUnsupported = value;
+        }
+    }
+
     public int? Seed { get; set; }
 
     public int RecentGameExclusionCount { get; set; }

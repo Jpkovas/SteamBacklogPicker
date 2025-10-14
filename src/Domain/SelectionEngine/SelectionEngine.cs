@@ -223,6 +223,11 @@ public sealed class SelectionEngine : ISelectionEngine
                 continue;
             }
 
+            if (filters.ExcludeDeckUnsupported && game.DeckCompatibility == SteamDeckCompatibility.Unsupported)
+            {
+                continue;
+            }
+
             var category = game.ProductCategory;
             if (category == ProductCategory.Unknown)
             {

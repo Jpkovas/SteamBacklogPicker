@@ -359,6 +359,11 @@
                           IsChecked="{Binding Preferences.RequireInstalled, Mode=TwoWay}"
                           AutomationProperties.Name="Filtrar apenas jogos instalados" />
 
+                <CheckBox Content="Excluir incompatíveis com o Steam Deck"
+                          Style="{StaticResource FilterCheckBoxStyle}"
+                          IsChecked="{Binding Preferences.ExcludeDeckUnsupported, Mode=TwoWay}"
+                          AutomationProperties.Name="Excluir jogos não compatíveis com o Steam Deck" />
+
                 <TextBlock Text="TIPOS DE CONTEÚDO"
                            Style="{StaticResource SectionLabelTextStyle}" />
 
