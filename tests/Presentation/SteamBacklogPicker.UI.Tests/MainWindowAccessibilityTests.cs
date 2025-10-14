@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Xml.Linq;
 using FluentAssertions;
+using SteamBacklogPicker.UI.Services;
 using Xunit;
 
 namespace SteamBacklogPicker.UI.Tests;
@@ -61,13 +62,26 @@ public sealed class MainWindowAccessibilityTests
         var document = XDocument.Load(GetMainWindowPath());
         var comboBox = document
             .Descendants(PresentationNamespace + "ComboBox")
-            .FirstOrDefault(element => string.Equals(
-                (string?)element.Attribute(XName.Get("AutomationProperties.Name")),
-                "Selecionar coleção",
-                StringComparison.Ordinal));
+            .FirstOrDefault(element => element.Attribute(XName.Get("AutomationProperties.Name")) is not null);
 
-        comboBox.Should().NotBeNull();
-        comboBox!.Attribute(XName.Get("AutomationProperties.HelpText"))
-            ?.Value.Should().Contain("coleção", "o menu deve orientar o usuário sobre sua função");
+        comboBox.Should().NotBeNull("o menu de seleção de coleção precisa expor um nome acessível");
+
+        comboBox!.Attribute(XName.Get("AutomationProperties.Name"))
+            ?.Value.Should().Be("{DynamicResource Filters_SelectCollection}",
+                "o menu usa recursos dinâmicos para acompanhar a linguagem atual");
+
+        comboBox.Attribute(XName.Get("AutomationProperties.HelpText"))
+            ?.Value.Should().Be("{DynamicResource Filters_SelectCollection_HelpText}",
+                "o menu deve oferecer uma descrição acessível através de recursos dinâmicos");
+
+        var localization = new LocalizationService();
+        localization.SetLanguage("pt-BR");
+
+        localization.GetString("Filters_SelectCollection")
+            .Should().Be("Selecionar coleção", "a tradução portuguesa mantém o nome acessível esperado");
+
+        localization.GetString("Filters_SelectCollection_HelpText")
+            .Should().Be("Escolha uma coleção personalizada para filtrar",
+                "a descrição em português orienta usuários de tecnologia assistiva");
     }
 }

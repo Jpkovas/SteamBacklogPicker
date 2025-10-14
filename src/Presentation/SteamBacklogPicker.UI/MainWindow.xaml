@@ -94,6 +94,45 @@
             <Setter Property="FontSize" Value="18" />
             <Setter Property="Padding" Value="18,12" />
         </Style>
+        <Style x:Key="LanguageButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="52" />
+            <Setter Property="Height" Value="52" />
+            <Setter Property="Padding" Value="10" />
+            <Setter Property="Background" Value="{StaticResource SurfaceAltBrush}" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="BorderBrush" Value="{StaticResource SurfaceBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonRoot"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="12">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonRoot"
+                                        Property="BorderBrush"
+                                        Value="{StaticResource AccentBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonRoot"
+                                        Property="Background"
+                                        Value="{StaticResource SurfaceBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="ButtonRoot" Property="Opacity" Value="0.5" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <Style x:Key="ComboBoxToggleButtonStyle" TargetType="ToggleButton">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
@@ -343,81 +382,86 @@
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
     </Window.Resources>
     <Grid Margin="32">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="360" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <Border Style="{StaticResource CardBorderStyle}"
-                AutomationProperties.Name="Painel de filtros">
+        <Border Grid.Row="0"
+                Style="{StaticResource CardBorderStyle}"
+                AutomationProperties.Name="{DynamicResource Filters_PanelAutomationName}">
             <StackPanel>
-                <TextBlock Text="Filtros"
+                <TextBlock Text="{DynamicResource Filters_Title}"
                            Style="{StaticResource SectionTitleTextStyle}" />
 
-                <CheckBox Content="Somente instalados"
+                <CheckBox Content="{DynamicResource Filters_RequireInstalled}"
                           Style="{StaticResource FilterCheckBoxStyle}"
                           IsChecked="{Binding Preferences.RequireInstalled, Mode=TwoWay}"
-                          AutomationProperties.Name="Filtrar apenas jogos instalados" />
+                          AutomationProperties.Name="{DynamicResource Filters_RequireInstalled}" />
 
-                <CheckBox Content="Excluir incompatíveis com o Steam Deck"
+                <CheckBox Content="{DynamicResource Filters_ExcludeDeckUnsupported}"
                           Style="{StaticResource FilterCheckBoxStyle}"
                           IsChecked="{Binding Preferences.ExcludeDeckUnsupported, Mode=TwoWay}"
-                          AutomationProperties.Name="Excluir jogos não compatíveis com o Steam Deck" />
+                          AutomationProperties.Name="{DynamicResource Filters_ExcludeDeckUnsupported}" />
 
-                <TextBlock Text="TIPOS DE CONTEÚDO"
+                <TextBlock Text="{DynamicResource Filters_ContentTypesLabel}"
                            Style="{StaticResource SectionLabelTextStyle}" />
 
                 <StackPanel>
-                    <CheckBox Content="Jogos"
+                    <CheckBox Content="{DynamicResource Filters_IncludeGames}"
                               Style="{StaticResource FilterCheckBoxStyle}"
                               IsChecked="{Binding Preferences.IncludeGames, Mode=TwoWay}"
-                              AutomationProperties.Name="Incluir jogos" />
-                    <CheckBox Content="Trilhas sonoras"
+                              AutomationProperties.Name="{DynamicResource Filters_IncludeGames}" />
+                    <CheckBox Content="{DynamicResource Filters_IncludeSoundtracks}"
                               Style="{StaticResource FilterCheckBoxStyle}"
                               IsChecked="{Binding Preferences.IncludeSoundtracks, Mode=TwoWay}"
-                              AutomationProperties.Name="Incluir trilhas sonoras" />
-                    <CheckBox Content="Softwares"
+                              AutomationProperties.Name="{DynamicResource Filters_IncludeSoundtracks}" />
+                    <CheckBox Content="{DynamicResource Filters_IncludeSoftware}"
                               Style="{StaticResource FilterCheckBoxStyle}"
                               IsChecked="{Binding Preferences.IncludeSoftware, Mode=TwoWay}"
-                              AutomationProperties.Name="Incluir softwares" />
-                    <CheckBox Content="Ferramentas"
+                              AutomationProperties.Name="{DynamicResource Filters_IncludeSoftware}" />
+                    <CheckBox Content="{DynamicResource Filters_IncludeTools}"
                               Style="{StaticResource FilterCheckBoxStyle}"
                               IsChecked="{Binding Preferences.IncludeTools, Mode=TwoWay}"
-                              AutomationProperties.Name="Incluir ferramentas" />
-                    <CheckBox Content="Vídeos"
+                              AutomationProperties.Name="{DynamicResource Filters_IncludeTools}" />
+                    <CheckBox Content="{DynamicResource Filters_IncludeVideos}"
                               Style="{StaticResource FilterCheckBoxStyle}"
                               IsChecked="{Binding Preferences.IncludeVideos, Mode=TwoWay}"
-                              AutomationProperties.Name="Incluir vídeos" />
-                    <CheckBox Content="Outros conteúdos"
+                              AutomationProperties.Name="{DynamicResource Filters_IncludeVideos}" />
+                    <CheckBox Content="{DynamicResource Filters_IncludeOther}"
                               Style="{StaticResource FilterCheckBoxStyle}"
                               IsChecked="{Binding Preferences.IncludeOther, Mode=TwoWay}"
-                              AutomationProperties.Name="Incluir outros conteúdos" />
+                              AutomationProperties.Name="{DynamicResource Filters_IncludeOther}" />
                 </StackPanel>
 
-                <TextBlock Text="COLEÇÃO"
+                <TextBlock Text="{DynamicResource Filters_CollectionLabel}"
                            Style="{StaticResource SectionLabelTextStyle}" />
 
                 <ComboBox ItemsSource="{Binding Preferences.CollectionOptions}"
                           SelectedItem="{Binding Preferences.SelectedCollection, Mode=TwoWay}"
                           Style="{StaticResource SurfaceComboBoxStyle}"
-                          AutomationProperties.Name="Selecionar coleção"
-                          AutomationProperties.HelpText="Escolha uma coleção personalizada para filtrar" />
+                          AutomationProperties.Name="{DynamicResource Filters_SelectCollection}"
+                          AutomationProperties.HelpText="{DynamicResource Filters_SelectCollection_HelpText}" />
 
-                <Button Content="Atualizar biblioteca"
+                <Button Content="{DynamicResource Filters_RefreshButton}"
                         Style="{StaticResource BaseButtonStyle}"
                         Command="{Binding RefreshCommand}"
                         Margin="0,12,0,0"
                         Height="44"
-                        AutomationProperties.Name="Atualizar biblioteca" />
+                        AutomationProperties.Name="{DynamicResource Filters_RefreshButton_Automation}" />
 
                 <Button x:Name="DrawButton"
-                        Content="Sortear"
+                        Content="{DynamicResource Filters_DrawButton}"
                         Style="{StaticResource PrimaryButtonStyle}"
                         Command="{Binding DrawCommand}"
                         Margin="0,20,0,0"
                         Height="52"
-                        AutomationProperties.Name="Sortear jogo"
-                        AutomationProperties.HelpText="Seleciona um jogo aleatório aplicando os filtros" />
+                        AutomationProperties.Name="{DynamicResource Filters_DrawButton_Automation}"
+                        AutomationProperties.HelpText="{DynamicResource Filters_DrawButton_HelpText}" />
 
                 <TextBlock Text="{Binding StatusMessage}"
                            Margin="0,16,0,0"
@@ -426,11 +470,12 @@
                            AutomationProperties.LiveSetting="Assertive" />
             </StackPanel>
         </Border>
-        <Border Grid.Column="1"
+        <Border Grid.Row="0"
+                Grid.Column="1"
                 Margin="28,0,0,0"
                 Style="{StaticResource CardBorderStyle}"
                 Background="{StaticResource SurfaceAltBrush}"
-                AutomationProperties.Name="Painel de detalhes do jogo">
+                AutomationProperties.Name="{DynamicResource GameDetails_PanelAutomationName}">
             <Border.Resources>
                 <Storyboard x:Key="CoverRevealStoryboard">
                     <DoubleAnimation Storyboard.TargetName="CoverVisualRoot"
@@ -458,14 +503,14 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
                 <StackPanel>
-                    <TextBlock Text="Próximo jogo"
+                    <TextBlock Text="{DynamicResource GameDetails_NextGameTitle}"
                                Style="{StaticResource SectionTitleTextStyle}" />
                     <TextBlock Text="{Binding SelectedGame.Title}"
                                FontSize="20"
                                FontWeight="SemiBold"
                                Margin="0,6,0,0"
                                TextWrapping="Wrap"
-                               AutomationProperties.Name="Título do jogo selecionado" />
+                               AutomationProperties.Name="{DynamicResource GameDetails_SelectedTitleAutomation}" />
                 </StackPanel>
                 <Border Grid.Row="1"
                         Height="360"
@@ -556,7 +601,7 @@
                         <StackPanel x:Name="CoverPlaceholder"
                                     Style="{StaticResource CoverPlaceholderStyle}">
                             <TextBlock x:Name="PlaceholderPrimaryText"
-                                       Text="Nenhum jogo selecionado"
+                                       Text="{DynamicResource GameDetails_NoSelectionTitle}"
                                        FontSize="18"
                                        FontWeight="SemiBold"
                                        TextAlignment="Center">
@@ -572,7 +617,7 @@
                                 </TextBlock.Style>
                             </TextBlock>
                             <TextBlock x:Name="PlaceholderSecondaryText"
-                                       Text="Não encontramos a capa deste jogo ainda."
+                                       Text="{DynamicResource GameDetails_NoCoverSubtitle}"
                                        FontSize="18"
                                        FontWeight="SemiBold"
                                        TextAlignment="Center">
@@ -591,7 +636,7 @@
                                     </Style>
                                 </TextBlock.Style>
                             </TextBlock>
-                            <TextBlock Text="Use o botão Sortear para descobrir o próximo jogo da fila."
+                            <TextBlock Text="{DynamicResource GameDetails_DrawPrompt}"
                                        FontSize="14"
                                        Foreground="{StaticResource MutedForegroundBrush}"
                                        TextAlignment="Center"
@@ -635,7 +680,7 @@
                                         </Path.RenderTransform>
                                     </Path>
                                 </Grid>
-                                <TextBlock Text="Sorteando..."
+                                <TextBlock Text="{DynamicResource Status_Drawing}"
                                            FontSize="16"
                                            FontWeight="SemiBold"
                                            Margin="0,18,0,0"
@@ -648,7 +693,7 @@
                     <TextBlock Text="{Binding SelectedGame.InstallationStatus}"
                                FontSize="16"
                                FontWeight="SemiBold"
-                               AutomationProperties.Name="Estado de instalação do jogo" />
+                               AutomationProperties.Name="{DynamicResource GameDetails_InstallationAutomation}" />
 
                     <Grid Margin="0,12,0,24">
                         <Grid.ColumnDefinitions>
@@ -657,24 +702,24 @@
                         </Grid.ColumnDefinitions>
 
                         <Button Grid.Column="0"
-                                Content="Jogar"
+                                Content="{DynamicResource GameDetails_PlayButton}"
                                 MinHeight="48"
                                 Margin="0,0,8,0"
                                 HorizontalAlignment="Stretch"
                                 Style="{StaticResource BaseButtonStyle}"
                                 Command="{Binding LaunchCommand}"
                                 IsEnabled="{Binding SelectedGame.CanLaunch}"
-                                AutomationProperties.Name="Abrir jogo no Steam" />
+                                AutomationProperties.Name="{DynamicResource GameDetails_PlayButton_Automation}" />
 
                         <Button Grid.Column="1"
-                                Content="Instalar"
+                                Content="{DynamicResource GameDetails_InstallButton}"
                                 MinHeight="48"
                                 Margin="8,0,0,0"
                                 HorizontalAlignment="Stretch"
                                 Style="{StaticResource BaseButtonStyle}"
                                 Command="{Binding InstallCommand}"
                                 IsEnabled="{Binding SelectedGame.CanInstall}"
-                                AutomationProperties.Name="Instalar jogo no Steam" />
+                                AutomationProperties.Name="{DynamicResource GameDetails_InstallButton_Automation}" />
                     </Grid>
                 </StackPanel>
 
@@ -703,5 +748,150 @@
                 </ItemsControl>
             </Grid>
         </Border>
+        <StackPanel Grid.Row="1"
+                    Grid.ColumnSpan="2"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="0,24,0,0">
+            <Button Command="{Binding ChangeLanguageCommand}"
+                    CommandParameter="pt-BR"
+                    ToolTip="{DynamicResource Language_Portuguese}"
+                    AutomationProperties.Name="{DynamicResource Language_Portuguese}">
+                <Button.Style>
+                    <Style TargetType="Button" BasedOn="{StaticResource LanguageButtonStyle}">
+                        <Setter Property="Margin" Value="0" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding CurrentLanguage}" Value="pt-BR">
+                                <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+                                <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+                <Viewbox Width="28"
+                         Height="20"
+                         Stretch="Uniform">
+                    <Grid Width="28"
+                          Height="20"
+                          ClipToBounds="True">
+                        <Rectangle Fill="#009B3A"
+                                   RadiusX="2"
+                                   RadiusY="2" />
+                        <Polygon Points="14,2 24,10 14,18 4,10"
+                                 Fill="#FFDF00" />
+                        <Ellipse Width="10"
+                                 Height="10"
+                                 Fill="#002776"
+                                 HorizontalAlignment="Center"
+                                 VerticalAlignment="Center" />
+                        <Path Data="M 8 11 A 5 5 0 0 1 20 9"
+                              Stroke="White"
+                              StrokeThickness="0.8"
+                              StrokeStartLineCap="Round"
+                              StrokeEndLineCap="Round"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"
+                              Stretch="None" />
+                    </Grid>
+                </Viewbox>
+            </Button>
+            <Button Command="{Binding ChangeLanguageCommand}"
+                    CommandParameter="en-US"
+                    ToolTip="{DynamicResource Language_English}"
+                    AutomationProperties.Name="{DynamicResource Language_English}">
+                <Button.Style>
+                    <Style TargetType="Button" BasedOn="{StaticResource LanguageButtonStyle}">
+                        <Setter Property="Margin" Value="12,0,0,0" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding CurrentLanguage}" Value="en-US">
+                                <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+                                <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+                <Viewbox Width="28"
+                         Height="20"
+                         Stretch="Uniform">
+                    <Grid Width="28"
+                          Height="20"
+                          ClipToBounds="True">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Rectangle Grid.Row="0" Fill="#B22234" />
+                        <Rectangle Grid.Row="1" Fill="White" />
+                        <Rectangle Grid.Row="2" Fill="#B22234" />
+                        <Rectangle Grid.Row="3" Fill="White" />
+                        <Rectangle Grid.Row="4" Fill="#B22234" />
+                        <Rectangle Grid.Row="5" Fill="White" />
+                        <Rectangle Grid.Row="6" Fill="#B22234" />
+                        <Rectangle Grid.Row="7" Fill="White" />
+                        <Rectangle Grid.Row="8" Fill="#B22234" />
+                        <Rectangle Grid.Row="9" Fill="White" />
+                        <Rectangle Grid.Row="10" Fill="#B22234" />
+                        <Rectangle Grid.Row="11" Fill="White" />
+                        <Rectangle Grid.Row="12" Fill="#B22234" />
+                        <Rectangle Grid.Row="0"
+                                   Grid.RowSpan="7"
+                                   Fill="#3C3B6E"
+                                   HorizontalAlignment="Left"
+                                   Width="12" />
+                        <UniformGrid Grid.Row="0"
+                                     Grid.RowSpan="7"
+                                     Columns="6"
+                                     Rows="5"
+                                     Width="10"
+                                     Height="8"
+                                     HorizontalAlignment="Left"
+                                     VerticalAlignment="Top"
+                                     Margin="1.2,1.2,0,0">
+                            <Ellipse Fill="White" Margin="0.2" />
+                            <Ellipse Fill="White" Margin="0.2" />
+                            <Ellipse Fill="White" Margin="0.2" />
+                            <Ellipse Fill="White" Margin="0.2" />
+                            <Ellipse Fill="White" Margin="0.2" />
+                            <Ellipse Fill="White" Margin="0.2" />
+                            <Ellipse Fill="White" Margin="0.2" />
+                            <Ellipse Fill="White" Margin="0.2" />
+                            <Ellipse Fill="White" Margin="0.2" />
+                            <Ellipse Fill="White" Margin="0.2" />
+                            <Ellipse Fill="White" Margin="0.2" />
+                            <Ellipse Fill="White" Margin="0.2" />
+                            <Ellipse Fill="White" Margin="0.2" />
+                            <Ellipse Fill="White" Margin="0.2" />
+                            <Ellipse Fill="White" Margin="0.2" />
+                            <Ellipse Fill="White" Margin="0.2" />
+                            <Ellipse Fill="White" Margin="0.2" />
+                            <Ellipse Fill="White" Margin="0.2" />
+                            <Ellipse Fill="White" Margin="0.2" />
+                            <Ellipse Fill="White" Margin="0.2" />
+                            <Ellipse Fill="White" Margin="0.2" />
+                            <Ellipse Fill="White" Margin="0.2" />
+                            <Ellipse Fill="White" Margin="0.2" />
+                            <Ellipse Fill="White" Margin="0.2" />
+                            <Ellipse Fill="White" Margin="0.2" />
+                            <Ellipse Fill="White" Margin="0.2" />
+                            <Ellipse Fill="White" Margin="0.2" />
+                            <Ellipse Fill="White" Margin="0.2" />
+                            <Ellipse Fill="White" Margin="0.2" />
+                            <Ellipse Fill="White" Margin="0.2" />
+                        </UniformGrid>
+                    </Grid>
+                </Viewbox>
+            </Button>
+        </StackPanel>
     </Grid>
 </Window>

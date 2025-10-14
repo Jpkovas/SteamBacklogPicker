@@ -111,6 +111,7 @@ public partial class App : Application
         services.AddSingleton<ISelectionEngine>(_ => new SelectionEngine());
         services.AddSingleton<IGameLibraryService, SteamGameLibraryService>();
         services.AddSingleton<IGameArtLocator, SteamGameArtLocator>();
+        services.AddSingleton<ILocalizationService, LocalizationService>();
         services.AddSingleton<IToastNotificationService, ToastNotificationService>();
         services.AddSingleton<IAppUpdateService, SquirrelUpdateService>();
         services.AddSingleton<MainViewModel>();
