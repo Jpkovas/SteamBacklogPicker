@@ -142,10 +142,12 @@ public sealed class SelectionEngine : ISelectionEngine
 
     private void SaveSettings()
     {
-        var directory = Path.GetDirectoryName(_settingsPath);
+        var (destinationPath, isSymbolicLink) = GetSettingsDestinationPath();
+
+        var directory = Path.GetDirectoryName(destinationPath);
         if (string.IsNullOrEmpty(directory))
         {
-            directory = Path.GetDirectoryName(Path.GetFullPath(_settingsPath));
+            directory = Path.GetDirectoryName(Path.GetFullPath(destinationPath));
         }
 
         if (!string.IsNullOrEmpty(directory))
@@ -165,7 +167,21 @@ public sealed class SelectionEngine : ISelectionEngine
 
             try
             {
-                File.Move(tempPath, _settingsPath, overwrite: true);
+                if (isSymbolicLink)
+                {
+                    if (File.Exists(destinationPath))
+                    {
+                        File.Replace(tempPath, destinationPath, destinationBackupFileName: null, ignoreMetadataErrors: true);
+                    }
+                    else
+                    {
+                        File.Move(tempPath, destinationPath, overwrite: true);
+                    }
+                }
+                else
+                {
+                    File.Move(tempPath, destinationPath, overwrite: true);
+                }
             }
             catch
             {
@@ -178,6 +194,44 @@ public sealed class SelectionEngine : ISelectionEngine
             TryDeleteTempFile(tempPath);
             throw;
         }
+    }
+
+    private (string DestinationPath, bool IsSymbolicLink) GetSettingsDestinationPath()
+    {
+        try
+        {
+            if (File.Exists(_settingsPath))
+            {
+                var attributes = File.GetAttributes(_settingsPath);
+                if ((attributes & FileAttributes.ReparsePoint) == FileAttributes.ReparsePoint)
+                {
+                    var targetInfo = File.ResolveLinkTarget(_settingsPath, returnFinalTarget: true);
+                    if (targetInfo is FileInfo fileTarget)
+                    {
+                        return (fileTarget.FullName, true);
+                    }
+
+                    if (targetInfo is DirectoryInfo directoryTarget)
+                    {
+                        var fileName = Path.GetFileName(_settingsPath);
+                        if (!string.IsNullOrEmpty(fileName))
+                        {
+                            return (Path.Combine(directoryTarget.FullName, fileName), true);
+                        }
+                    }
+                }
+            }
+        }
+        catch (IOException)
+        {
+            // Fall back to writing through the link if resolution fails.
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Ignore and fall back to the original path.
+        }
+
+        return (_settingsPath, false);
     }
 
     private static void TryDeleteTempFile(string tempPath)
