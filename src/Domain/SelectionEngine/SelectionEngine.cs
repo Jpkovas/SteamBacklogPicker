@@ -149,8 +149,36 @@ public sealed class SelectionEngine : ISelectionEngine
             Directory.CreateDirectory(directory);
         }
 
-        using var stream = File.Create(_settingsPath);
-        JsonSerializer.Serialize(stream, _state, SerializerOptions);
+        var tempPath = string.IsNullOrEmpty(directory)
+            ? Path.GetRandomFileName()
+            : Path.Combine(directory, Path.GetRandomFileName());
+
+        using (var stream = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 4096, FileOptions.WriteThrough))
+        {
+            JsonSerializer.Serialize(stream, _state, SerializerOptions);
+            stream.Flush(flushToDisk: true);
+        }
+
+        try
+        {
+            File.Move(tempPath, _settingsPath, overwrite: true);
+        }
+        catch
+        {
+            try
+            {
+                if (File.Exists(tempPath))
+                {
+                    File.Delete(tempPath);
+                }
+            }
+            catch
+            {
+                // Swallow cleanup failures to preserve the original exception.
+            }
+
+            throw;
+        }
     }
 
     private static string BuildDefaultSettingsPath()

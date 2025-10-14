@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Domain;
 using Domain.Selection;
@@ -422,6 +423,46 @@ public sealed class SelectionEngineTests
         }
     }
 
+    [Fact]
+    public void UpdatePreferences_ShouldPreserveExistingSettings_WhenSaveFailsDueToReadOnlyDirectory()
+    {
+        var settingsPath = CreateSettingsPath();
+        try
+        {
+            var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
+            engine.UpdatePreferences(new SelectionPreferences
+            {
+                HistoryLimit = 10,
+                RecentGameExclusionCount = 0,
+            });
+
+            var originalContents = File.ReadAllText(settingsPath);
+            var directory = Path.GetDirectoryName(settingsPath);
+
+            directory.Should().NotBeNullOrEmpty();
+
+            using (MakeDirectoryReadOnly(directory!))
+            {
+                Action act = () => engine.UpdatePreferences(new SelectionPreferences
+                {
+                    HistoryLimit = 5,
+                    RecentGameExclusionCount = 0,
+                });
+
+                act.Should().Throw<Exception>().Which.Should().Match<Exception>(ex => ex is IOException or UnauthorizedAccessException);
+            }
+
+            File.ReadAllText(settingsPath).Should().Be(originalContents);
+
+            var resumedEngine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
+            resumedEngine.GetPreferences().HistoryLimit.Should().Be(10);
+        }
+        finally
+        {
+            Cleanup(settingsPath);
+        }
+    }
+
     private static IReadOnlyList<uint> RunSelectionSequence(IEnumerable<GameEntry> games, SelectionPreferences preferences, string settingsPath, int picks)
     {
         var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
@@ -463,6 +504,29 @@ public sealed class SelectionEngineTests
         return Path.Combine(directory, "settings.json");
     }
 
+    private static IDisposable MakeDirectoryReadOnly(string directory)
+    {
+        if (string.IsNullOrEmpty(directory))
+        {
+            return new RevertAction(() => { });
+        }
+
+        if (OperatingSystem.IsWindows())
+        {
+            var info = new DirectoryInfo(directory);
+            var previousAttributes = info.Attributes;
+            info.Attributes = previousAttributes | FileAttributes.ReadOnly;
+
+            return new RevertAction(() => info.Attributes = previousAttributes);
+        }
+
+        var previousMode = File.GetUnixFileMode(directory);
+        var readOnlyMode = previousMode & ~(UnixFileMode.UserWrite | UnixFileMode.GroupWrite | UnixFileMode.OtherWrite);
+        File.SetUnixFileMode(directory, readOnlyMode);
+
+        return new RevertAction(() => File.SetUnixFileMode(directory, previousMode));
+    }
+
     private static void Cleanup(string settingsPath)
     {
         var directory = Path.GetDirectoryName(settingsPath);
@@ -476,6 +540,28 @@ public sealed class SelectionEngineTests
             {
                 // Ignored: best-effort cleanup.
             }
+        }
+    }
+
+    private sealed class RevertAction : IDisposable
+    {
+        private readonly Action _onDispose;
+        private bool _disposed;
+
+        public RevertAction(Action onDispose)
+        {
+            _onDispose = onDispose;
+        }
+
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            _onDispose();
         }
     }
 }
