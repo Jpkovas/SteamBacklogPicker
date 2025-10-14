@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Domain;
 using Domain.Selection;
 using FluentAssertions;
+using SteamBacklogPicker.UI.Services;
 using SteamBacklogPicker.UI.ViewModels;
 using Xunit;
 
@@ -22,7 +23,8 @@ public sealed class SelectionPreferencesViewModelTests
         };
 
         var engine = new FakeSelectionEngine(initialPreferences);
-        var viewModel = new SelectionPreferencesViewModel(engine);
+        var localization = new FakeLocalizationService();
+        var viewModel = new SelectionPreferencesViewModel(engine, localization);
 
         viewModel.UpdateCollections(new[] { "Jogáveis no Deck", "Multijogador" });
 
@@ -40,7 +42,8 @@ public sealed class SelectionPreferencesViewModelTests
     public void UpdateCollections_ShouldKeepExistingSelectionWhenAvailable()
     {
         var engine = new FakeSelectionEngine(new SelectionPreferences());
-        var viewModel = new SelectionPreferencesViewModel(engine);
+        var localization = new FakeLocalizationService();
+        var viewModel = new SelectionPreferencesViewModel(engine, localization);
         viewModel.UpdateCollections(new[] { "VR", "Favoritos" });
 
         viewModel.SelectedCollection = "VR";
@@ -64,7 +67,8 @@ public sealed class SelectionPreferencesViewModelTests
         };
 
         var engine = new FakeSelectionEngine(initialPreferences);
-        var viewModel = new SelectionPreferencesViewModel(engine);
+        var localization = new FakeLocalizationService();
+        var viewModel = new SelectionPreferencesViewModel(engine, localization);
 
         viewModel.ExcludeDeckUnsupported = true;
         engine.LastUpdatedPreferences.Filters.ExcludeDeckUnsupported.Should().BeTrue();
@@ -104,5 +108,30 @@ public sealed class SelectionPreferencesViewModelTests
         public GameEntry PickNext(IEnumerable<GameEntry> games) => throw new NotSupportedException();
 
         public IReadOnlyList<GameEntry> FilterGames(IEnumerable<GameEntry> games) => throw new NotSupportedException();
+    }
+
+    private sealed class FakeLocalizationService : ILocalizationService
+    {
+        public event EventHandler? LanguageChanged;
+
+        public string CurrentLanguage { get; private set; } = "pt-BR";
+
+        public IReadOnlyList<string> SupportedLanguages { get; } = new[] { "en-US", "pt-BR" };
+
+        public void SetLanguage(string languageCode)
+        {
+            CurrentLanguage = languageCode;
+            LanguageChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        public string GetString(string key) => key switch
+        {
+            "Filters_NoCollection" => "Nenhuma coleção",
+            _ => key,
+        };
+
+        public string GetString(string key, params object[] arguments) => string.Format(GetString(key), arguments);
+
+        public string FormatGameCount(int count) => count.ToString();
     }
 }
