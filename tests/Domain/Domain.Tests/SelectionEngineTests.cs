@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Domain;
 using Domain.Selection;
@@ -348,6 +349,42 @@ public sealed class SelectionEngineTests
         }
     }
 
+    [Fact]
+    public void UpdatePreferences_ShouldPreserveExistingSettings_WhenSavingFails()
+    {
+        var settingsPath = CreateSettingsPath();
+        try
+        {
+            var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
+            engine.UpdatePreferences(new SelectionPreferences
+            {
+                HistoryLimit = 3,
+            });
+
+            var originalContent = File.ReadAllText(settingsPath);
+            var directory = Path.GetDirectoryName(settingsPath)!;
+
+            using (MakeDirectoryReadOnly(directory))
+            {
+                Action act = () => engine.UpdatePreferences(new SelectionPreferences
+                {
+                    HistoryLimit = 5,
+                });
+
+                act.Should().Throw<Exception>().Where(exception => exception is UnauthorizedAccessException or IOException);
+
+                File.ReadAllText(settingsPath).Should().Be(originalContent);
+                Directory.EnumerateFiles(directory)
+                    .Should()
+                    .OnlyContain(file => Path.GetFileName(file) == Path.GetFileName(settingsPath));
+            }
+        }
+        finally
+        {
+            Cleanup(settingsPath);
+        }
+    }
+
     private static IReadOnlyList<uint> RunSelectionSequence(IEnumerable<GameEntry> games, SelectionPreferences preferences, string settingsPath, int picks)
     {
         var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
@@ -360,6 +397,24 @@ public sealed class SelectionEngineTests
         }
 
         return results;
+    }
+
+    private static IDisposable MakeDirectoryReadOnly(string directory)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            var info = new DirectoryInfo(directory);
+            var originalAttributes = info.Attributes;
+            info.Attributes |= FileAttributes.ReadOnly;
+
+            return new RevertDirectoryPermission(() => info.Attributes = originalAttributes);
+        }
+
+        var originalMode = Directory.GetUnixFileMode(directory);
+        var readonlyMode = originalMode & ~(UnixFileMode.UserWrite | UnixFileMode.GroupWrite | UnixFileMode.OtherWrite);
+        Directory.SetUnixFileMode(directory, readonlyMode);
+
+        return new RevertDirectoryPermission(() => Directory.SetUnixFileMode(directory, originalMode));
     }
 
     private static IReadOnlyList<uint> ComputeUniformSequence(int seed, IReadOnlyList<GameEntry> games, int picks)
@@ -402,6 +457,32 @@ public sealed class SelectionEngineTests
             {
                 // Ignored: best-effort cleanup.
             }
+            catch (UnauthorizedAccessException)
+            {
+                // Ignored: best-effort cleanup.
+            }
+        }
+    }
+
+    private sealed class RevertDirectoryPermission : IDisposable
+    {
+        private readonly Action _revert;
+        private bool _disposed;
+
+        public RevertDirectoryPermission(Action revert)
+        {
+            _revert = revert;
+        }
+
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _revert();
+            _disposed = true;
         }
     }
 }

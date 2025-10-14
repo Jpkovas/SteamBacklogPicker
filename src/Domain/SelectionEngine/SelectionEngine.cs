@@ -143,13 +143,56 @@ public sealed class SelectionEngine : ISelectionEngine
     private void SaveSettings()
     {
         var directory = Path.GetDirectoryName(_settingsPath);
+        if (string.IsNullOrEmpty(directory))
+        {
+            directory = Path.GetDirectoryName(Path.GetFullPath(_settingsPath));
+        }
+
         if (!string.IsNullOrEmpty(directory))
         {
             Directory.CreateDirectory(directory);
         }
 
-        using var stream = File.Create(_settingsPath);
-        JsonSerializer.Serialize(stream, _state, SerializerOptions);
+        var tempPath = Path.Combine(directory ?? Directory.GetCurrentDirectory(), Path.GetRandomFileName());
+
+        try
+        {
+            using (var stream = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 4096, FileOptions.WriteThrough))
+            {
+                JsonSerializer.Serialize(stream, _state, SerializerOptions);
+                stream.Flush(flushToDisk: true);
+            }
+
+            try
+            {
+                File.Move(tempPath, _settingsPath, overwrite: true);
+            }
+            catch
+            {
+                TryDeleteTempFile(tempPath);
+                throw;
+            }
+        }
+        catch
+        {
+            TryDeleteTempFile(tempPath);
+            throw;
+        }
+    }
+
+    private static void TryDeleteTempFile(string tempPath)
+    {
+        try
+        {
+            if (File.Exists(tempPath))
+            {
+                File.Delete(tempPath);
+            }
+        }
+        catch
+        {
+            // Suppress cleanup failures.
+        }
     }
 
     private static string BuildDefaultSettingsPath()
