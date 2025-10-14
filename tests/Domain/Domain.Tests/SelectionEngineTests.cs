@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.Versioning;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using Domain;
@@ -451,7 +452,8 @@ public sealed class SelectionEngineTests
                     RecentGameExclusionCount = 0,
                 });
 
-                act.Should().Throw<Exception>().Which.Should().Match<Exception>(ex => ex is IOException or UnauthorizedAccessException);
+                var exception = act.Should().Throw<Exception>().Which;
+                exception.Should().BeAssignableTo<IOException>().Or.BeAssignableTo<UnauthorizedAccessException>();
             }
 
             File.ReadAllText(settingsPath).Should().Be(originalContents);
@@ -515,29 +517,41 @@ public sealed class SelectionEngineTests
 
         if (OperatingSystem.IsWindows())
         {
-            var info = new DirectoryInfo(directory);
-            var previousSecurityDescriptor = info.GetAccessControl().GetSecurityDescriptorBinaryForm();
-
-            var security = info.GetAccessControl();
-            var denyRule = new FileSystemAccessRule(
-                new SecurityIdentifier(WellKnownSidType.WorldSid, domainSid: null),
-                FileSystemRights.Write | FileSystemRights.CreateFiles | FileSystemRights.CreateDirectories |
-                FileSystemRights.Modify | FileSystemRights.Delete | FileSystemRights.DeleteSubdirectoriesAndFiles,
-                InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
-                PropagationFlags.None,
-                AccessControlType.Deny);
-
-            security.AddAccessRule(denyRule);
-            info.SetAccessControl(security);
-
-            return new RevertAction(() =>
-            {
-                var revertSecurity = new DirectorySecurity();
-                revertSecurity.SetSecurityDescriptorBinaryForm(previousSecurityDescriptor);
-                info.SetAccessControl(revertSecurity);
-            });
+            return MakeDirectoryReadOnlyWindows(new DirectoryInfo(directory));
         }
 
+        if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD())
+        {
+            return MakeDirectoryReadOnlyUnix(directory);
+        }
+
+        return new RevertAction(() => { });
+    }
+
+    [SupportedOSPlatform("windows")]
+    private static IDisposable MakeDirectoryReadOnlyWindows(DirectoryInfo directory)
+    {
+        var originalSecurity = directory.GetAccessControl();
+        var updatedSecurity = new DirectorySecurity();
+        updatedSecurity.SetSecurityDescriptorBinaryForm(originalSecurity.GetSecurityDescriptorBinaryForm());
+
+        var denyRule = new FileSystemAccessRule(
+            new SecurityIdentifier(WellKnownSidType.WorldSid, domainSid: null),
+            FileSystemRights.Write | FileSystemRights.CreateFiles | FileSystemRights.CreateDirectories |
+            FileSystemRights.Modify | FileSystemRights.Delete | FileSystemRights.DeleteSubdirectoriesAndFiles,
+            InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
+            PropagationFlags.None,
+            AccessControlType.Deny);
+
+        updatedSecurity.AddAccessRule(denyRule);
+        directory.SetAccessControl(updatedSecurity);
+
+        return new RevertAction(() => directory.SetAccessControl(originalSecurity));
+    }
+
+    [UnsupportedOSPlatform("windows")]
+    private static IDisposable MakeDirectoryReadOnlyUnix(string directory)
+    {
         var previousMode = File.GetUnixFileMode(directory);
         var readOnlyMode = previousMode & ~(UnixFileMode.UserWrite | UnixFileMode.GroupWrite | UnixFileMode.OtherWrite);
         File.SetUnixFileMode(directory, readOnlyMode);
