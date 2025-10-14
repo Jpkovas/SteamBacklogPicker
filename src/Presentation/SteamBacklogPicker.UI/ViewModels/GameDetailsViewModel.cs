@@ -2,38 +2,57 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Domain;
+using SteamBacklogPicker.UI.Services;
 
 namespace SteamBacklogPicker.UI.ViewModels;
 
 public sealed class GameDetailsViewModel : ObservableObject
 {
+    private readonly ILocalizationService _localizationService;
+    private readonly bool _isPlaceholder;
+    private string _title;
+
     private GameDetailsViewModel(
+        ILocalizationService localizationService,
         uint appId,
         string title,
         string? coverImagePath,
         InstallState installState,
         OwnershipType ownershipType,
-        IReadOnlyList<string> tags)
+        IReadOnlyList<string> tags,
+        bool isPlaceholder)
     {
+        _localizationService = localizationService ?? throw new ArgumentNullException(nameof(localizationService));
         AppId = appId;
-        Title = title;
+        _title = title;
         CoverImagePath = coverImagePath;
         InstallState = installState;
         OwnershipType = ownershipType;
         Tags = tags;
+        _isPlaceholder = isPlaceholder;
     }
 
-    public static GameDetailsViewModel Empty { get; } = new(
-        0,
-        "Nenhum jogo selecionado",
-        null,
-        InstallState.Unknown,
-        OwnershipType.Unknown,
-        Array.Empty<string>());
+    public static GameDetailsViewModel CreateEmpty(ILocalizationService localizationService)
+    {
+        ArgumentNullException.ThrowIfNull(localizationService);
+        return new GameDetailsViewModel(
+            localizationService,
+            0,
+            localizationService.GetString("GameDetails_NoSelectionTitle"),
+            null,
+            InstallState.Unknown,
+            OwnershipType.Unknown,
+            Array.Empty<string>(),
+            true);
+    }
 
     public uint AppId { get; }
 
-    public string Title { get; }
+    public string Title
+    {
+        get => _title;
+        private set => SetProperty(ref _title, value);
+    }
 
     public string? CoverImagePath { get; }
 
@@ -49,26 +68,39 @@ public sealed class GameDetailsViewModel : ObservableObject
 
     public string InstallationStatus => InstallState switch
     {
-        InstallState.Installed => "Instalado",
+        InstallState.Installed => _localizationService.GetString("GameDetails_InstallState_Installed"),
         InstallState.Available => OwnershipType == OwnershipType.FamilyShared
-            ? "Disponível via compartilhamento familiar"
-            : "Disponível para instalar",
-        InstallState.Shared => "Disponível via compartilhamento familiar",
-        InstallState.Unknown => "Estado de instalação desconhecido",
-        _ => "Estado de instalação desconhecido",
+            ? _localizationService.GetString("GameDetails_InstallState_FamilySharing")
+            : _localizationService.GetString("GameDetails_InstallState_Available"),
+        InstallState.Shared => _localizationService.GetString("GameDetails_InstallState_FamilySharing"),
+        InstallState.Unknown => _localizationService.GetString("GameDetails_InstallState_Unknown"),
+        _ => _localizationService.GetString("GameDetails_InstallState_Unknown"),
     };
 
-    public static GameDetailsViewModel FromGame(GameEntry game, string? coverPath)
+    public void RefreshLocalization()
+    {
+        if (_isPlaceholder)
+        {
+            Title = _localizationService.GetString("GameDetails_NoSelectionTitle");
+        }
+
+        OnPropertyChanged(nameof(InstallationStatus));
+    }
+
+    public static GameDetailsViewModel FromGame(GameEntry game, string? coverPath, ILocalizationService localizationService)
     {
         ArgumentNullException.ThrowIfNull(game);
+        ArgumentNullException.ThrowIfNull(localizationService);
         var tags = game.Tags?.Where(tag => !string.IsNullOrWhiteSpace(tag)).Distinct(StringComparer.OrdinalIgnoreCase).ToArray()
                    ?? Array.Empty<string>();
         return new GameDetailsViewModel(
+            localizationService,
             game.AppId,
             game.Title,
             coverPath,
             game.InstallState,
             game.OwnershipType,
-            tags);
+            tags,
+            false);
     }
 }

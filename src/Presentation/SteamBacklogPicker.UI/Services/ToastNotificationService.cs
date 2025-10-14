@@ -7,6 +7,13 @@ namespace SteamBacklogPicker.UI.Services;
 
 public sealed class ToastNotificationService : IToastNotificationService
 {
+    private readonly ILocalizationService _localizationService;
+
+    public ToastNotificationService(ILocalizationService localizationService)
+    {
+        _localizationService = localizationService ?? throw new ArgumentNullException(nameof(localizationService));
+    }
+
     public void ShowGameSelected(GameEntry game, string? imagePath)
     {
         ArgumentNullException.ThrowIfNull(game);
@@ -14,7 +21,7 @@ public sealed class ToastNotificationService : IToastNotificationService
         try
         {
             var builder = new ToastContentBuilder()
-                .AddText("Jogo sorteado!")
+                .AddText(_localizationService.GetString("Notifications_GameDrawn"))
                 .AddText(game.Title);
 
             if (!string.IsNullOrWhiteSpace(imagePath) &&

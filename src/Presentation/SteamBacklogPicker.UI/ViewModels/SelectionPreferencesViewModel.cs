@@ -4,14 +4,14 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using Domain;
 using Domain.Selection;
+using SteamBacklogPicker.UI.Services;
 
 namespace SteamBacklogPicker.UI.ViewModels;
 
 public sealed class SelectionPreferencesViewModel : ObservableObject
 {
-    private const string NoCollectionOption = "Nenhuma coleção";
-
     private readonly ISelectionEngine _selectionEngine;
+    private readonly ILocalizationService _localizationService;
     private bool _requireInstalled;
     private bool _excludeDeckUnsupported;
     private bool _includeGames = true;
@@ -21,12 +21,18 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
     private bool _includeVideos;
     private bool _includeOther;
     private bool _isHydrating;
-    private readonly ObservableCollection<string> _collectionOptions = new() { NoCollectionOption };
-    private string _selectedCollection = NoCollectionOption;
+    private readonly ObservableCollection<string> _collectionOptions = new();
+    private string _noCollectionOption = string.Empty;
+    private string _selectedCollection = string.Empty;
 
-    public SelectionPreferencesViewModel(ISelectionEngine selectionEngine)
+    public SelectionPreferencesViewModel(ISelectionEngine selectionEngine, ILocalizationService localizationService)
     {
         _selectionEngine = selectionEngine ?? throw new ArgumentNullException(nameof(selectionEngine));
+        _localizationService = localizationService ?? throw new ArgumentNullException(nameof(localizationService));
+        _localizationService.LanguageChanged += OnLanguageChanged;
+
+        UpdateNoCollectionOption();
+
         var preferences = _selectionEngine.GetPreferences();
         Apply(preferences);
     }
@@ -136,10 +142,16 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
         get => _selectedCollection;
         set
         {
-            var desired = string.IsNullOrWhiteSpace(value) ? NoCollectionOption : value;
+            var noCollection = _noCollectionOption;
+            var desired = string.IsNullOrWhiteSpace(value) ? noCollection : value;
+            if (string.Equals(desired, noCollection, StringComparison.OrdinalIgnoreCase))
+            {
+                desired = noCollection;
+            }
+
             if (SetProperty(ref _selectedCollection, desired) && !_isHydrating)
             {
-                UpdatePreferences(p => p.Filters.RequiredCollection = desired == NoCollectionOption ? null : desired);
+                UpdatePreferences(p => p.Filters.RequiredCollection = desired == noCollection ? null : desired);
             }
         }
     }
@@ -169,14 +181,61 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
                 _collectionOptions.Add(requiredCollection);
             }
 
-             SelectedCollection = string.IsNullOrWhiteSpace(requiredCollection)
-                 ? NoCollectionOption
-                 : requiredCollection;
+            SelectedCollection = string.IsNullOrWhiteSpace(requiredCollection)
+                ? _noCollectionOption
+                : requiredCollection;
         }
         finally
         {
             _isHydrating = false;
         }
+    }
+
+    public void UpdateCollections(IEnumerable<string> collections)
+    {
+        ArgumentNullException.ThrowIfNull(collections);
+
+        var normalized = collections
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Select(name => name.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(name => name, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+
+        _isHydrating = true;
+        try
+        {
+            _collectionOptions.Clear();
+            _collectionOptions.Add(_noCollectionOption);
+
+            foreach (var name in normalized)
+            {
+                _collectionOptions.Add(name);
+            }
+
+            var matchingSelection = _collectionOptions
+                .FirstOrDefault(option => string.Equals(option, _selectedCollection, StringComparison.OrdinalIgnoreCase));
+
+            if (matchingSelection is null)
+            {
+                _selectedCollection = _noCollectionOption;
+                OnPropertyChanged(nameof(SelectedCollection));
+            }
+            else if (!string.Equals(matchingSelection, _selectedCollection, StringComparison.Ordinal))
+            {
+                _selectedCollection = matchingSelection;
+                OnPropertyChanged(nameof(SelectedCollection));
+            }
+        }
+        finally
+        {
+            _isHydrating = false;
+        }
+    }
+
+    public void RefreshLocalization()
+    {
+        UpdateNoCollectionOption();
     }
 
     private void UpdatePreferences(Action<SelectionPreferences> updater)
@@ -232,45 +291,34 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
         return categories;
     }
 
-    public void UpdateCollections(IEnumerable<string> collections)
+    private void OnLanguageChanged(object? sender, EventArgs e)
     {
-        ArgumentNullException.ThrowIfNull(collections);
+        RefreshLocalization();
+    }
 
-        var normalized = collections
-            .Where(name => !string.IsNullOrWhiteSpace(name))
-            .Select(name => name.Trim())
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(name => name, StringComparer.CurrentCultureIgnoreCase)
-            .ToList();
+    private void UpdateNoCollectionOption()
+    {
+        var previousNoCollection = _noCollectionOption;
+        var previousSelection = _selectedCollection;
 
-        _isHydrating = true;
-        try
+        _noCollectionOption = _localizationService.GetString("Filters_NoCollection");
+
+        var isNoneSelected = string.IsNullOrWhiteSpace(previousSelection) ||
+                             string.Equals(previousSelection, previousNoCollection, StringComparison.OrdinalIgnoreCase);
+
+        if (_collectionOptions.Count == 0)
         {
-            _collectionOptions.Clear();
-            _collectionOptions.Add(NoCollectionOption);
-
-            foreach (var name in normalized)
-            {
-                _collectionOptions.Add(name);
-            }
-
-            var matchingSelection = _collectionOptions
-                .FirstOrDefault(option => string.Equals(option, _selectedCollection, StringComparison.OrdinalIgnoreCase));
-
-            if (matchingSelection is null)
-            {
-                _selectedCollection = NoCollectionOption;
-                OnPropertyChanged(nameof(SelectedCollection));
-            }
-            else if (!string.Equals(matchingSelection, _selectedCollection, StringComparison.Ordinal))
-            {
-                _selectedCollection = matchingSelection;
-                OnPropertyChanged(nameof(SelectedCollection));
-            }
+            _collectionOptions.Add(_noCollectionOption);
         }
-        finally
+        else
         {
-            _isHydrating = false;
+            _collectionOptions[0] = _noCollectionOption;
+        }
+
+        if (isNoneSelected)
+        {
+            _selectedCollection = _noCollectionOption;
+            OnPropertyChanged(nameof(SelectedCollection));
         }
     }
 }

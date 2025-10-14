@@ -16,29 +16,43 @@ public sealed class MainViewModel : ObservableObject
     private readonly IGameLibraryService _libraryService;
     private readonly IGameArtLocator _artLocator;
     private readonly IToastNotificationService _toastNotificationService;
+    private readonly ILocalizationService _localizationService;
     private readonly List<GameEntry> _library = new();
+    private readonly GameDetailsViewModel _emptyGame;
     private int _eligibleGameCount;
-    private GameDetailsViewModel _selectedGame = GameDetailsViewModel.Empty;
+    private GameDetailsViewModel _selectedGame;
     private bool _isDrawing;
+    private Func<ILocalizationService, string>? _statusFactory;
+    private string _statusMessage = string.Empty;
 
     public MainViewModel(
         ISelectionEngine selectionEngine,
         IGameLibraryService libraryService,
         IGameArtLocator artLocator,
-        IToastNotificationService toastNotificationService)
+        IToastNotificationService toastNotificationService,
+        ILocalizationService localizationService)
     {
         _selectionEngine = selectionEngine ?? throw new ArgumentNullException(nameof(selectionEngine));
         _libraryService = libraryService ?? throw new ArgumentNullException(nameof(libraryService));
         _artLocator = artLocator ?? throw new ArgumentNullException(nameof(artLocator));
         _toastNotificationService = toastNotificationService ?? throw new ArgumentNullException(nameof(toastNotificationService));
+        _localizationService = localizationService ?? throw new ArgumentNullException(nameof(localizationService));
 
-        Preferences = new SelectionPreferencesViewModel(_selectionEngine);
+        _localizationService.LanguageChanged += OnLanguageChanged;
+
+        Preferences = new SelectionPreferencesViewModel(_selectionEngine, _localizationService);
         Preferences.PreferencesChanged += OnPreferencesChanged;
+
+        _emptyGame = GameDetailsViewModel.CreateEmpty(_localizationService);
+        _selectedGame = _emptyGame;
 
         RefreshCommand = new AsyncRelayCommand(RefreshLibraryAsync);
         DrawCommand = new AsyncRelayCommand(DrawAsync, () => _eligibleGameCount > 0);
         LaunchCommand = new RelayCommand(LaunchGame, () => SelectedGame.CanLaunch);
         InstallCommand = new RelayCommand(InstallGame, () => SelectedGame.CanInstall);
+        ChangeLanguageCommand = new RelayCommand(ChangeLanguage);
+
+        SetStatus(loc => loc.GetString("Status_LoadingLibrary"));
     }
 
     public SelectionPreferencesViewModel Preferences { get; }
@@ -50,12 +64,16 @@ public sealed class MainViewModel : ObservableObject
 
     public RelayCommand InstallCommand { get; }
 
+    public RelayCommand ChangeLanguageCommand { get; }
+
+    public string CurrentLanguage => _localizationService.CurrentLanguage;
+
     public GameDetailsViewModel SelectedGame
     {
         get => _selectedGame;
         private set
         {
-            if (_selectedGame == value)
+            if (ReferenceEquals(_selectedGame, value))
             {
                 return;
             }
@@ -69,15 +87,13 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
-    private string _statusMessage = "Carregando biblioteca...";
-
     public string StatusMessage
     {
         get => _statusMessage;
         set => SetProperty(ref _statusMessage, value);
     }
 
-    public bool HasSelection => SelectedGame != GameDetailsViewModel.Empty;
+    public bool HasSelection => !ReferenceEquals(SelectedGame, _emptyGame);
 
     public bool IsDrawing
     {
@@ -92,7 +108,7 @@ public sealed class MainViewModel : ObservableObject
 
     private async Task RefreshLibraryAsync()
     {
-        StatusMessage = "Carregando biblioteca...";
+        SetStatus(loc => loc.GetString("Status_LoadingLibrary"));
         _library.Clear();
         try
         {
@@ -104,7 +120,7 @@ public sealed class MainViewModel : ObservableObject
         catch (Exception ex)
         {
             _eligibleGameCount = 0;
-            StatusMessage = ex.Message;
+            SetStatusRaw(ex.Message);
             Preferences.UpdateCollections(Array.Empty<string>());
         }
         finally
@@ -127,17 +143,17 @@ public sealed class MainViewModel : ObservableObject
         try
         {
             IsDrawing = true;
-            SelectedGame = GameDetailsViewModel.Empty;
-            StatusMessage = "Sorteando...";
+            SelectedGame = _emptyGame;
+            SetStatus(loc => loc.GetString("Status_Drawing"));
             await Task.Delay(850).ConfigureAwait(true);
 
             var game = _selectionEngine.PickNext(_library);
             ApplySelection(game);
-            StatusMessage = $"Jogo sorteado: {game.Title}";
+            SetStatus(loc => loc.GetString("Status_Drawn", game.Title));
         }
         catch (Exception ex)
         {
-            StatusMessage = ex.Message;
+            SetStatusRaw(ex.Message);
         }
         finally
         {
@@ -148,7 +164,7 @@ public sealed class MainViewModel : ObservableObject
     private void ApplySelection(GameEntry game)
     {
         var coverPath = _artLocator.FindHeroImage(game.AppId);
-        var details = GameDetailsViewModel.FromGame(game, coverPath);
+        var details = GameDetailsViewModel.FromGame(game, coverPath, _localizationService);
         SelectedGame = details;
         _toastNotificationService.ShowGameSelected(game, coverPath);
     }
@@ -181,7 +197,7 @@ public sealed class MainViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            StatusMessage = ex.Message;
+            SetStatusRaw(ex.Message);
         }
     }
 
@@ -208,7 +224,7 @@ public sealed class MainViewModel : ObservableObject
         catch (Exception ex)
         {
             _eligibleGameCount = 0;
-            StatusMessage = ex.Message;
+            SetStatusRaw(ex.Message);
             DrawCommand.RaiseCanExecuteChanged();
             return;
         }
@@ -216,32 +232,73 @@ public sealed class MainViewModel : ObservableObject
         _eligibleGameCount = eligibleGames.Count;
         var total = _library.Count;
 
-        if (SelectedGame != GameDetailsViewModel.Empty &&
+        if (!ReferenceEquals(SelectedGame, _emptyGame) &&
             !eligibleGames.Any(game => game.AppId == SelectedGame.AppId))
         {
-            SelectedGame = GameDetailsViewModel.Empty;
+            SelectedGame = _emptyGame;
         }
 
         if (total == 0)
         {
-            StatusMessage = "Nenhum jogo encontrado nos diretórios configurados.";
+            SetStatus(loc => loc.GetString("Status_NoGamesFound"));
         }
         else if (_eligibleGameCount == 0)
         {
-            StatusMessage = $"Nenhum jogo corresponde aos filtros atuais (0 de {FormatGameCount(total)}).";
+            SetStatus(loc => loc.GetString("Status_NoMatches", loc.FormatGameCount(total)));
         }
         else if (_eligibleGameCount == total)
         {
-            StatusMessage = $"{FormatGameCount(total)} disponíveis para sorteio.";
+            SetStatus(loc => loc.GetString("Status_AllEligible", loc.FormatGameCount(total)));
         }
         else
         {
-            StatusMessage = $"{FormatGameCount(_eligibleGameCount)} disponíveis após aplicar os filtros (de {FormatGameCount(total)}).";
+            SetStatus(loc => loc.GetString(
+                "Status_FilteredCount",
+                loc.FormatGameCount(_eligibleGameCount),
+                loc.FormatGameCount(total)));
         }
 
         DrawCommand.RaiseCanExecuteChanged();
     }
 
-    private static string FormatGameCount(int count)
-        => count == 1 ? "1 jogo" : $"{count} jogos";
+    private void ChangeLanguage(object? parameter)
+    {
+        if (parameter is not string languageCode)
+        {
+            return;
+        }
+
+        _localizationService.SetLanguage(languageCode);
+    }
+
+    private void OnLanguageChanged(object? sender, EventArgs e)
+    {
+        _emptyGame.RefreshLocalization();
+        SelectedGame.RefreshLocalization();
+        Preferences.RefreshLocalization();
+        ReapplyStatus();
+        OnPropertyChanged(nameof(CurrentLanguage));
+    }
+
+    private void SetStatus(Func<ILocalizationService, string> statusFactory)
+    {
+        _statusFactory = statusFactory ?? throw new ArgumentNullException(nameof(statusFactory));
+        StatusMessage = statusFactory(_localizationService);
+    }
+
+    private void SetStatusRaw(string message)
+    {
+        _statusFactory = null;
+        StatusMessage = message;
+    }
+
+    private void ReapplyStatus()
+    {
+        if (_statusFactory is null)
+        {
+            return;
+        }
+
+        StatusMessage = _statusFactory(_localizationService);
+    }
 }
