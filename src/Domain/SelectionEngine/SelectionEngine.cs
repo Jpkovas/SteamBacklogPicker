@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using Domain;
@@ -205,8 +206,11 @@ public sealed class SelectionEngine : ISelectionEngine
         var filters = _state.Preferences.Filters;
         var excludedIds = GetExcludedAppIds();
         var skipExclusionCheck = excludedIds.Count == 0;
-        var allowedCategories = filters.IncludedCategories ?? new List<ProductCategory> { ProductCategory.Game };
+        var allowedCategories = filters.IncludedCategories;
         var filterByCategory = allowedCategories.Count > 0;
+        var allowedCategorySet = filterByCategory
+            ? new HashSet<ProductCategory>(allowedCategories)
+            : null;
         var requiredCollection = filters.RequiredCollection;
         var filterByCollection = !string.IsNullOrWhiteSpace(requiredCollection);
         var results = new List<GameEntry>();
@@ -234,7 +238,7 @@ public sealed class SelectionEngine : ISelectionEngine
                 category = ProductCategory.Game;
             }
 
-            if (filterByCategory && !allowedCategories.Contains(category))
+            if (allowedCategorySet is not null && !allowedCategorySet.Contains(category))
             {
                 continue;
             }
