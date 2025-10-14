@@ -348,6 +348,63 @@ public sealed class SelectionEngineTests
         }
     }
 
+    [Fact]
+    public void FilterGames_ShouldExcludeDeckUnsupportedGames_WhenPreferenceIsEnabled()
+    {
+        var settingsPath = CreateSettingsPath();
+        try
+        {
+            var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
+            engine.UpdatePreferences(new SelectionPreferences
+            {
+                Filters = new SelectionFilters
+                {
+                    ExcludeDeckUnsupported = true,
+                },
+                HistoryLimit = 10,
+            });
+
+            var games = new[]
+            {
+                new GameEntry
+                {
+                    AppId = 1,
+                    Title = "Verified",
+                    InstallState = InstallState.Installed,
+                    OwnershipType = OwnershipType.Owned,
+                    ProductCategory = ProductCategory.Game,
+                    DeckCompatibility = SteamDeckCompatibility.Verified,
+                },
+                new GameEntry
+                {
+                    AppId = 2,
+                    Title = "Unsupported",
+                    InstallState = InstallState.Installed,
+                    OwnershipType = OwnershipType.Owned,
+                    ProductCategory = ProductCategory.Game,
+                    DeckCompatibility = SteamDeckCompatibility.Unsupported,
+                },
+                new GameEntry
+                {
+                    AppId = 3,
+                    Title = "Playable",
+                    InstallState = InstallState.Installed,
+                    OwnershipType = OwnershipType.Owned,
+                    ProductCategory = ProductCategory.Game,
+                    DeckCompatibility = SteamDeckCompatibility.Playable,
+                },
+            };
+
+            var filtered = engine.FilterGames(games);
+
+            filtered.Select(game => game.AppId).Should().BeEquivalentTo(new[] { 1u, 3u });
+        }
+        finally
+        {
+            Cleanup(settingsPath);
+        }
+    }
+
     private static IReadOnlyList<uint> RunSelectionSequence(IEnumerable<GameEntry> games, SelectionPreferences preferences, string settingsPath, int picks)
     {
         var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);

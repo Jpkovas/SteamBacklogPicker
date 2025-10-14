@@ -52,6 +52,29 @@ public sealed class SelectionPreferencesViewModelTests
         viewModel.CollectionOptions.Should().Contain("Multijogador");
     }
 
+    [Fact]
+    public void ExcludeDeckUnsupported_ShouldUpdatePreferences()
+    {
+        var initialPreferences = new SelectionPreferences
+        {
+            Filters = new SelectionFilters
+            {
+                ExcludeDeckUnsupported = false,
+            },
+        };
+
+        var engine = new FakeSelectionEngine(initialPreferences);
+        var viewModel = new SelectionPreferencesViewModel(engine);
+
+        viewModel.ExcludeDeckUnsupported = true;
+        engine.LastUpdatedPreferences.Filters.ExcludeDeckUnsupported.Should().BeTrue();
+        viewModel.ExcludeDeckUnsupported.Should().BeTrue();
+
+        viewModel.ExcludeDeckUnsupported = false;
+        engine.LastUpdatedPreferences.Filters.ExcludeDeckUnsupported.Should().BeFalse();
+        viewModel.ExcludeDeckUnsupported.Should().BeFalse();
+    }
+
     private sealed class FakeSelectionEngine : ISelectionEngine
     {
         private SelectionPreferences _preferences;
