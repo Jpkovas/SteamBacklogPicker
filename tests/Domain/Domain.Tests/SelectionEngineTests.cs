@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using Domain;
 using Domain.Selection;
 using FluentAssertions;
@@ -514,10 +516,26 @@ public sealed class SelectionEngineTests
         if (OperatingSystem.IsWindows())
         {
             var info = new DirectoryInfo(directory);
-            var previousAttributes = info.Attributes;
-            info.Attributes = previousAttributes | FileAttributes.ReadOnly;
+            var previousSecurityDescriptor = info.GetAccessControl().GetSecurityDescriptorBinaryForm();
 
-            return new RevertAction(() => info.Attributes = previousAttributes);
+            var security = info.GetAccessControl();
+            var denyRule = new FileSystemAccessRule(
+                new SecurityIdentifier(WellKnownSidType.WorldSid, domainSid: null),
+                FileSystemRights.Write | FileSystemRights.CreateFiles | FileSystemRights.CreateDirectories |
+                FileSystemRights.Modify | FileSystemRights.Delete | FileSystemRights.DeleteSubdirectoriesAndFiles,
+                InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
+                PropagationFlags.None,
+                AccessControlType.Deny);
+
+            security.AddAccessRule(denyRule);
+            info.SetAccessControl(security);
+
+            return new RevertAction(() =>
+            {
+                var revertSecurity = new DirectorySecurity();
+                revertSecurity.SetSecurityDescriptorBinaryForm(previousSecurityDescriptor);
+                info.SetAccessControl(revertSecurity);
+            });
         }
 
         var previousMode = File.GetUnixFileMode(directory);
