@@ -787,7 +787,8 @@
                         <Path Data="M 8 11 A 5 5 0 0 1 20 9"
                               Stroke="White"
                               StrokeThickness="0.8"
-                              StrokeLineCap="Round"
+                              StrokeStartLineCap="Round"
+                              StrokeEndLineCap="Round"
                               HorizontalAlignment="Center"
                               VerticalAlignment="Center"
                               Stretch="None" />
