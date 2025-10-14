@@ -247,7 +247,8 @@ public sealed class SelectionEngineTests
                     IncludedCategories = new List<ProductCategory>
                     {
                         ProductCategory.Game,
-                        ProductCategory.Soundtrack
+                        ProductCategory.Soundtrack,
+                        ProductCategory.DLC,
                     },
                 },
                 HistoryLimit = 10,
@@ -279,11 +280,27 @@ public sealed class SelectionEngineTests
                     OwnershipType = OwnershipType.Owned,
                     ProductCategory = ProductCategory.Tool,
                 },
+                new GameEntry
+                {
+                    AppId = 4,
+                    Title = "Expansion Pack",
+                    InstallState = InstallState.Installed,
+                    OwnershipType = OwnershipType.Owned,
+                    ProductCategory = ProductCategory.DLC,
+                },
+                new GameEntry
+                {
+                    AppId = 5,
+                    Title = "Mystery Entry",
+                    InstallState = InstallState.Installed,
+                    OwnershipType = OwnershipType.Owned,
+                    ProductCategory = ProductCategory.Unknown,
+                },
             };
 
             var filtered = engine.FilterGames(games);
 
-            filtered.Select(game => game.AppId).Should().BeEquivalentTo(new[] { 1u, 2u });
+            filtered.Select(game => game.AppId).Should().BeEquivalentTo(new[] { 1u, 2u, 4u, 5u });
         }
         finally
         {
