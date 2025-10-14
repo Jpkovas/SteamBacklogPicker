@@ -23,7 +23,8 @@ public enum ProductCategory
     Software = 3,
     Tool = 4,
     Video = 5,
-    Other = 6,
+    DLC = 6,
+    Other = 7,
 }
 
 public sealed record class GameEntry
