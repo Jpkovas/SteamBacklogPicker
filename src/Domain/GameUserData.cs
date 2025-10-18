@@ -17,5 +17,6 @@ public sealed record class GameUserData
                            string.IsNullOrWhiteSpace(Notes) &&
                            !Playtime.HasValue &&
                            !TargetSessionLength.HasValue &&
-                           !EstimatedCompletionTime.HasValue;
+                           !EstimatedCompletionTime.HasValue &&
+                           !EstimatedCompletionFetchedAt.HasValue;
 }
