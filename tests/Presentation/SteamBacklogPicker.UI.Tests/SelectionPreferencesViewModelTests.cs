@@ -56,13 +56,13 @@ public sealed class SelectionPreferencesViewModelTests
     }
 
     [Fact]
-    public void ExcludeDeckUnsupported_ShouldUpdatePreferences()
+    public void DeckCompatibilityPreferences_ShouldUpdateSelectionEngine()
     {
         var initialPreferences = new SelectionPreferences
         {
             Filters = new SelectionFilters
             {
-                ExcludeDeckUnsupported = false,
+                AllowedDeckCompatibility = DeckCompatibilityFilter.All,
             },
         };
 
@@ -70,13 +70,21 @@ public sealed class SelectionPreferencesViewModelTests
         var localization = new FakeLocalizationService();
         var viewModel = new SelectionPreferencesViewModel(engine, localization);
 
-        viewModel.ExcludeDeckUnsupported = true;
-        engine.LastUpdatedPreferences.Filters.ExcludeDeckUnsupported.Should().BeTrue();
-        viewModel.ExcludeDeckUnsupported.Should().BeTrue();
+        viewModel.IncludeDeckUnsupported = false;
+        engine.LastUpdatedPreferences.Filters.AllowedDeckCompatibility.Should().Be(DeckCompatibilityFilter.All & ~DeckCompatibilityFilter.Unsupported);
+        viewModel.IncludeDeckUnsupported.Should().BeFalse();
 
-        viewModel.ExcludeDeckUnsupported = false;
-        engine.LastUpdatedPreferences.Filters.ExcludeDeckUnsupported.Should().BeFalse();
-        viewModel.ExcludeDeckUnsupported.Should().BeFalse();
+        viewModel.IncludeDeckVerified = false;
+        engine.LastUpdatedPreferences.Filters.AllowedDeckCompatibility.Should().Be(DeckCompatibilityFilter.Unknown | DeckCompatibilityFilter.Playable);
+        viewModel.IncludeDeckVerified.Should().BeFalse();
+
+        viewModel.IncludeDeckUnknown = false;
+        engine.LastUpdatedPreferences.Filters.AllowedDeckCompatibility.Should().Be(DeckCompatibilityFilter.Playable);
+        viewModel.IncludeDeckUnknown.Should().BeFalse();
+
+        viewModel.IncludeDeckPlayable = false;
+        engine.LastUpdatedPreferences.Filters.AllowedDeckCompatibility.Should().Be(DeckCompatibilityFilter.None);
+        viewModel.IncludeDeckPlayable.Should().BeFalse();
     }
 
     [Fact]

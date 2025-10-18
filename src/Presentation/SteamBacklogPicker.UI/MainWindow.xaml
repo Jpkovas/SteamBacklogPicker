@@ -408,10 +408,27 @@
                           IsChecked="{Binding Preferences.RequireInstalled, Mode=TwoWay}"
                           AutomationProperties.Name="{DynamicResource Filters_RequireInstalled}" />
 
-                <CheckBox Content="{DynamicResource Filters_ExcludeDeckUnsupported}"
-                          Style="{StaticResource FilterCheckBoxStyle}"
-                          IsChecked="{Binding Preferences.ExcludeDeckUnsupported, Mode=TwoWay}"
-                          AutomationProperties.Name="{DynamicResource Filters_ExcludeDeckUnsupported}" />
+                <TextBlock Text="{DynamicResource Filters_DeckCompatibilityLabel}"
+                           Style="{StaticResource SectionLabelTextStyle}" />
+
+                <StackPanel>
+                    <CheckBox Content="{DynamicResource Filters_DeckCompatibility_Unknown}"
+                              Style="{StaticResource FilterCheckBoxStyle}"
+                              IsChecked="{Binding Preferences.IncludeDeckUnknown, Mode=TwoWay}"
+                              AutomationProperties.Name="{DynamicResource Filters_DeckCompatibility_Unknown}" />
+                    <CheckBox Content="{DynamicResource Filters_DeckCompatibility_Verified}"
+                              Style="{StaticResource FilterCheckBoxStyle}"
+                              IsChecked="{Binding Preferences.IncludeDeckVerified, Mode=TwoWay}"
+                              AutomationProperties.Name="{DynamicResource Filters_DeckCompatibility_Verified}" />
+                    <CheckBox Content="{DynamicResource Filters_DeckCompatibility_Playable}"
+                              Style="{StaticResource FilterCheckBoxStyle}"
+                              IsChecked="{Binding Preferences.IncludeDeckPlayable, Mode=TwoWay}"
+                              AutomationProperties.Name="{DynamicResource Filters_DeckCompatibility_Playable}" />
+                    <CheckBox Content="{DynamicResource Filters_DeckCompatibility_Unsupported}"
+                              Style="{StaticResource FilterCheckBoxStyle}"
+                              IsChecked="{Binding Preferences.IncludeDeckUnsupported, Mode=TwoWay}"
+                              AutomationProperties.Name="{DynamicResource Filters_DeckCompatibility_Unsupported}" />
+                </StackPanel>
 
                 <TextBlock Text="{DynamicResource Filters_RecentExclusionLabel}"
                            Style="{StaticResource SectionLabelTextStyle}" />

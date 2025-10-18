@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json.Serialization;
 
 namespace Domain.Selection;
 
@@ -7,7 +8,17 @@ public sealed class SelectionFilters
 {
     public bool RequireInstalled { get; set; }
 
-    public bool ExcludeDeckUnsupported { get; set; }
+    public DeckCompatibilityFilter AllowedDeckCompatibility { get; set; } = DeckCompatibilityFilter.All;
+
+    [JsonPropertyName("ExcludeDeckUnsupported")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool LegacyExcludeDeckUnsupported
+    {
+        get => !AllowedDeckCompatibility.HasFlag(DeckCompatibilityFilter.Unsupported);
+        set => AllowedDeckCompatibility = value
+            ? AllowedDeckCompatibility & ~DeckCompatibilityFilter.Unsupported
+            : AllowedDeckCompatibility | DeckCompatibilityFilter.Unsupported;
+    }
 
     public string? RequiredCollection { get; set; }
 
@@ -18,7 +29,7 @@ public sealed class SelectionFilters
         return new SelectionFilters
         {
             RequireInstalled = RequireInstalled,
-            ExcludeDeckUnsupported = ExcludeDeckUnsupported,
+            AllowedDeckCompatibility = AllowedDeckCompatibility,
             RequiredCollection = RequiredCollection,
             IncludedCategories = IncludedCategories is null ? new List<ProductCategory>() : new List<ProductCategory>(IncludedCategories),
         };
@@ -26,6 +37,7 @@ public sealed class SelectionFilters
 
     internal void Normalize()
     {
+        AllowedDeckCompatibility &= DeckCompatibilityFilter.All;
         RequiredCollection = string.IsNullOrWhiteSpace(RequiredCollection)
             ? null
             : RequiredCollection.Trim();

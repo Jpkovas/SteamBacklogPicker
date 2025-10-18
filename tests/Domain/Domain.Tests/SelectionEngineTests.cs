@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 using Domain;
 using Domain.Selection;
 using FluentAssertions;
@@ -425,7 +426,7 @@ public sealed class SelectionEngineTests
     }
 
     [Fact]
-    public void FilterGames_ShouldExcludeDeckUnsupportedGames_WhenPreferenceIsEnabled()
+    public void FilterGames_ShouldRespectDeckCompatibilityFilter()
     {
         var settingsPath = CreateSettingsPath();
         try
@@ -435,7 +436,7 @@ public sealed class SelectionEngineTests
             {
                 Filters = new SelectionFilters
                 {
-                    ExcludeDeckUnsupported = true,
+                    AllowedDeckCompatibility = DeckCompatibilityFilter.Verified | DeckCompatibilityFilter.Playable,
                 },
                 HistoryLimit = 10,
             });
@@ -474,6 +475,26 @@ public sealed class SelectionEngineTests
             var filtered = engine.FilterGames(games);
 
             filtered.Select(game => game.AppId).Should().BeEquivalentTo(new[] { 1u, 3u });
+        }
+        finally
+        {
+            Cleanup(settingsPath);
+        }
+    }
+
+    [Fact]
+    public void LoadSettings_ShouldRespectLegacyExcludeDeckUnsupportedFlag()
+    {
+        var settingsPath = CreateSettingsPath();
+        try
+        {
+            var legacyJson = "{\"Preferences\":{\"Filters\":{\"ExcludeDeckUnsupported\":true}}}";
+            File.WriteAllText(settingsPath, legacyJson);
+
+            var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
+
+            var preferences = engine.GetPreferences();
+            preferences.Filters.AllowedDeckCompatibility.Should().Be(DeckCompatibilityFilter.All & ~DeckCompatibilityFilter.Unsupported);
         }
         finally
         {
