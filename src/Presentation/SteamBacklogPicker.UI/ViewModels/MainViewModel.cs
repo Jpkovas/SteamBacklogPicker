@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Domain;
@@ -110,22 +111,48 @@ public sealed class MainViewModel : ObservableObject
     {
         SetStatus(loc => loc.GetString("Status_LoadingLibrary"));
         _library.Clear();
+        var synchronizationContext = SynchronizationContext.Current;
+        var uiScheduler = synchronizationContext is null
+            ? TaskScheduler.Current
+            : TaskScheduler.FromCurrentSynchronizationContext();
         try
         {
-            var games = await _libraryService.GetLibraryAsync().ConfigureAwait(true);
-            _library.AddRange(games.OrderBy(game => game.Title, StringComparer.CurrentCultureIgnoreCase));
-            Preferences.UpdateCollections(GetAvailableCollections());
-            UpdateEligibilitySummary();
+            var games = await _libraryService.GetLibraryAsync().ConfigureAwait(false);
+            await Task.Factory.StartNew(
+                    () =>
+                    {
+                        _library.Clear();
+                        _library.AddRange(games.OrderBy(game => game.Title, StringComparer.CurrentCultureIgnoreCase));
+                        Preferences.UpdateCollections(GetAvailableCollections());
+                        UpdateEligibilitySummary();
+                    },
+                    CancellationToken.None,
+                    TaskCreationOptions.DenyChildAttach,
+                    uiScheduler)
+                .ConfigureAwait(false);
         }
         catch (Exception ex)
         {
-            _eligibleGameCount = 0;
-            SetStatusRaw(ex.Message);
-            Preferences.UpdateCollections(Array.Empty<string>());
+            await Task.Factory.StartNew(
+                    () =>
+                    {
+                        _eligibleGameCount = 0;
+                        SetStatusRaw(ex.Message);
+                        Preferences.UpdateCollections(Array.Empty<string>());
+                    },
+                    CancellationToken.None,
+                    TaskCreationOptions.DenyChildAttach,
+                    uiScheduler)
+                .ConfigureAwait(false);
         }
         finally
         {
-            DrawCommand.RaiseCanExecuteChanged();
+            await Task.Factory.StartNew(
+                    () => DrawCommand.RaiseCanExecuteChanged(),
+                    CancellationToken.None,
+                    TaskCreationOptions.DenyChildAttach,
+                    uiScheduler)
+                .ConfigureAwait(false);
         }
     }
 
