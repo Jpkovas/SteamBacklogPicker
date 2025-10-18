@@ -299,43 +299,12 @@ public sealed class SteamGameLibraryService : IGameLibraryService
         return option switch
         {
             1 => entry.InstallState is InstallState.Installed or InstallState.Shared,
-            3 => SupportsVr(entry),
-            7 => SupportsSinglePlayer(entry),
-            8 => SupportsMultiplayer(entry),
+            3 => GameEntryCapabilities.SupportsVirtualReality(entry),
+            7 => GameEntryCapabilities.SupportsSinglePlayer(entry),
+            8 => GameEntryCapabilities.SupportsMultiplayer(entry),
             13 => entry.DeckCompatibility is SteamDeckCompatibility.Verified or SteamDeckCompatibility.Playable,
             _ => false,
         };
-    }
-
-    private static bool SupportsSinglePlayer(GameEntry entry)
-        => entry.StoreCategoryIds.Any(id => id == 2);
-
-    private static bool SupportsMultiplayer(GameEntry entry)
-        => entry.StoreCategoryIds.Any(id => id is 1 or 9 or 38 or 48 or 49);
-
-    private static bool SupportsVr(GameEntry entry)
-    {
-        foreach (var category in entry.StoreCategoryIds)
-        {
-            switch (category)
-            {
-                case 31:
-                case 32:
-                case 33:
-                case 34:
-                case 35:
-                case 36:
-                case 37:
-                case 38:
-                case 39:
-                case 52:
-                case 53:
-                case 54:
-                    return true;
-            }
-        }
-
-        return false;
     }
 
 }

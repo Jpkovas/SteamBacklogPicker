@@ -170,6 +170,90 @@ public sealed class SelectionPreferencesViewModelTests
         viewModel.DeckCompatibilityWeight.Should().Be(0.4d);
     }
 
+    [Fact]
+    public void RequireSinglePlayer_ShouldUpdatePreferences()
+    {
+        var initialPreferences = new SelectionPreferences
+        {
+            Filters = new SelectionFilters
+            {
+                RequireSinglePlayer = false,
+            },
+        };
+
+        var engine = new FakeSelectionEngine(initialPreferences);
+        var localization = new FakeLocalizationService();
+        var viewModel = new SelectionPreferencesViewModel(engine, localization);
+
+        viewModel.RequireSinglePlayer = true;
+
+        engine.LastUpdatedPreferences.Filters.RequireSinglePlayer.Should().BeTrue();
+        viewModel.RequireSinglePlayer.Should().BeTrue();
+    }
+
+    [Fact]
+    public void RequireMultiplayer_ShouldUpdatePreferences()
+    {
+        var initialPreferences = new SelectionPreferences
+        {
+            Filters = new SelectionFilters
+            {
+                RequireMultiplayer = false,
+            },
+        };
+
+        var engine = new FakeSelectionEngine(initialPreferences);
+        var localization = new FakeLocalizationService();
+        var viewModel = new SelectionPreferencesViewModel(engine, localization);
+
+        viewModel.RequireMultiplayer = true;
+
+        engine.LastUpdatedPreferences.Filters.RequireMultiplayer.Should().BeTrue();
+        viewModel.RequireMultiplayer.Should().BeTrue();
+    }
+
+    [Fact]
+    public void RequireVr_ShouldUpdatePreferences()
+    {
+        var initialPreferences = new SelectionPreferences
+        {
+            Filters = new SelectionFilters
+            {
+                RequireVr = false,
+            },
+        };
+
+        var engine = new FakeSelectionEngine(initialPreferences);
+        var localization = new FakeLocalizationService();
+        var viewModel = new SelectionPreferencesViewModel(engine, localization);
+
+        viewModel.RequireVr = true;
+
+        engine.LastUpdatedPreferences.Filters.RequireVr.Should().BeTrue();
+        viewModel.RequireVr.Should().BeTrue();
+    }
+
+    [Fact]
+    public void MoodTagsText_ShouldUpdatePreferences()
+    {
+        var initialPreferences = new SelectionPreferences
+        {
+            Filters = new SelectionFilters
+            {
+                MoodTags = new List<string>(),
+            },
+        };
+
+        var engine = new FakeSelectionEngine(initialPreferences);
+        var localization = new FakeLocalizationService();
+        var viewModel = new SelectionPreferencesViewModel(engine, localization);
+
+        viewModel.MoodTagsText = "Relaxing, Story-Rich, relaxing";
+
+        engine.LastUpdatedPreferences.Filters.MoodTags.Should().Contain(new[] { "Relaxing", "Story-Rich" });
+        viewModel.MoodTagsText.Should().Be("Relaxing, Story-Rich");
+    }
+
     private sealed class FakeSelectionEngine : ISelectionEngine
     {
         private SelectionPreferences _preferences;

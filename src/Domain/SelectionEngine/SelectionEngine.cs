@@ -215,6 +215,11 @@ public sealed class SelectionEngine : ISelectionEngine
         var requiredCollection = filters.RequiredCollection;
         var filterByCollection = !string.IsNullOrWhiteSpace(requiredCollection);
         var allowedCompatibility = filters.AllowedDeckCompatibility;
+        var requireSinglePlayer = filters.RequireSinglePlayer;
+        var requireMultiplayer = filters.RequireMultiplayer;
+        var requireVr = filters.RequireVr;
+        var moodTags = filters.MoodTags ?? new List<string>();
+        var filterByMood = moodTags.Count > 0;
         var results = new List<GameEntry>();
 
         foreach (var game in games)
@@ -225,6 +230,21 @@ public sealed class SelectionEngine : ISelectionEngine
             }
 
             if (filters.RequireInstalled && game.InstallState is not (InstallState.Installed or InstallState.Shared))
+            {
+                continue;
+            }
+
+            if (requireSinglePlayer && !GameEntryCapabilities.SupportsSinglePlayer(game))
+            {
+                continue;
+            }
+
+            if (requireMultiplayer && !GameEntryCapabilities.SupportsMultiplayer(game))
+            {
+                continue;
+            }
+
+            if (requireVr && !GameEntryCapabilities.SupportsVirtualReality(game))
             {
                 continue;
             }
@@ -253,6 +273,11 @@ public sealed class SelectionEngine : ISelectionEngine
                 {
                     continue;
                 }
+            }
+
+            if (filterByMood && !GameEntryCapabilities.MatchesMoodTags(game, moodTags))
+            {
+                continue;
             }
 
             results.Add(game);

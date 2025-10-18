@@ -215,6 +215,114 @@ public sealed class SelectionEngineTests
     }
 
     [Fact]
+    public void FilterGames_ShouldRespectSinglePlayerRequirement()
+    {
+        var settingsPath = CreateSettingsPath();
+        try
+        {
+            var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
+            var preferences = engine.GetPreferences();
+            preferences.Filters.RequireSinglePlayer = true;
+            engine.UpdatePreferences(preferences);
+
+            var games = new[]
+            {
+                new GameEntry { AppId = 1, Title = "Solo", StoreCategoryIds = new[] { 2 } },
+                new GameEntry { AppId = 2, Title = "Multiplayer", StoreCategoryIds = new[] { 1 } },
+            };
+
+            var filtered = engine.FilterGames(games);
+
+            filtered.Should().ContainSingle(game => game.AppId == 1u);
+        }
+        finally
+        {
+            Cleanup(settingsPath);
+        }
+    }
+
+    [Fact]
+    public void FilterGames_ShouldRespectMultiplayerRequirement()
+    {
+        var settingsPath = CreateSettingsPath();
+        try
+        {
+            var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
+            var preferences = engine.GetPreferences();
+            preferences.Filters.RequireMultiplayer = true;
+            engine.UpdatePreferences(preferences);
+
+            var games = new[]
+            {
+                new GameEntry { AppId = 1, Title = "Solo", StoreCategoryIds = new[] { 2 } },
+                new GameEntry { AppId = 2, Title = "Multiplayer", StoreCategoryIds = new[] { 1, 9 } },
+            };
+
+            var filtered = engine.FilterGames(games);
+
+            filtered.Should().ContainSingle(game => game.AppId == 2u);
+        }
+        finally
+        {
+            Cleanup(settingsPath);
+        }
+    }
+
+    [Fact]
+    public void FilterGames_ShouldRespectVrRequirement()
+    {
+        var settingsPath = CreateSettingsPath();
+        try
+        {
+            var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
+            var preferences = engine.GetPreferences();
+            preferences.Filters.RequireVr = true;
+            engine.UpdatePreferences(preferences);
+
+            var games = new[]
+            {
+                new GameEntry { AppId = 1, Title = "Flat", StoreCategoryIds = new[] { 2 } },
+                new GameEntry { AppId = 2, Title = "VR Ready", StoreCategoryIds = new[] { 31, 2 } },
+            };
+
+            var filtered = engine.FilterGames(games);
+
+            filtered.Should().ContainSingle(game => game.AppId == 2u);
+        }
+        finally
+        {
+            Cleanup(settingsPath);
+        }
+    }
+
+    [Fact]
+    public void FilterGames_ShouldRespectMoodTags()
+    {
+        var settingsPath = CreateSettingsPath();
+        try
+        {
+            var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
+            var preferences = engine.GetPreferences();
+            preferences.Filters.MoodTags = new List<string> { "Relaxing" };
+            engine.UpdatePreferences(preferences);
+
+            var games = new[]
+            {
+                new GameEntry { AppId = 1, Title = "Action", Tags = new[] { "Action" } },
+                new GameEntry { AppId = 2, Title = "Calm", Tags = new[] { "relaxing", "Indie" } },
+            };
+
+            var filtered = engine.FilterGames(games);
+
+            filtered.Should().ContainSingle(game => game.AppId == 2u);
+        }
+        finally
+        {
+            Cleanup(settingsPath);
+        }
+    }
+
+    [Fact]
     public void PickNext_ShouldRemainDeterministicWithWeights_WhenSeedIsProvided()
     {
         var games = new[]
