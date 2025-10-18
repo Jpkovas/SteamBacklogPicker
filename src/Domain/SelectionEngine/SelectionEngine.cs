@@ -84,6 +84,52 @@ public sealed class SelectionEngine : ISelectionEngine
         }
     }
 
+    public GameUserData GetUserData(uint appId)
+    {
+        lock (_syncRoot)
+        {
+            if (_state.UserData.TryGetValue(appId, out var data))
+            {
+                return data;
+            }
+
+            return new GameUserData();
+        }
+    }
+
+    public IReadOnlyDictionary<uint, GameUserData> GetUserDataSnapshot()
+    {
+        lock (_syncRoot)
+        {
+            return new Dictionary<uint, GameUserData>(_state.UserData);
+        }
+    }
+
+    public void UpdateUserData(uint appId, GameUserData userData)
+    {
+        ArgumentNullException.ThrowIfNull(userData);
+
+        lock (_syncRoot)
+        {
+            var normalized = userData.Normalize();
+            var changed = false;
+            if (IsUserDataEmpty(normalized))
+            {
+                changed = _state.UserData.Remove(appId);
+            }
+            else if (!_state.UserData.TryGetValue(appId, out var existing) || existing != normalized)
+            {
+                _state.UserData[appId] = normalized;
+                changed = true;
+            }
+
+            if (changed)
+            {
+                SaveSettings();
+            }
+        }
+    }
+
     public GameEntry PickNext(IEnumerable<GameEntry> games)
     {
         ArgumentNullException.ThrowIfNull(games);
@@ -179,6 +225,25 @@ public sealed class SelectionEngine : ISelectionEngine
             settings.RandomPosition = 0;
         }
 
+        settings.UserData ??= new Dictionary<uint, GameUserData>();
+        var toRemove = new List<uint>();
+        foreach (var (appId, data) in settings.UserData.ToArray())
+        {
+            var normalized = data.Normalize();
+            if (IsUserDataEmpty(normalized))
+            {
+                toRemove.Add(appId);
+                continue;
+            }
+
+            settings.UserData[appId] = normalized;
+        }
+
+        foreach (var appId in toRemove)
+        {
+            settings.UserData.Remove(appId);
+        }
+
         TrimHistory(settings);
     }
 
@@ -215,11 +280,16 @@ public sealed class SelectionEngine : ISelectionEngine
         var requiredCollection = filters.RequiredCollection;
         var filterByCollection = !string.IsNullOrWhiteSpace(requiredCollection);
         var allowedCompatibility = filters.AllowedDeckCompatibility;
+        var allowedStatuses = filters.AllowedBacklogStatuses;
+        var filterByStatus = allowedStatuses != BacklogStatusFilter.All;
         var requireSinglePlayer = filters.RequireSinglePlayer;
         var requireMultiplayer = filters.RequireMultiplayer;
         var requireVr = filters.RequireVr;
         var moodTags = filters.MoodTags ?? new List<string>();
         var filterByMood = moodTags.Count > 0;
+        var minimumPlaytime = filters.MinimumPlaytime;
+        var maximumTargetSessionLength = filters.MaximumTargetSessionLength;
+        var maximumEstimatedCompletionTime = filters.MaximumEstimatedCompletionTime;
         var results = new List<GameEntry>();
 
         foreach (var game in games)
@@ -229,33 +299,56 @@ public sealed class SelectionEngine : ISelectionEngine
                 continue;
             }
 
-            if (filters.RequireInstalled && game.InstallState is not (InstallState.Installed or InstallState.Shared))
+            var enriched = AttachUserData(game);
+            var userData = enriched.UserData;
+
+            if (filters.RequireInstalled && enriched.InstallState is not (InstallState.Installed or InstallState.Shared))
             {
                 continue;
             }
 
-            if (requireSinglePlayer && !GameEntryCapabilities.SupportsSinglePlayer(game))
+            if (filterByStatus && !IsStatusAllowed(userData.Status, allowedStatuses))
             {
                 continue;
             }
 
-            if (requireMultiplayer && !GameEntryCapabilities.SupportsMultiplayer(game))
+            if (requireSinglePlayer && !GameEntryCapabilities.SupportsSinglePlayer(enriched))
             {
                 continue;
             }
 
-            if (requireVr && !GameEntryCapabilities.SupportsVirtualReality(game))
+            if (requireMultiplayer && !GameEntryCapabilities.SupportsMultiplayer(enriched))
             {
                 continue;
             }
 
-            var compatibility = GetCompatibilityFlag(game.DeckCompatibility);
+            if (requireVr && !GameEntryCapabilities.SupportsVirtualReality(enriched))
+            {
+                continue;
+            }
+
+            if (minimumPlaytime is { } minimum && (!userData.Playtime.HasValue || userData.Playtime.Value < minimum))
+            {
+                continue;
+            }
+
+            if (maximumTargetSessionLength is { } maxSession && userData.TargetSessionLength is { } sessionLength && sessionLength > maxSession)
+            {
+                continue;
+            }
+
+            if (maximumEstimatedCompletionTime is { } maxEstimate && userData.EstimatedCompletionTime is { } estimate && estimate > maxEstimate)
+            {
+                continue;
+            }
+
+            var compatibility = GetCompatibilityFlag(enriched.DeckCompatibility);
             if ((allowedCompatibility & compatibility) == 0)
             {
                 continue;
             }
 
-            var category = game.ProductCategory;
+            var category = enriched.ProductCategory;
             if (category == ProductCategory.Unknown)
             {
                 category = ProductCategory.Game;
@@ -268,19 +361,19 @@ public sealed class SelectionEngine : ISelectionEngine
 
             if (filterByCollection)
             {
-                var tags = game.Tags;
+                var tags = enriched.Tags;
                 if (tags is null || !tags.Any(tag => string.Equals(tag, requiredCollection, StringComparison.OrdinalIgnoreCase)))
                 {
                     continue;
                 }
             }
 
-            if (filterByMood && !GameEntryCapabilities.MatchesMoodTags(game, moodTags))
+            if (filterByMood && !GameEntryCapabilities.MatchesMoodTags(enriched, moodTags))
             {
                 continue;
             }
 
-            results.Add(game);
+            results.Add(enriched);
         }
 
         return results;
@@ -310,6 +403,46 @@ public sealed class SelectionEngine : ISelectionEngine
 
         return set;
     }
+
+    private GameEntry AttachUserData(GameEntry game)
+    {
+        if (_state.UserData.TryGetValue(game.AppId, out var persisted))
+        {
+            return game with { UserData = persisted };
+        }
+
+        var provided = game.UserData.Normalize();
+        if (IsUserDataEmpty(provided))
+        {
+            return game with { UserData = new GameUserData() };
+        }
+
+        return game with { UserData = provided };
+    }
+
+    private static bool IsStatusAllowed(BacklogStatus status, BacklogStatusFilter allowed)
+    {
+        var flag = status switch
+        {
+            BacklogStatus.Wishlist => BacklogStatusFilter.Wishlist,
+            BacklogStatus.Backlog => BacklogStatusFilter.Backlog,
+            BacklogStatus.Playing => BacklogStatusFilter.Playing,
+            BacklogStatus.Completed => BacklogStatusFilter.Completed,
+            BacklogStatus.Shelved => BacklogStatusFilter.Shelved,
+            BacklogStatus.Abandoned => BacklogStatusFilter.Abandoned,
+            _ => BacklogStatusFilter.Uncategorized,
+        };
+
+        return (allowed & flag) != 0;
+    }
+
+    private static bool IsUserDataEmpty(GameUserData data) =>
+        data.Status == BacklogStatus.Uncategorized
+        && string.IsNullOrWhiteSpace(data.Notes)
+        && data.Playtime is null
+        && data.TargetSessionLength is null
+        && data.EstimatedCompletionTime is null
+        && data.EstimatedCompletionTimeUpdatedAt is null;
 
     private GameEntry ChooseGame(IReadOnlyList<GameEntry> candidates)
     {

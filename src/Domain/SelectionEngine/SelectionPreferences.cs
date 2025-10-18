@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace Domain.Selection;
@@ -92,6 +93,20 @@ public sealed class SelectionPreferences
         }
     }
 
+    public BacklogStatusFilter AllowedBacklogStatuses
+    {
+        get
+        {
+            Filters ??= new SelectionFilters();
+            return Filters.AllowedBacklogStatuses;
+        }
+        set
+        {
+            Filters ??= new SelectionFilters();
+            Filters.AllowedBacklogStatuses = value;
+        }
+    }
+
     public double InstallStateWeight
     {
         get
@@ -131,6 +146,48 @@ public sealed class SelectionPreferences
         {
             Filters ??= new SelectionFilters();
             Filters.DeckCompatibilityWeight = value;
+        }
+    }
+
+    public TimeSpan? MinimumPlaytime
+    {
+        get
+        {
+            Filters ??= new SelectionFilters();
+            return Filters.MinimumPlaytime;
+        }
+        set
+        {
+            Filters ??= new SelectionFilters();
+            Filters.MinimumPlaytime = value;
+        }
+    }
+
+    public TimeSpan? MaximumTargetSessionLength
+    {
+        get
+        {
+            Filters ??= new SelectionFilters();
+            return Filters.MaximumTargetSessionLength;
+        }
+        set
+        {
+            Filters ??= new SelectionFilters();
+            Filters.MaximumTargetSessionLength = value;
+        }
+    }
+
+    public TimeSpan? MaximumEstimatedCompletionTime
+    {
+        get
+        {
+            Filters ??= new SelectionFilters();
+            return Filters.MaximumEstimatedCompletionTime;
+        }
+        set
+        {
+            Filters ??= new SelectionFilters();
+            Filters.MaximumEstimatedCompletionTime = value;
         }
     }
 

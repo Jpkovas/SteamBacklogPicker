@@ -745,6 +745,114 @@ public sealed class SelectionEngineTests
         }
     }
 
+    [Fact]
+    public void UpdateUserData_ShouldPersistAcrossInstances()
+    {
+        var settingsPath = CreateSettingsPath();
+        try
+        {
+            var initial = new GameUserData
+            {
+                Status = BacklogStatus.Playing,
+                Notes = "Working through the campaign",
+                Playtime = TimeSpan.FromHours(4.5),
+                TargetSessionLength = TimeSpan.FromMinutes(40),
+                EstimatedCompletionTime = TimeSpan.FromHours(18)
+            };
+
+            var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UtcNow);
+            engine.UpdateUserData(42, initial);
+
+            var snapshot = engine.GetUserDataSnapshot();
+            snapshot.Should().ContainKey(42);
+            snapshot[42].Should().BeEquivalentTo(initial.Normalize());
+
+            engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UtcNow);
+            engine.GetUserData(42).Should().BeEquivalentTo(initial.Normalize());
+        }
+        finally
+        {
+            Cleanup(settingsPath);
+        }
+    }
+
+    [Fact]
+    public void FilterGames_ShouldRespectUserDataFilters()
+    {
+        var settingsPath = CreateSettingsPath();
+        try
+        {
+            var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UtcNow);
+            engine.UpdatePreferences(new SelectionPreferences
+            {
+                Filters = new SelectionFilters
+                {
+                    AllowedBacklogStatuses = BacklogStatusFilter.Playing | BacklogStatusFilter.Backlog,
+                    MinimumPlaytime = TimeSpan.FromHours(2),
+                    MaximumTargetSessionLength = TimeSpan.FromMinutes(45),
+                    MaximumEstimatedCompletionTime = TimeSpan.FromHours(30),
+                }
+            });
+
+            engine.UpdateUserData(1, new GameUserData
+            {
+                Status = BacklogStatus.Playing,
+                Playtime = TimeSpan.FromHours(3),
+                TargetSessionLength = TimeSpan.FromMinutes(30),
+                EstimatedCompletionTime = TimeSpan.FromHours(12)
+            });
+
+            engine.UpdateUserData(2, new GameUserData
+            {
+                Status = BacklogStatus.Backlog,
+                Playtime = TimeSpan.FromHours(1),
+                TargetSessionLength = TimeSpan.FromMinutes(30),
+                EstimatedCompletionTime = TimeSpan.FromHours(6)
+            });
+
+            engine.UpdateUserData(3, new GameUserData
+            {
+                Status = BacklogStatus.Completed,
+                Playtime = TimeSpan.FromHours(6),
+                TargetSessionLength = TimeSpan.FromMinutes(25),
+                EstimatedCompletionTime = TimeSpan.FromHours(8)
+            });
+
+            engine.UpdateUserData(4, new GameUserData
+            {
+                Status = BacklogStatus.Playing,
+                Playtime = TimeSpan.FromHours(4),
+                TargetSessionLength = TimeSpan.FromMinutes(120),
+                EstimatedCompletionTime = TimeSpan.FromHours(20)
+            });
+
+            engine.UpdateUserData(5, new GameUserData
+            {
+                Status = BacklogStatus.Playing,
+                Playtime = TimeSpan.FromHours(3),
+                TargetSessionLength = TimeSpan.FromMinutes(30),
+                EstimatedCompletionTime = TimeSpan.FromHours(40)
+            });
+
+            var games = new[]
+            {
+                new GameEntry { AppId = 1, Title = "Eligible", ProductCategory = ProductCategory.Game },
+                new GameEntry { AppId = 2, Title = "Not enough playtime", ProductCategory = ProductCategory.Game },
+                new GameEntry { AppId = 3, Title = "Completed", ProductCategory = ProductCategory.Game },
+                new GameEntry { AppId = 4, Title = "Long session", ProductCategory = ProductCategory.Game },
+                new GameEntry { AppId = 5, Title = "Long completion", ProductCategory = ProductCategory.Game }
+            };
+
+            var filtered = engine.FilterGames(games);
+            filtered.Should().ContainSingle();
+            filtered[0].AppId.Should().Be(1);
+        }
+        finally
+        {
+            Cleanup(settingsPath);
+        }
+    }
+
     private static IReadOnlyList<uint> RunSelectionSequence(IEnumerable<GameEntry> games, SelectionPreferences preferences, string settingsPath, int picks)
     {
         var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);

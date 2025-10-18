@@ -257,6 +257,7 @@ public sealed class SelectionPreferencesViewModelTests
     private sealed class FakeSelectionEngine : ISelectionEngine
     {
         private SelectionPreferences _preferences;
+        private readonly Dictionary<uint, GameUserData> _userData = new();
 
         public FakeSelectionEngine(SelectionPreferences initialPreferences)
         {
@@ -278,6 +279,28 @@ public sealed class SelectionPreferencesViewModelTests
 
         public void ClearHistory()
         {
+        }
+
+        public GameUserData GetUserData(uint appId) => _userData.TryGetValue(appId, out var data) ? data : new GameUserData();
+
+        public IReadOnlyDictionary<uint, GameUserData> GetUserDataSnapshot() => new Dictionary<uint, GameUserData>(_userData);
+
+        public void UpdateUserData(uint appId, GameUserData userData)
+        {
+            ArgumentNullException.ThrowIfNull(userData);
+
+            var normalized = userData.Normalize();
+            if (normalized.Status == BacklogStatus.Uncategorized &&
+                string.IsNullOrWhiteSpace(normalized.Notes) &&
+                normalized.Playtime is null &&
+                normalized.TargetSessionLength is null &&
+                normalized.EstimatedCompletionTime is null)
+            {
+                _userData.Remove(appId);
+                return;
+            }
+
+            _userData[appId] = normalized;
         }
 
         public GameEntry PickNext(IEnumerable<GameEntry> games) => throw new NotSupportedException();
