@@ -24,6 +24,7 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
     private readonly ObservableCollection<string> _collectionOptions = new();
     private string _noCollectionOption = string.Empty;
     private string _selectedCollection = string.Empty;
+    private int _recentGameExclusionCount;
 
     public SelectionPreferencesViewModel(ISelectionEngine selectionEngine, ILocalizationService localizationService)
     {
@@ -59,6 +60,19 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
             if (SetProperty(ref _excludeDeckUnsupported, value) && !_isHydrating)
             {
                 UpdatePreferences(p => p.Filters.ExcludeDeckUnsupported = value);
+            }
+        }
+    }
+
+    public int RecentGameExclusionCount
+    {
+        get => _recentGameExclusionCount;
+        set
+        {
+            var normalized = Math.Max(0, value);
+            if (SetProperty(ref _recentGameExclusionCount, normalized) && !_isHydrating)
+            {
+                UpdatePreferences(p => p.RecentGameExclusionCount = normalized);
             }
         }
     }
@@ -173,6 +187,8 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
             IncludeTools = categories.Contains(ProductCategory.Tool);
             IncludeVideos = categories.Contains(ProductCategory.Video);
             IncludeOther = categories.Contains(ProductCategory.Other);
+
+            RecentGameExclusionCount = preferences.RecentGameExclusionCount;
 
             var requiredCollection = preferences.Filters.RequiredCollection;
             if (!string.IsNullOrWhiteSpace(requiredCollection) &&
