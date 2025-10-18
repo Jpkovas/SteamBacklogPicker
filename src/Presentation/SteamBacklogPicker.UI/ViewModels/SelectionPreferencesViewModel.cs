@@ -25,6 +25,9 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
     private string _noCollectionOption = string.Empty;
     private string _selectedCollection = string.Empty;
     private int _recentGameExclusionCount;
+    private double _installStateWeight = 1d;
+    private double _lastPlayedWeight = 1d;
+    private double _deckCompatibilityWeight = 1d;
 
     public SelectionPreferencesViewModel(ISelectionEngine selectionEngine, ILocalizationService localizationService)
     {
@@ -73,6 +76,45 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
             if (SetProperty(ref _recentGameExclusionCount, normalized) && !_isHydrating)
             {
                 UpdatePreferences(p => p.RecentGameExclusionCount = normalized);
+            }
+        }
+    }
+
+    public double InstallStateWeight
+    {
+        get => _installStateWeight;
+        set
+        {
+            var normalized = Math.Clamp(value, 0d, 2d);
+            if (SetProperty(ref _installStateWeight, normalized) && !_isHydrating)
+            {
+                UpdatePreferences(p => p.Filters.InstallStateWeight = normalized);
+            }
+        }
+    }
+
+    public double LastPlayedWeight
+    {
+        get => _lastPlayedWeight;
+        set
+        {
+            var normalized = Math.Clamp(value, 0d, 2d);
+            if (SetProperty(ref _lastPlayedWeight, normalized) && !_isHydrating)
+            {
+                UpdatePreferences(p => p.Filters.LastPlayedRecencyWeight = normalized);
+            }
+        }
+    }
+
+    public double DeckCompatibilityWeight
+    {
+        get => _deckCompatibilityWeight;
+        set
+        {
+            var normalized = Math.Clamp(value, 0d, 2d);
+            if (SetProperty(ref _deckCompatibilityWeight, normalized) && !_isHydrating)
+            {
+                UpdatePreferences(p => p.Filters.DeckCompatibilityWeight = normalized);
             }
         }
     }
@@ -189,6 +231,10 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
             IncludeOther = categories.Contains(ProductCategory.Other);
 
             RecentGameExclusionCount = preferences.RecentGameExclusionCount;
+
+            InstallStateWeight = preferences.Filters.InstallStateWeight;
+            LastPlayedWeight = preferences.Filters.LastPlayedRecencyWeight;
+            DeckCompatibilityWeight = preferences.Filters.DeckCompatibilityWeight;
 
             var requiredCollection = preferences.Filters.RequiredCollection;
             if (!string.IsNullOrWhiteSpace(requiredCollection) &&
