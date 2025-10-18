@@ -17,6 +17,8 @@ public sealed class SelectionFilters
 
     public DeckCompatibilityFilter AllowedDeckCompatibility { get; set; } = DeckCompatibilityFilter.All;
 
+    public BacklogStatusFilter AllowedBacklogStatuses { get; set; } = BacklogStatusFilter.All;
+
     [JsonPropertyName("ExcludeDeckUnsupported")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public bool LegacyExcludeDeckUnsupported
@@ -39,6 +41,12 @@ public sealed class SelectionFilters
 
     public double DeckCompatibilityWeight { get; set; } = 1d;
 
+    public TimeSpan? MinimumPlaytime { get; set; }
+
+    public TimeSpan? MaximumTargetSessionLength { get; set; }
+
+    public TimeSpan? MaximumEstimatedCompletionTime { get; set; }
+
     public SelectionFilters Clone()
     {
         return new SelectionFilters
@@ -48,18 +56,26 @@ public sealed class SelectionFilters
             RequireMultiplayer = RequireMultiplayer,
             RequireVr = RequireVr,
             AllowedDeckCompatibility = AllowedDeckCompatibility,
+            AllowedBacklogStatuses = AllowedBacklogStatuses,
             RequiredCollection = RequiredCollection,
             IncludedCategories = IncludedCategories is null ? new List<ProductCategory>() : new List<ProductCategory>(IncludedCategories),
             MoodTags = MoodTags is null ? new List<string>() : new List<string>(MoodTags),
             InstallStateWeight = InstallStateWeight,
             LastPlayedRecencyWeight = LastPlayedRecencyWeight,
             DeckCompatibilityWeight = DeckCompatibilityWeight,
+            MinimumPlaytime = MinimumPlaytime,
+            MaximumTargetSessionLength = MaximumTargetSessionLength,
+            MaximumEstimatedCompletionTime = MaximumEstimatedCompletionTime,
         };
     }
 
     internal void Normalize()
     {
         AllowedDeckCompatibility &= DeckCompatibilityFilter.All;
+        if (AllowedBacklogStatuses == BacklogStatusFilter.None)
+        {
+            AllowedBacklogStatuses = BacklogStatusFilter.All;
+        }
         RequiredCollection = string.IsNullOrWhiteSpace(RequiredCollection)
             ? null
             : RequiredCollection.Trim();
@@ -80,6 +96,9 @@ public sealed class SelectionFilters
         DeckCompatibilityWeight = ClampWeight(DeckCompatibilityWeight);
 
         MoodTags = NormalizeMoodTags(MoodTags);
+        MinimumPlaytime = NormalizeDuration(MinimumPlaytime);
+        MaximumTargetSessionLength = NormalizeDuration(MaximumTargetSessionLength);
+        MaximumEstimatedCompletionTime = NormalizeDuration(MaximumEstimatedCompletionTime);
     }
 
     private static double ClampWeight(double value)
@@ -104,5 +123,20 @@ public sealed class SelectionFilters
             .Select(tag => tag.Trim())
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
+    }
+
+    private static TimeSpan? NormalizeDuration(TimeSpan? value)
+    {
+        if (value is null)
+        {
+            return null;
+        }
+
+        if (value.Value < TimeSpan.Zero)
+        {
+            return TimeSpan.Zero;
+        }
+
+        return value;
     }
 }

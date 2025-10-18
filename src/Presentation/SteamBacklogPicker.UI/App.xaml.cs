@@ -114,6 +114,8 @@ public partial class App : Application
         services.AddSingleton<ILocalizationService, LocalizationService>();
         services.AddSingleton<IToastNotificationService, ToastNotificationService>();
         services.AddSingleton<IAppUpdateService, SquirrelUpdateService>();
+        services.AddSingleton<INetworkStatusService, NetworkStatusService>();
+        services.AddSingleton<IGameCompletionEstimator, HowLongToBeatCompletionEstimator>();
         services.AddSingleton<MainViewModel>();
         services.AddTransient<MainWindow>();
 

@@ -649,6 +649,7 @@
                     <RowDefinition Height="*" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
                 <StackPanel>
                     <TextBlock Text="{DynamicResource GameDetails_NextGameTitle}"
@@ -871,7 +872,114 @@
                     </Grid>
                 </StackPanel>
 
-                <ItemsControl Grid.Row="3"
+                <StackPanel Grid.Row="3" Margin="0,20,0,0">
+                    <TextBlock Text="{DynamicResource GameDetails_StatusLabel}"
+                               Style="{StaticResource SectionLabelTextStyle}" />
+                    <ComboBox ItemsSource="{Binding SelectedGame.StatusOptions}"
+                              SelectedValuePath="Status"
+                              DisplayMemberPath="DisplayName"
+                              SelectedValue="{Binding SelectedGame.Status, Mode=TwoWay}"
+                              Margin="0,4,0,0"
+                              Height="36"
+                              Background="{StaticResource SurfaceBrush}"
+                              Foreground="White"
+                              BorderBrush="{StaticResource SurfaceBorderBrush}"
+                              BorderThickness="1"
+                              Padding="10,4"
+                              HorizontalAlignment="Stretch">
+                        <ComboBox.Resources>
+                            <Style TargetType="ComboBoxItem" BasedOn="{StaticResource SurfaceComboBoxItemStyle}" />
+                        </ComboBox.Resources>
+                    </ComboBox>
+
+                    <TextBlock Text="{DynamicResource GameDetails_NotesLabel}"
+                               Style="{StaticResource SectionLabelTextStyle}"
+                               Margin="0,16,0,4" />
+                    <TextBox Text="{Binding SelectedGame.Notes, UpdateSourceTrigger=PropertyChanged}"
+                             TextWrapping="Wrap"
+                             AcceptsReturn="True"
+                             Height="96"
+                             Padding="10"
+                             Background="{StaticResource SurfaceBrush}"
+                             BorderBrush="{StaticResource SurfaceBorderBrush}"
+                             BorderThickness="1"
+                             HorizontalAlignment="Stretch" />
+
+                    <Grid Margin="0,16,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="{DynamicResource GameDetails_PlaytimeLabel}"
+                                       Style="{StaticResource SectionLabelTextStyle}" />
+                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                <TextBox Width="96"
+                                         Text="{Binding SelectedGame.PlaytimeText, UpdateSourceTrigger=PropertyChanged}"
+                                         Padding="8,4"
+                                         Background="{StaticResource SurfaceBrush}"
+                                         BorderBrush="{StaticResource SurfaceBorderBrush}"
+                                         BorderThickness="1" />
+                                <TextBlock Text="{DynamicResource GameDetails_PlaytimeHoursSuffix}"
+                                           Margin="8,0,0,0"
+                                           VerticalAlignment="Center"
+                                           Foreground="{StaticResource MutedForegroundBrush}" />
+                            </StackPanel>
+                            <TextBlock Text="{Binding SelectedGame.CompletionSummary}"
+                                       Margin="0,12,0,0"
+                                       Foreground="{StaticResource MutedForegroundBrush}" />
+                            <ProgressBar Margin="0,6,0,0"
+                                         Height="8"
+                                         Minimum="0"
+                                         Maximum="1"
+                                         Value="{Binding SelectedGame.CompletionProgress}" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" Margin="16,0,0,0">
+                            <TextBlock Text="{DynamicResource GameDetails_TargetSessionLabel}"
+                                       Style="{StaticResource SectionLabelTextStyle}" />
+                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                <CheckBox Content="{DynamicResource GameDetails_TargetSessionToggle}"
+                                          IsChecked="{Binding SelectedGame.HasTargetSession}"
+                                          VerticalAlignment="Center"
+                                          Template="{StaticResource MinimalCheckBoxTemplate}" />
+                                <Slider Margin="12,0,0,0"
+                                        Minimum="0"
+                                        Maximum="180"
+                                        SmallChange="5"
+                                        LargeChange="15"
+                                        Width="160"
+                                        Value="{Binding SelectedGame.TargetSessionMinutes, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                        IsEnabled="{Binding SelectedGame.HasTargetSession}" />
+                                <TextBlock Text="{Binding SelectedGame.TargetSessionDisplay}"
+                                           Margin="12,0,0,0"
+                                           VerticalAlignment="Center"
+                                           Foreground="{StaticResource MutedForegroundBrush}" />
+                            </StackPanel>
+
+                            <TextBlock Text="{DynamicResource GameDetails_EstimatedCompletionLabel}"
+                                       Style="{StaticResource SectionLabelTextStyle}"
+                                       Margin="0,16,0,0" />
+                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                <TextBlock Text="{Binding SelectedGame.EstimatedCompletionDisplay}"
+                                           VerticalAlignment="Center" />
+                                <Button Content="{DynamicResource GameDetails_RefreshEstimate}"
+                                        Style="{StaticResource BaseButtonStyle}"
+                                        Margin="12,0,0,0"
+                                        Command="{Binding SelectedGame.RefreshEstimateCommand}" />
+                            </StackPanel>
+                            <TextBlock Text="{Binding SelectedGame.EstimatedCompletionUpdatedDisplay}"
+                                       Margin="0,4,0,0"
+                                       Foreground="{StaticResource MutedForegroundBrush}" />
+                            <TextBlock Text="{Binding SelectedGame.EstimateError}"
+                                       Margin="0,4,0,0"
+                                       Foreground="#FFE17C" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+
+                <ItemsControl Grid.Row="4"
                               ItemsSource="{Binding SelectedGame.Tags}"
                               Margin="0,0,0,4">
                     <ItemsControl.ItemsPanel>
