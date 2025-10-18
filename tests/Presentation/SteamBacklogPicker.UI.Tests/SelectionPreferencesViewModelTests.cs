@@ -80,6 +80,90 @@ public sealed class SelectionPreferencesViewModelTests
     }
 
     [Fact]
+    public void RequireSinglePlayer_ShouldUpdatePreferences()
+    {
+        var initialPreferences = new SelectionPreferences
+        {
+            Filters = new SelectionFilters
+            {
+                RequireSinglePlayer = false,
+            },
+        };
+
+        var engine = new FakeSelectionEngine(initialPreferences);
+        var localization = new FakeLocalizationService();
+        var viewModel = new SelectionPreferencesViewModel(engine, localization);
+
+        viewModel.RequireSinglePlayer = true;
+
+        engine.LastUpdatedPreferences.Filters.RequireSinglePlayer.Should().BeTrue();
+        viewModel.RequireSinglePlayer.Should().BeTrue();
+    }
+
+    [Fact]
+    public void RequireMultiplayer_ShouldUpdatePreferences()
+    {
+        var initialPreferences = new SelectionPreferences
+        {
+            Filters = new SelectionFilters
+            {
+                RequireMultiplayer = false,
+            },
+        };
+
+        var engine = new FakeSelectionEngine(initialPreferences);
+        var localization = new FakeLocalizationService();
+        var viewModel = new SelectionPreferencesViewModel(engine, localization);
+
+        viewModel.RequireMultiplayer = true;
+
+        engine.LastUpdatedPreferences.Filters.RequireMultiplayer.Should().BeTrue();
+        viewModel.RequireMultiplayer.Should().BeTrue();
+    }
+
+    [Fact]
+    public void RequireVirtualReality_ShouldUpdatePreferences()
+    {
+        var initialPreferences = new SelectionPreferences
+        {
+            Filters = new SelectionFilters
+            {
+                RequireVirtualReality = false,
+            },
+        };
+
+        var engine = new FakeSelectionEngine(initialPreferences);
+        var localization = new FakeLocalizationService();
+        var viewModel = new SelectionPreferencesViewModel(engine, localization);
+
+        viewModel.RequireVirtualReality = true;
+
+        engine.LastUpdatedPreferences.Filters.RequireVirtualReality.Should().BeTrue();
+        viewModel.RequireVirtualReality.Should().BeTrue();
+    }
+
+    [Fact]
+    public void MoodTagsText_ShouldUpdatePreferences()
+    {
+        var initialPreferences = new SelectionPreferences
+        {
+            Filters = new SelectionFilters
+            {
+                MoodTags = new List<string> { "Calm" },
+            },
+        };
+
+        var engine = new FakeSelectionEngine(initialPreferences);
+        var localization = new FakeLocalizationService();
+        var viewModel = new SelectionPreferencesViewModel(engine, localization);
+
+        viewModel.MoodTagsText = "Relaxed, Focus";
+
+        engine.LastUpdatedPreferences.Filters.MoodTags.Should().BeEquivalentTo(new[] { "Relaxed", "Focus" }, options => options.WithoutStrictOrdering());
+        viewModel.MoodTagsText.Should().Be("Relaxed, Focus");
+    }
+
+    [Fact]
     public void RecentGameExclusionCount_ShouldUpdatePreferences()
     {
         var initialPreferences = new SelectionPreferences
@@ -150,6 +234,12 @@ public sealed class SelectionPreferencesViewModelTests
             "Filters_RecentExclusionLabel" => "Sorteios recentes",
             "Filters_RecentExclusion_HelpText" => "Quantidade de sorteios recentes a ignorar",
             "Filters_RecentExclusion_ValuePrefix" => "Ignorar últimos:",
+            "Filters_PlayModesLabel" => "Modos de jogo",
+            "Filters_RequireSinglePlayer" => "Apenas singleplayer",
+            "Filters_RequireMultiplayer" => "Apenas multijogador",
+            "Filters_RequireVirtualReality" => "Compatíveis com VR",
+            "Filters_MoodTagsLabel" => "Marcadores de humor",
+            "Filters_MoodTags_HelpText" => "Separe por vírgulas",
             _ => key,
         };
 

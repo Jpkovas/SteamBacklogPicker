@@ -14,6 +14,9 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
     private readonly ILocalizationService _localizationService;
     private bool _requireInstalled;
     private bool _excludeDeckUnsupported;
+    private bool _requireSinglePlayer;
+    private bool _requireMultiplayer;
+    private bool _requireVirtualReality;
     private bool _includeGames = true;
     private bool _includeSoundtracks;
     private bool _includeSoftware;
@@ -25,6 +28,7 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
     private string _noCollectionOption = string.Empty;
     private string _selectedCollection = string.Empty;
     private int _recentGameExclusionCount;
+    private string _moodTagsText = string.Empty;
 
     public SelectionPreferencesViewModel(ISelectionEngine selectionEngine, ILocalizationService localizationService)
     {
@@ -60,6 +64,42 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
             if (SetProperty(ref _excludeDeckUnsupported, value) && !_isHydrating)
             {
                 UpdatePreferences(p => p.Filters.ExcludeDeckUnsupported = value);
+            }
+        }
+    }
+
+    public bool RequireSinglePlayer
+    {
+        get => _requireSinglePlayer;
+        set
+        {
+            if (SetProperty(ref _requireSinglePlayer, value) && !_isHydrating)
+            {
+                UpdatePreferences(p => p.Filters.RequireSinglePlayer = value);
+            }
+        }
+    }
+
+    public bool RequireMultiplayer
+    {
+        get => _requireMultiplayer;
+        set
+        {
+            if (SetProperty(ref _requireMultiplayer, value) && !_isHydrating)
+            {
+                UpdatePreferences(p => p.Filters.RequireMultiplayer = value);
+            }
+        }
+    }
+
+    public bool RequireVirtualReality
+    {
+        get => _requireVirtualReality;
+        set
+        {
+            if (SetProperty(ref _requireVirtualReality, value) && !_isHydrating)
+            {
+                UpdatePreferences(p => p.Filters.RequireVirtualReality = value);
             }
         }
     }
@@ -170,6 +210,19 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
         }
     }
 
+    public string MoodTagsText
+    {
+        get => _moodTagsText;
+        set
+        {
+            var normalized = value ?? string.Empty;
+            if (SetProperty(ref _moodTagsText, normalized) && !_isHydrating)
+            {
+                UpdatePreferences(p => p.Filters.MoodTags = ParseMoodTags(normalized));
+            }
+        }
+    }
+
     public void Apply(SelectionPreferences preferences)
     {
         ArgumentNullException.ThrowIfNull(preferences);
@@ -179,6 +232,9 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
         {
             RequireInstalled = preferences.Filters.RequireInstalled;
             ExcludeDeckUnsupported = preferences.Filters.ExcludeDeckUnsupported;
+            RequireSinglePlayer = preferences.Filters.RequireSinglePlayer;
+            RequireMultiplayer = preferences.Filters.RequireMultiplayer;
+            RequireVirtualReality = preferences.Filters.RequireVirtualReality;
 
             var categories = preferences.Filters.IncludedCategories ?? new List<ProductCategory>();
             IncludeGames = categories.Contains(ProductCategory.Game);
@@ -200,6 +256,8 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
             SelectedCollection = string.IsNullOrWhiteSpace(requiredCollection)
                 ? _noCollectionOption
                 : requiredCollection;
+
+            MoodTagsText = FormatMoodTags(preferences.Filters.MoodTags);
         }
         finally
         {
@@ -336,5 +394,30 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
             _selectedCollection = _noCollectionOption;
             OnPropertyChanged(nameof(SelectedCollection));
         }
+    }
+
+    private static List<string> ParseMoodTags(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return new List<string>();
+        }
+
+        return value
+            .Split(new[] { ',', ';', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(tag => tag.Trim())
+            .Where(tag => tag.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private static string FormatMoodTags(IReadOnlyCollection<string>? tags)
+    {
+        if (tags is null || tags.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        return string.Join(", ", tags);
     }
 }

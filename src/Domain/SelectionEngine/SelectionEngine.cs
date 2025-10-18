@@ -232,6 +232,21 @@ public sealed class SelectionEngine : ISelectionEngine
                 continue;
             }
 
+            if (filters.RequireSinglePlayer && !GameEntryCapabilities.SupportsSinglePlayer(game))
+            {
+                continue;
+            }
+
+            if (filters.RequireMultiplayer && !GameEntryCapabilities.SupportsMultiplayer(game))
+            {
+                continue;
+            }
+
+            if (filters.RequireVirtualReality && !GameEntryCapabilities.SupportsVirtualReality(game))
+            {
+                continue;
+            }
+
             var category = game.ProductCategory;
             if (category == ProductCategory.Unknown)
             {
@@ -247,6 +262,24 @@ public sealed class SelectionEngine : ISelectionEngine
             {
                 var tags = game.Tags;
                 if (tags is null || !tags.Any(tag => string.Equals(tag, requiredCollection, StringComparison.OrdinalIgnoreCase)))
+                {
+                    continue;
+                }
+            }
+
+            var requiredMoods = filters.MoodTags;
+            if (requiredMoods is not null && requiredMoods.Count > 0)
+            {
+                var tags = game.Tags;
+                if (tags is null)
+                {
+                    continue;
+                }
+
+                var hasAllRequiredMoods = requiredMoods.All(mood =>
+                    tags.Any(tag => string.Equals(tag, mood, StringComparison.OrdinalIgnoreCase)));
+
+                if (!hasAllRequiredMoods)
                 {
                     continue;
                 }

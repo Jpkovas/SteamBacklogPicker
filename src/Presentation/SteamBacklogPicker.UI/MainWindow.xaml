@@ -413,6 +413,24 @@
                           IsChecked="{Binding Preferences.ExcludeDeckUnsupported, Mode=TwoWay}"
                           AutomationProperties.Name="{DynamicResource Filters_ExcludeDeckUnsupported}" />
 
+                <TextBlock Text="{DynamicResource Filters_PlayModesLabel}"
+                           Style="{StaticResource SectionLabelTextStyle}" />
+
+                <StackPanel>
+                    <CheckBox Content="{DynamicResource Filters_RequireSinglePlayer}"
+                              Style="{StaticResource FilterCheckBoxStyle}"
+                              IsChecked="{Binding Preferences.RequireSinglePlayer, Mode=TwoWay}"
+                              AutomationProperties.Name="{DynamicResource Filters_RequireSinglePlayer}" />
+                    <CheckBox Content="{DynamicResource Filters_RequireMultiplayer}"
+                              Style="{StaticResource FilterCheckBoxStyle}"
+                              IsChecked="{Binding Preferences.RequireMultiplayer, Mode=TwoWay}"
+                              AutomationProperties.Name="{DynamicResource Filters_RequireMultiplayer}" />
+                    <CheckBox Content="{DynamicResource Filters_RequireVirtualReality}"
+                              Style="{StaticResource FilterCheckBoxStyle}"
+                              IsChecked="{Binding Preferences.RequireVirtualReality, Mode=TwoWay}"
+                              AutomationProperties.Name="{DynamicResource Filters_RequireVirtualReality}" />
+                </StackPanel>
+
                 <TextBlock Text="{DynamicResource Filters_RecentExclusionLabel}"
                            Style="{StaticResource SectionLabelTextStyle}" />
 
@@ -474,6 +492,20 @@
                           Style="{StaticResource SurfaceComboBoxStyle}"
                           AutomationProperties.Name="{DynamicResource Filters_SelectCollection}"
                           AutomationProperties.HelpText="{DynamicResource Filters_SelectCollection_HelpText}" />
+
+                <TextBlock Text="{DynamicResource Filters_MoodTagsLabel}"
+                           Style="{StaticResource SectionLabelTextStyle}" />
+
+                <TextBox Text="{Binding Preferences.MoodTagsText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Margin="0,0,0,12"
+                         MinHeight="32"
+                         Padding="10,6"
+                         Background="{StaticResource SurfaceAltBrush}"
+                         BorderBrush="{StaticResource SurfaceBorderBrush}"
+                         BorderThickness="1"
+                         Foreground="White"
+                         AutomationProperties.Name="{DynamicResource Filters_MoodTagsLabel}"
+                         AutomationProperties.HelpText="{DynamicResource Filters_MoodTags_HelpText}" />
 
                 <Button Content="{DynamicResource Filters_RefreshButton}"
                         Style="{StaticResource BaseButtonStyle}"

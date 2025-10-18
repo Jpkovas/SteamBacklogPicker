@@ -233,6 +233,190 @@ public sealed class SelectionEngineTests
     }
 
     [Fact]
+    public void FilterGames_ShouldRespectSinglePlayerRequirement()
+    {
+        var settingsPath = CreateSettingsPath();
+        try
+        {
+            var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
+            engine.UpdatePreferences(new SelectionPreferences
+            {
+                Filters = new SelectionFilters
+                {
+                    RequireSinglePlayer = true,
+                },
+                HistoryLimit = 10,
+            });
+
+            var games = new[]
+            {
+                new GameEntry
+                {
+                    AppId = 1,
+                    Title = "Singleplayer",
+                    InstallState = InstallState.Installed,
+                    OwnershipType = OwnershipType.Owned,
+                    StoreCategoryIds = new[] { 2 },
+                },
+                new GameEntry
+                {
+                    AppId = 2,
+                    Title = "No Modes",
+                    InstallState = InstallState.Installed,
+                    OwnershipType = OwnershipType.Owned,
+                    StoreCategoryIds = Array.Empty<int>(),
+                },
+            };
+
+            var filtered = engine.FilterGames(games);
+
+            filtered.Select(game => game.AppId).Should().BeEquivalentTo(new[] { 1u });
+        }
+        finally
+        {
+            Cleanup(settingsPath);
+        }
+    }
+
+    [Fact]
+    public void FilterGames_ShouldRespectMultiplayerRequirement()
+    {
+        var settingsPath = CreateSettingsPath();
+        try
+        {
+            var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
+            engine.UpdatePreferences(new SelectionPreferences
+            {
+                Filters = new SelectionFilters
+                {
+                    RequireMultiplayer = true,
+                },
+                HistoryLimit = 10,
+            });
+
+            var games = new[]
+            {
+                new GameEntry
+                {
+                    AppId = 1,
+                    Title = "Multiplayer",
+                    InstallState = InstallState.Installed,
+                    OwnershipType = OwnershipType.Owned,
+                    StoreCategoryIds = new[] { 1 },
+                },
+                new GameEntry
+                {
+                    AppId = 2,
+                    Title = "Single Only",
+                    InstallState = InstallState.Installed,
+                    OwnershipType = OwnershipType.Owned,
+                    StoreCategoryIds = new[] { 2 },
+                },
+            };
+
+            var filtered = engine.FilterGames(games);
+
+            filtered.Select(game => game.AppId).Should().BeEquivalentTo(new[] { 1u });
+        }
+        finally
+        {
+            Cleanup(settingsPath);
+        }
+    }
+
+    [Fact]
+    public void FilterGames_ShouldRespectVirtualRealityRequirement()
+    {
+        var settingsPath = CreateSettingsPath();
+        try
+        {
+            var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
+            engine.UpdatePreferences(new SelectionPreferences
+            {
+                Filters = new SelectionFilters
+                {
+                    RequireVirtualReality = true,
+                },
+                HistoryLimit = 10,
+            });
+
+            var games = new[]
+            {
+                new GameEntry
+                {
+                    AppId = 1,
+                    Title = "VR Game",
+                    InstallState = InstallState.Installed,
+                    OwnershipType = OwnershipType.Owned,
+                    StoreCategoryIds = new[] { 31 },
+                },
+                new GameEntry
+                {
+                    AppId = 2,
+                    Title = "Flat Game",
+                    InstallState = InstallState.Installed,
+                    OwnershipType = OwnershipType.Owned,
+                    StoreCategoryIds = new[] { 2 },
+                },
+            };
+
+            var filtered = engine.FilterGames(games);
+
+            filtered.Select(game => game.AppId).Should().BeEquivalentTo(new[] { 1u });
+        }
+        finally
+        {
+            Cleanup(settingsPath);
+        }
+    }
+
+    [Fact]
+    public void FilterGames_ShouldRespectMoodTagRequirements()
+    {
+        var settingsPath = CreateSettingsPath();
+        try
+        {
+            var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
+            engine.UpdatePreferences(new SelectionPreferences
+            {
+                Filters = new SelectionFilters
+                {
+                    MoodTags = new List<string> { "Relaxed", "Cozy" },
+                },
+                HistoryLimit = 10,
+            });
+
+            var games = new[]
+            {
+                new GameEntry
+                {
+                    AppId = 1,
+                    Title = "Chill",
+                    InstallState = InstallState.Installed,
+                    OwnershipType = OwnershipType.Owned,
+                    Tags = new[] { "Relaxed", "Cozy" },
+                },
+                new GameEntry
+                {
+                    AppId = 2,
+                    Title = "Partial",
+                    InstallState = InstallState.Installed,
+                    OwnershipType = OwnershipType.Owned,
+                    Tags = new[] { "Relaxed" },
+                },
+            };
+
+            var filtered = engine.FilterGames(games);
+
+            filtered.Select(game => game.AppId).Should().BeEquivalentTo(new[] { 1u });
+        }
+        finally
+        {
+            Cleanup(settingsPath);
+        }
+    }
+
+    [Fact]
     public void RecentGameExclusionCount_ShouldPersistAndExcludeRecentSelections()
     {
         var settingsPath = CreateSettingsPath();

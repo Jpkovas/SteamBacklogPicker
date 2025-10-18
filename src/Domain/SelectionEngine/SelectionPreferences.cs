@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Domain.Selection;
 
 public sealed class SelectionPreferences
@@ -15,6 +17,62 @@ public sealed class SelectionPreferences
         {
             Filters ??= new SelectionFilters();
             Filters.ExcludeDeckUnsupported = value;
+        }
+    }
+
+    public bool RequireSinglePlayer
+    {
+        get
+        {
+            Filters ??= new SelectionFilters();
+            return Filters.RequireSinglePlayer;
+        }
+        set
+        {
+            Filters ??= new SelectionFilters();
+            Filters.RequireSinglePlayer = value;
+        }
+    }
+
+    public bool RequireMultiplayer
+    {
+        get
+        {
+            Filters ??= new SelectionFilters();
+            return Filters.RequireMultiplayer;
+        }
+        set
+        {
+            Filters ??= new SelectionFilters();
+            Filters.RequireMultiplayer = value;
+        }
+    }
+
+    public bool RequireVirtualReality
+    {
+        get
+        {
+            Filters ??= new SelectionFilters();
+            return Filters.RequireVirtualReality;
+        }
+        set
+        {
+            Filters ??= new SelectionFilters();
+            Filters.RequireVirtualReality = value;
+        }
+    }
+
+    public List<string> MoodTags
+    {
+        get
+        {
+            Filters ??= new SelectionFilters();
+            return Filters.MoodTags;
+        }
+        set
+        {
+            Filters ??= new SelectionFilters();
+            Filters.MoodTags = value is null ? new List<string>() : new List<string>(value);
         }
     }
 

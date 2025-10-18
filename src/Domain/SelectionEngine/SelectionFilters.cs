@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -9,9 +10,17 @@ public sealed class SelectionFilters
 
     public bool ExcludeDeckUnsupported { get; set; }
 
+    public bool RequireSinglePlayer { get; set; }
+
+    public bool RequireMultiplayer { get; set; }
+
+    public bool RequireVirtualReality { get; set; }
+
     public string? RequiredCollection { get; set; }
 
     public List<ProductCategory> IncludedCategories { get; set; } = new() { ProductCategory.Game };
+
+    public List<string> MoodTags { get; set; } = new();
 
     public SelectionFilters Clone()
     {
@@ -19,8 +28,12 @@ public sealed class SelectionFilters
         {
             RequireInstalled = RequireInstalled,
             ExcludeDeckUnsupported = ExcludeDeckUnsupported,
+            RequireSinglePlayer = RequireSinglePlayer,
+            RequireMultiplayer = RequireMultiplayer,
+            RequireVirtualReality = RequireVirtualReality,
             RequiredCollection = RequiredCollection,
             IncludedCategories = IncludedCategories is null ? new List<ProductCategory>() : new List<ProductCategory>(IncludedCategories),
+            MoodTags = MoodTags is null ? new List<string>() : new List<string>(MoodTags),
         };
     }
 
@@ -38,6 +51,17 @@ public sealed class SelectionFilters
         {
             IncludedCategories = IncludedCategories
                 .Distinct()
+                .ToList();
+        }
+
+        MoodTags ??= new List<string>();
+        if (MoodTags.Count > 0)
+        {
+            MoodTags = MoodTags
+                .Where(tag => !string.IsNullOrWhiteSpace(tag))
+                .Select(tag => tag.Trim())
+                .Where(tag => tag.Length > 0)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
         }
     }
