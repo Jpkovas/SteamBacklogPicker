@@ -453,6 +453,78 @@
                                Style="{StaticResource SectionSupportingTextStyle}" />
                 </StackPanel>
 
+                <TextBlock Text="{DynamicResource Filters_WeightsLabel}"
+                           Style="{StaticResource SectionLabelTextStyle}" />
+
+                <TextBlock Text="{DynamicResource Filters_InstallWeightLabel}"
+                           Style="{StaticResource SectionSupportingTextStyle}"
+                           Margin="0,0,0,4" />
+                <Grid Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Slider Minimum="0"
+                            Maximum="2"
+                            TickFrequency="0.1"
+                            IsSnapToTickEnabled="True"
+                            Value="{Binding Preferences.InstallStateWeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            SmallChange="0.1"
+                            LargeChange="0.2"
+                            AutomationProperties.Name="{DynamicResource Filters_InstallWeightLabel}"
+                            AutomationProperties.HelpText="{DynamicResource Filters_InstallWeight_HelpText}" />
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding Preferences.InstallStateWeight, StringFormat={}{0:0.0}}"
+                               Style="{StaticResource SectionSupportingTextStyle}"
+                               Margin="12,0,0,0" />
+                </Grid>
+
+                <TextBlock Text="{DynamicResource Filters_LastPlayedWeightLabel}"
+                           Style="{StaticResource SectionSupportingTextStyle}"
+                           Margin="0,0,0,4" />
+                <Grid Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Slider Minimum="0"
+                            Maximum="2"
+                            TickFrequency="0.1"
+                            IsSnapToTickEnabled="True"
+                            Value="{Binding Preferences.LastPlayedWeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            SmallChange="0.1"
+                            LargeChange="0.2"
+                            AutomationProperties.Name="{DynamicResource Filters_LastPlayedWeightLabel}"
+                            AutomationProperties.HelpText="{DynamicResource Filters_LastPlayedWeight_HelpText}" />
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding Preferences.LastPlayedWeight, StringFormat={}{0:0.0}}"
+                               Style="{StaticResource SectionSupportingTextStyle}"
+                               Margin="12,0,0,0" />
+                </Grid>
+
+                <TextBlock Text="{DynamicResource Filters_DeckWeightLabel}"
+                           Style="{StaticResource SectionSupportingTextStyle}"
+                           Margin="0,0,0,4" />
+                <Grid Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Slider Minimum="0"
+                            Maximum="2"
+                            TickFrequency="0.1"
+                            IsSnapToTickEnabled="True"
+                            Value="{Binding Preferences.DeckCompatibilityWeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            SmallChange="0.1"
+                            LargeChange="0.2"
+                            AutomationProperties.Name="{DynamicResource Filters_DeckWeightLabel}"
+                            AutomationProperties.HelpText="{DynamicResource Filters_DeckWeight_HelpText}" />
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding Preferences.DeckCompatibilityWeight, StringFormat={}{0:0.0}}"
+                               Style="{StaticResource SectionSupportingTextStyle}"
+                               Margin="12,0,0,0" />
+                </Grid>
+
                 <TextBlock Text="{DynamicResource Filters_ContentTypesLabel}"
                            Style="{StaticResource SectionLabelTextStyle}" />
 

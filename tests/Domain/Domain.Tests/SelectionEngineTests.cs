@@ -119,6 +119,141 @@ public sealed class SelectionEngineTests
     }
 
     [Fact]
+    public void PickNext_ShouldFavorInstalledGames_WhenInstallWeightConfigured()
+    {
+        var settingsPath = CreateSettingsPath();
+        try
+        {
+            var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
+            var preferences = engine.GetPreferences();
+            preferences.Filters.InstallStateWeight = 2d;
+            preferences.Seed = 3141;
+            engine.UpdatePreferences(preferences);
+
+            var games = new[]
+            {
+                new GameEntry { AppId = 1, Title = "Installed", InstallState = InstallState.Installed, OwnershipType = OwnershipType.Owned },
+                new GameEntry { AppId = 2, Title = "Available", InstallState = InstallState.Available, OwnershipType = OwnershipType.Owned },
+            };
+
+            var picks = new List<uint>();
+            for (var i = 0; i < 12; i++)
+            {
+                picks.Add(engine.PickNext(games).AppId);
+            }
+
+            picks.Should().OnlyContain(id => id == 1u);
+        }
+        finally
+        {
+            Cleanup(settingsPath);
+        }
+    }
+
+    [Fact]
+    public void PickNext_ShouldBoostUnplayedGames_WhenRecencyWeightConfigured()
+    {
+        var settingsPath = CreateSettingsPath();
+        try
+        {
+            var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
+            var preferences = engine.GetPreferences();
+            preferences.Filters.LastPlayedRecencyWeight = 2d;
+            preferences.Seed = 4242;
+            engine.UpdatePreferences(preferences);
+
+            var games = new[]
+            {
+                new GameEntry { AppId = 1, Title = "Never Played", InstallState = InstallState.Installed, OwnershipType = OwnershipType.Owned, LastPlayed = null },
+                new GameEntry { AppId = 2, Title = "Played Today", InstallState = InstallState.Installed, OwnershipType = OwnershipType.Owned, LastPlayed = DateTimeOffset.UnixEpoch },
+            };
+
+            var picks = new List<uint>();
+            for (var i = 0; i < 10; i++)
+            {
+                picks.Add(engine.PickNext(games).AppId);
+            }
+
+            picks.Should().OnlyContain(id => id == 1u);
+        }
+        finally
+        {
+            Cleanup(settingsPath);
+        }
+    }
+
+    [Fact]
+    public void PickNext_ShouldFavorDeckCompatibleGames_WhenDeckWeightConfigured()
+    {
+        var settingsPath = CreateSettingsPath();
+        try
+        {
+            var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
+            var preferences = engine.GetPreferences();
+            preferences.Filters.DeckCompatibilityWeight = 2d;
+            preferences.Seed = 5150;
+            engine.UpdatePreferences(preferences);
+
+            var games = new[]
+            {
+                new GameEntry { AppId = 1, Title = "Verified", InstallState = InstallState.Installed, OwnershipType = OwnershipType.Owned, DeckCompatibility = SteamDeckCompatibility.Verified },
+                new GameEntry { AppId = 2, Title = "Unsupported", InstallState = InstallState.Installed, OwnershipType = OwnershipType.Owned, DeckCompatibility = SteamDeckCompatibility.Unsupported },
+            };
+
+            var picks = new List<uint>();
+            for (var i = 0; i < 10; i++)
+            {
+                picks.Add(engine.PickNext(games).AppId);
+            }
+
+            picks.Should().OnlyContain(id => id == 1u);
+        }
+        finally
+        {
+            Cleanup(settingsPath);
+        }
+    }
+
+    [Fact]
+    public void PickNext_ShouldRemainDeterministicWithWeights_WhenSeedIsProvided()
+    {
+        var games = new[]
+        {
+            new GameEntry { AppId = 10, Title = "Installed", InstallState = InstallState.Installed, OwnershipType = OwnershipType.Owned, DeckCompatibility = SteamDeckCompatibility.Verified },
+            new GameEntry { AppId = 20, Title = "Shared", InstallState = InstallState.Shared, OwnershipType = OwnershipType.FamilyShared, DeckCompatibility = SteamDeckCompatibility.Playable },
+            new GameEntry { AppId = 30, Title = "Cloud", InstallState = InstallState.Available, OwnershipType = OwnershipType.Owned, DeckCompatibility = SteamDeckCompatibility.Unsupported, LastPlayed = DateTimeOffset.UnixEpoch },
+        };
+
+        var preferencesFactory = () => new SelectionPreferences
+        {
+            Seed = 2468,
+            HistoryLimit = 25,
+            Filters = new SelectionFilters
+            {
+                InstallStateWeight = 1.6d,
+                LastPlayedRecencyWeight = 1.4d,
+                DeckCompatibilityWeight = 1.8d,
+            },
+        };
+
+        var firstSettings = CreateSettingsPath();
+        var secondSettings = CreateSettingsPath();
+
+        try
+        {
+            var firstSequence = RunSelectionSequence(games, preferencesFactory(), firstSettings, picks: 30);
+            var secondSequence = RunSelectionSequence(games, preferencesFactory(), secondSettings, picks: 30);
+
+            secondSequence.Should().Equal(firstSequence);
+        }
+        finally
+        {
+            Cleanup(firstSettings);
+            Cleanup(secondSettings);
+        }
+    }
+
+    [Fact]
     public void PickNext_ShouldResumeSeededSequenceAcrossSessions()
     {
         var games = new[]

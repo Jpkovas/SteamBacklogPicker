@@ -34,6 +34,48 @@ public sealed class SelectionPreferences
         }
     }
 
+    public double InstallStateWeight
+    {
+        get
+        {
+            Filters ??= new SelectionFilters();
+            return Filters.InstallStateWeight;
+        }
+        set
+        {
+            Filters ??= new SelectionFilters();
+            Filters.InstallStateWeight = value;
+        }
+    }
+
+    public double LastPlayedRecencyWeight
+    {
+        get
+        {
+            Filters ??= new SelectionFilters();
+            return Filters.LastPlayedRecencyWeight;
+        }
+        set
+        {
+            Filters ??= new SelectionFilters();
+            Filters.LastPlayedRecencyWeight = value;
+        }
+    }
+
+    public double DeckCompatibilityWeight
+    {
+        get
+        {
+            Filters ??= new SelectionFilters();
+            return Filters.DeckCompatibilityWeight;
+        }
+        set
+        {
+            Filters ??= new SelectionFilters();
+            Filters.DeckCompatibilityWeight = value;
+        }
+    }
+
     public int? Seed { get; set; }
 
     public int RecentGameExclusionCount { get; set; }
