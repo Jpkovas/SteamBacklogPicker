@@ -214,6 +214,7 @@ public sealed class SelectionEngine : ISelectionEngine
             : null;
         var requiredCollection = filters.RequiredCollection;
         var filterByCollection = !string.IsNullOrWhiteSpace(requiredCollection);
+        var allowedCompatibility = filters.AllowedDeckCompatibility;
         var results = new List<GameEntry>();
 
         foreach (var game in games)
@@ -228,7 +229,8 @@ public sealed class SelectionEngine : ISelectionEngine
                 continue;
             }
 
-            if (filters.ExcludeDeckUnsupported && game.DeckCompatibility == SteamDeckCompatibility.Unsupported)
+            var compatibility = GetCompatibilityFlag(game.DeckCompatibility);
+            if ((allowedCompatibility & compatibility) == 0)
             {
                 continue;
             }
@@ -258,6 +260,14 @@ public sealed class SelectionEngine : ISelectionEngine
 
         return results;
     }
+
+    private static DeckCompatibilityFilter GetCompatibilityFlag(SteamDeckCompatibility compatibility) => compatibility switch
+    {
+        SteamDeckCompatibility.Verified => DeckCompatibilityFilter.Verified,
+        SteamDeckCompatibility.Playable => DeckCompatibilityFilter.Playable,
+        SteamDeckCompatibility.Unsupported => DeckCompatibilityFilter.Unsupported,
+        _ => DeckCompatibilityFilter.Unknown,
+    };
 
     private HashSet<uint> GetExcludedAppIds()
     {

@@ -9,12 +9,28 @@ public sealed class SelectionPreferences
         get
         {
             Filters ??= new SelectionFilters();
-            return Filters.ExcludeDeckUnsupported;
+            return !Filters.AllowedDeckCompatibility.HasFlag(DeckCompatibilityFilter.Unsupported);
         }
         set
         {
             Filters ??= new SelectionFilters();
-            Filters.ExcludeDeckUnsupported = value;
+            Filters.AllowedDeckCompatibility = value
+                ? Filters.AllowedDeckCompatibility & ~DeckCompatibilityFilter.Unsupported
+                : Filters.AllowedDeckCompatibility | DeckCompatibilityFilter.Unsupported;
+        }
+    }
+
+    public DeckCompatibilityFilter AllowedDeckCompatibility
+    {
+        get
+        {
+            Filters ??= new SelectionFilters();
+            return Filters.AllowedDeckCompatibility;
+        }
+        set
+        {
+            Filters ??= new SelectionFilters();
+            Filters.AllowedDeckCompatibility = value;
         }
     }
 
