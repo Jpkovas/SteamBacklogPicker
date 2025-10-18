@@ -465,11 +465,6 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
                 allowed |= DeckCompatibilityFilter.Unsupported;
             }
 
-            if (allowed == DeckCompatibilityFilter.None)
-            {
-                allowed = DeckCompatibilityFilter.All;
-            }
-
             p.Filters.AllowedDeckCompatibility = allowed;
         });
     }
