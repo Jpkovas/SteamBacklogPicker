@@ -23,6 +23,9 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
     private bool _includeTools;
     private bool _includeVideos;
     private bool _includeOther;
+    private bool _requireSinglePlayer;
+    private bool _requireMultiplayer;
+    private bool _requireVr;
     private bool _isHydrating;
     private readonly ObservableCollection<string> _collectionOptions = new();
     private string _noCollectionOption = string.Empty;
@@ -31,6 +34,7 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
     private double _installStateWeight = 1d;
     private double _lastPlayedWeight = 1d;
     private double _deckCompatibilityWeight = 1d;
+    private string _moodTagsText = string.Empty;
 
     public SelectionPreferencesViewModel(ISelectionEngine selectionEngine, ILocalizationService localizationService)
     {
@@ -54,6 +58,55 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
             if (SetProperty(ref _requireInstalled, value) && !_isHydrating)
             {
                 UpdatePreferences(p => p.Filters.RequireInstalled = value);
+            }
+        }
+    }
+
+    public bool RequireSinglePlayer
+    {
+        get => _requireSinglePlayer;
+        set
+        {
+            if (SetProperty(ref _requireSinglePlayer, value) && !_isHydrating)
+            {
+                UpdatePreferences(p => p.Filters.RequireSinglePlayer = value);
+            }
+        }
+    }
+
+    public bool RequireMultiplayer
+    {
+        get => _requireMultiplayer;
+        set
+        {
+            if (SetProperty(ref _requireMultiplayer, value) && !_isHydrating)
+            {
+                UpdatePreferences(p => p.Filters.RequireMultiplayer = value);
+            }
+        }
+    }
+
+    public bool RequireVr
+    {
+        get => _requireVr;
+        set
+        {
+            if (SetProperty(ref _requireVr, value) && !_isHydrating)
+            {
+                UpdatePreferences(p => p.Filters.RequireVr = value);
+            }
+        }
+    }
+
+    public string MoodTagsText
+    {
+        get => _moodTagsText;
+        set
+        {
+            var normalized = value ?? string.Empty;
+            if (SetProperty(ref _moodTagsText, normalized) && !_isHydrating)
+            {
+                UpdateMoodTagsPreferences(normalized);
             }
         }
     }
@@ -259,6 +312,9 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
         try
         {
             RequireInstalled = preferences.Filters.RequireInstalled;
+            RequireSinglePlayer = preferences.Filters.RequireSinglePlayer;
+            RequireMultiplayer = preferences.Filters.RequireMultiplayer;
+            RequireVr = preferences.Filters.RequireVr;
             var allowedCompatibility = preferences.Filters.AllowedDeckCompatibility;
             IncludeDeckUnknown = allowedCompatibility.HasFlag(DeckCompatibilityFilter.Unknown);
             IncludeDeckVerified = allowedCompatibility.HasFlag(DeckCompatibilityFilter.Verified);
@@ -278,6 +334,9 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
             InstallStateWeight = preferences.Filters.InstallStateWeight;
             LastPlayedWeight = preferences.Filters.LastPlayedRecencyWeight;
             DeckCompatibilityWeight = preferences.Filters.DeckCompatibilityWeight;
+
+            var moodTags = preferences.Filters.MoodTags ?? new List<string>();
+            MoodTagsText = moodTags.Count == 0 ? string.Empty : string.Join(", ", moodTags);
 
             var requiredCollection = preferences.Filters.RequiredCollection;
             if (!string.IsNullOrWhiteSpace(requiredCollection) &&
@@ -360,6 +419,27 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
         });
     }
 
+    private void UpdateMoodTagsPreferences(string tagsText)
+    {
+        UpdatePreferences(p =>
+        {
+            if (string.IsNullOrWhiteSpace(tagsText))
+            {
+                p.Filters.MoodTags = new List<string>();
+                return;
+            }
+
+            var tags = tagsText
+                .Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(tag => tag.Trim())
+                .Where(tag => tag.Length > 0)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            p.Filters.MoodTags = tags;
+        });
+    }
+
     private void UpdateDeckCompatibilityPreferences()
     {
         UpdatePreferences(p =>
@@ -383,11 +463,6 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
             if (IncludeDeckUnsupported)
             {
                 allowed |= DeckCompatibilityFilter.Unsupported;
-            }
-
-            if (allowed == DeckCompatibilityFilter.None)
-            {
-                allowed = DeckCompatibilityFilter.All;
             }
 
             p.Filters.AllowedDeckCompatibility = allowed;

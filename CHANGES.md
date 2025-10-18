@@ -1,5 +1,7 @@
 # Recent Changes
 
+- Fixed Deck compatibility toggles to respect deselected states so the persisted filter matches the UI configuration.
+- Added singleplayer, multiplayer/co-op, VR, and mood tag filters with updated persistence, UI controls, and coverage in selection logic tests.
 - Refactored the Steam library refresh workflow to run heavy operations asynchronously and updated the view model to marshal UI updates safely.
 - Added a localized slider in the filters pane to control recent draw exclusions and verified persistence in unit tests.
 - Cached Steam VDF fallbacks with dependency tracking and exposed invalidation hooks for library refreshes, including regression tests for reuse behavior.
