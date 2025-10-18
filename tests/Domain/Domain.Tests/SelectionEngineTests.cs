@@ -233,6 +233,65 @@ public sealed class SelectionEngineTests
     }
 
     [Fact]
+    public void RecentGameExclusionCount_ShouldPersistAndExcludeRecentSelections()
+    {
+        var settingsPath = CreateSettingsPath();
+        try
+        {
+            var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
+            engine.UpdatePreferences(new SelectionPreferences
+            {
+                RecentGameExclusionCount = 1,
+                HistoryLimit = 10,
+            });
+
+            var games = new[]
+            {
+                new GameEntry
+                {
+                    AppId = 1,
+                    Title = "First",
+                    InstallState = InstallState.Installed,
+                    OwnershipType = OwnershipType.Owned,
+                    ProductCategory = ProductCategory.Game,
+                },
+                new GameEntry
+                {
+                    AppId = 2,
+                    Title = "Second",
+                    InstallState = InstallState.Installed,
+                    OwnershipType = OwnershipType.Owned,
+                    ProductCategory = ProductCategory.Game,
+                },
+                new GameEntry
+                {
+                    AppId = 3,
+                    Title = "Third",
+                    InstallState = InstallState.Installed,
+                    OwnershipType = OwnershipType.Owned,
+                    ProductCategory = ProductCategory.Game,
+                },
+            };
+
+            var first = engine.PickNext(games);
+
+            var filteredAfterPick = engine.FilterGames(games);
+            filteredAfterPick.Should().NotBeEmpty();
+            filteredAfterPick.Select(game => game.AppId).Should().NotContain(first.AppId);
+
+            var second = engine.PickNext(games);
+            second.AppId.Should().NotBe(first.AppId);
+
+            var reloaded = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
+            reloaded.GetPreferences().RecentGameExclusionCount.Should().Be(1);
+        }
+        finally
+        {
+            Cleanup(settingsPath);
+        }
+    }
+
+    [Fact]
     public void FilterGames_ShouldRespectCategorySelection()
     {
         var settingsPath = CreateSettingsPath();
