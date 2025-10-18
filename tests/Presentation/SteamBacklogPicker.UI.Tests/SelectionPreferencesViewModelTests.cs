@@ -56,13 +56,13 @@ public sealed class SelectionPreferencesViewModelTests
     }
 
     [Fact]
-    public void ExcludeDeckUnsupported_ShouldUpdatePreferences()
+    public void DeckCompatibilityPreferences_ShouldUpdateSelectionEngine()
     {
         var initialPreferences = new SelectionPreferences
         {
             Filters = new SelectionFilters
             {
-                ExcludeDeckUnsupported = false,
+                AllowedDeckCompatibility = DeckCompatibilityFilter.All,
             },
         };
 
@@ -70,13 +70,21 @@ public sealed class SelectionPreferencesViewModelTests
         var localization = new FakeLocalizationService();
         var viewModel = new SelectionPreferencesViewModel(engine, localization);
 
-        viewModel.ExcludeDeckUnsupported = true;
-        engine.LastUpdatedPreferences.Filters.ExcludeDeckUnsupported.Should().BeTrue();
-        viewModel.ExcludeDeckUnsupported.Should().BeTrue();
+        viewModel.IncludeDeckUnsupported = false;
+        engine.LastUpdatedPreferences.Filters.AllowedDeckCompatibility.Should().Be(DeckCompatibilityFilter.All & ~DeckCompatibilityFilter.Unsupported);
+        viewModel.IncludeDeckUnsupported.Should().BeFalse();
 
-        viewModel.ExcludeDeckUnsupported = false;
-        engine.LastUpdatedPreferences.Filters.ExcludeDeckUnsupported.Should().BeFalse();
-        viewModel.ExcludeDeckUnsupported.Should().BeFalse();
+        viewModel.IncludeDeckVerified = false;
+        engine.LastUpdatedPreferences.Filters.AllowedDeckCompatibility.Should().Be(DeckCompatibilityFilter.Unknown | DeckCompatibilityFilter.Playable);
+        viewModel.IncludeDeckVerified.Should().BeFalse();
+
+        viewModel.IncludeDeckUnknown = false;
+        engine.LastUpdatedPreferences.Filters.AllowedDeckCompatibility.Should().Be(DeckCompatibilityFilter.Playable);
+        viewModel.IncludeDeckUnknown.Should().BeFalse();
+
+        viewModel.IncludeDeckPlayable = false;
+        engine.LastUpdatedPreferences.Filters.AllowedDeckCompatibility.Should().Be(DeckCompatibilityFilter.None);
+        viewModel.IncludeDeckPlayable.Should().BeFalse();
     }
 
     [Fact]
@@ -97,6 +105,69 @@ public sealed class SelectionPreferencesViewModelTests
 
         engine.LastUpdatedPreferences.RecentGameExclusionCount.Should().Be(4);
         viewModel.RecentGameExclusionCount.Should().Be(4);
+    }
+
+    [Fact]
+    public void InstallStateWeight_ShouldUpdatePreferences()
+    {
+        var initialPreferences = new SelectionPreferences
+        {
+            Filters = new SelectionFilters
+            {
+                InstallStateWeight = 1d,
+            },
+        };
+
+        var engine = new FakeSelectionEngine(initialPreferences);
+        var localization = new FakeLocalizationService();
+        var viewModel = new SelectionPreferencesViewModel(engine, localization);
+
+        viewModel.InstallStateWeight = 1.6d;
+
+        engine.LastUpdatedPreferences.Filters.InstallStateWeight.Should().Be(1.6d);
+        viewModel.InstallStateWeight.Should().Be(1.6d);
+    }
+
+    [Fact]
+    public void LastPlayedWeight_ShouldUpdatePreferences()
+    {
+        var initialPreferences = new SelectionPreferences
+        {
+            Filters = new SelectionFilters
+            {
+                LastPlayedRecencyWeight = 1d,
+            },
+        };
+
+        var engine = new FakeSelectionEngine(initialPreferences);
+        var localization = new FakeLocalizationService();
+        var viewModel = new SelectionPreferencesViewModel(engine, localization);
+
+        viewModel.LastPlayedWeight = 1.8d;
+
+        engine.LastUpdatedPreferences.Filters.LastPlayedRecencyWeight.Should().Be(1.8d);
+        viewModel.LastPlayedWeight.Should().Be(1.8d);
+    }
+
+    [Fact]
+    public void DeckCompatibilityWeight_ShouldUpdatePreferences()
+    {
+        var initialPreferences = new SelectionPreferences
+        {
+            Filters = new SelectionFilters
+            {
+                DeckCompatibilityWeight = 1d,
+            },
+        };
+
+        var engine = new FakeSelectionEngine(initialPreferences);
+        var localization = new FakeLocalizationService();
+        var viewModel = new SelectionPreferencesViewModel(engine, localization);
+
+        viewModel.DeckCompatibilityWeight = 0.4d;
+
+        engine.LastUpdatedPreferences.Filters.DeckCompatibilityWeight.Should().Be(0.4d);
+        viewModel.DeckCompatibilityWeight.Should().Be(0.4d);
     }
 
     private sealed class FakeSelectionEngine : ISelectionEngine
@@ -150,6 +221,13 @@ public sealed class SelectionPreferencesViewModelTests
             "Filters_RecentExclusionLabel" => "Sorteios recentes",
             "Filters_RecentExclusion_HelpText" => "Quantidade de sorteios recentes a ignorar",
             "Filters_RecentExclusion_ValuePrefix" => "Ignorar últimos:",
+            "Filters_WeightsLabel" => "Pesos",
+            "Filters_InstallWeightLabel" => "Instalação",
+            "Filters_InstallWeight_HelpText" => "Preferir instalados",
+            "Filters_LastPlayedWeightLabel" => "Última vez jogado",
+            "Filters_LastPlayedWeight_HelpText" => "Preferir não jogados",
+            "Filters_DeckWeightLabel" => "Compatibilidade Deck",
+            "Filters_DeckWeight_HelpText" => "Preferir compatíveis",
             _ => key,
         };
 

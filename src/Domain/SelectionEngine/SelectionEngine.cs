@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -213,6 +214,7 @@ public sealed class SelectionEngine : ISelectionEngine
             : null;
         var requiredCollection = filters.RequiredCollection;
         var filterByCollection = !string.IsNullOrWhiteSpace(requiredCollection);
+        var allowedCompatibility = filters.AllowedDeckCompatibility;
         var results = new List<GameEntry>();
 
         foreach (var game in games)
@@ -227,7 +229,8 @@ public sealed class SelectionEngine : ISelectionEngine
                 continue;
             }
 
-            if (filters.ExcludeDeckUnsupported && game.DeckCompatibility == SteamDeckCompatibility.Unsupported)
+            var compatibility = GetCompatibilityFlag(game.DeckCompatibility);
+            if ((allowedCompatibility & compatibility) == 0)
             {
                 continue;
             }
@@ -258,6 +261,14 @@ public sealed class SelectionEngine : ISelectionEngine
         return results;
     }
 
+    private static DeckCompatibilityFilter GetCompatibilityFlag(SteamDeckCompatibility compatibility) => compatibility switch
+    {
+        SteamDeckCompatibility.Verified => DeckCompatibilityFilter.Verified,
+        SteamDeckCompatibility.Playable => DeckCompatibilityFilter.Playable,
+        SteamDeckCompatibility.Unsupported => DeckCompatibilityFilter.Unsupported,
+        _ => DeckCompatibilityFilter.Unknown,
+    };
+
     private HashSet<uint> GetExcludedAppIds()
     {
         var toExclude = Math.Min(_state.Preferences.RecentGameExclusionCount, _state.History.Count);
@@ -279,9 +290,10 @@ public sealed class SelectionEngine : ISelectionEngine
     {
         var weights = new double[candidates.Count];
         double total = 0;
+        var referenceTime = _clock();
         for (var i = 0; i < candidates.Count; i++)
         {
-            weights[i] = Math.Max(0, GetWeight(candidates[i]));
+            weights[i] = Math.Max(0, GetWeight(candidates[i], referenceTime));
             total += weights[i];
         }
 
@@ -311,7 +323,101 @@ public sealed class SelectionEngine : ISelectionEngine
         return candidates[^1];
     }
 
-    private static double GetWeight(GameEntry game) => 1d;
+    private double GetWeight(GameEntry game, DateTimeOffset referenceTime)
+    {
+        var filters = _state.Preferences.Filters ?? new SelectionFilters();
+        var weight = 1d;
+
+        weight *= ComputeInstallStateMultiplier(game, filters.InstallStateWeight);
+        weight *= ComputeLastPlayedMultiplier(game, referenceTime, filters.LastPlayedRecencyWeight);
+        weight *= ComputeDeckCompatibilityMultiplier(game, filters.DeckCompatibilityWeight);
+
+        return weight;
+    }
+
+    private static double ComputeInstallStateMultiplier(GameEntry game, double sliderValue)
+    {
+        var normalized = NormalizeSlider(sliderValue);
+        var bias = normalized - 1d;
+        var isInstalled = game.InstallState is InstallState.Installed or InstallState.Shared;
+        var multiplier = isInstalled ? 1d + bias : 1d - bias;
+        return Math.Clamp(multiplier, 0d, 2d);
+    }
+
+    private static double ComputeLastPlayedMultiplier(GameEntry game, DateTimeOffset referenceTime, double sliderValue)
+    {
+        var normalized = NormalizeSlider(sliderValue);
+        var bias = normalized - 1d;
+        if (Math.Abs(bias) < 0.0001d)
+        {
+            return 1d;
+        }
+
+        var recencyScore = GetRecencyScore(game, referenceTime);
+        var recencyNormalized = (recencyScore * 2d) - 1d;
+        var multiplier = 1d + bias * recencyNormalized;
+        return Math.Clamp(multiplier, 0d, 2d);
+    }
+
+    private static double GetRecencyScore(GameEntry game, DateTimeOffset referenceTime)
+    {
+        if (game.LastPlayed is null)
+        {
+            return 1d;
+        }
+
+        var lastPlayed = game.LastPlayed.Value;
+        if (lastPlayed >= referenceTime)
+        {
+            return 0d;
+        }
+
+        var days = (referenceTime - lastPlayed).TotalDays;
+        const double maxDays = 180d;
+        if (days >= maxDays)
+        {
+            return 1d;
+        }
+
+        if (days <= 0)
+        {
+            return 0d;
+        }
+
+        return Math.Clamp(days / maxDays, 0d, 1d);
+    }
+
+    private static double ComputeDeckCompatibilityMultiplier(GameEntry game, double sliderValue)
+    {
+        var normalized = NormalizeSlider(sliderValue);
+        var bias = normalized - 1d;
+        if (Math.Abs(bias) < 0.0001d)
+        {
+            return 1d;
+        }
+
+        var compatibilityScore = game.DeckCompatibility switch
+        {
+            SteamDeckCompatibility.Verified => 1d,
+            SteamDeckCompatibility.Playable => 0.75d,
+            SteamDeckCompatibility.Unsupported => 0d,
+            _ => 0.5d,
+        };
+
+        var compatibilityNormalized = (compatibilityScore * 2d) - 1d;
+        var multiplier = 1d + bias * compatibilityNormalized;
+        return Math.Clamp(multiplier, 0d, 2d);
+    }
+
+    private static double NormalizeSlider(double value)
+    {
+        if (double.IsNaN(value) || double.IsInfinity(value))
+        {
+            return 1d;
+        }
+
+        return Math.Clamp(value, 0d, 2d);
+    }
 
     private double NextRandom()
     {

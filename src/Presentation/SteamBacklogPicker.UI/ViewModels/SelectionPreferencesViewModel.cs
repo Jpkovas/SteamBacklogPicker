@@ -13,7 +13,10 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
     private readonly ISelectionEngine _selectionEngine;
     private readonly ILocalizationService _localizationService;
     private bool _requireInstalled;
-    private bool _excludeDeckUnsupported;
+    private bool _includeDeckUnknown = true;
+    private bool _includeDeckVerified = true;
+    private bool _includeDeckPlayable = true;
+    private bool _includeDeckUnsupported = true;
     private bool _includeGames = true;
     private bool _includeSoundtracks;
     private bool _includeSoftware;
@@ -25,6 +28,9 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
     private string _noCollectionOption = string.Empty;
     private string _selectedCollection = string.Empty;
     private int _recentGameExclusionCount;
+    private double _installStateWeight = 1d;
+    private double _lastPlayedWeight = 1d;
+    private double _deckCompatibilityWeight = 1d;
 
     public SelectionPreferencesViewModel(ISelectionEngine selectionEngine, ILocalizationService localizationService)
     {
@@ -52,14 +58,50 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
         }
     }
 
-    public bool ExcludeDeckUnsupported
+    public bool IncludeDeckUnknown
     {
-        get => _excludeDeckUnsupported;
+        get => _includeDeckUnknown;
         set
         {
-            if (SetProperty(ref _excludeDeckUnsupported, value) && !_isHydrating)
+            if (SetProperty(ref _includeDeckUnknown, value) && !_isHydrating)
             {
-                UpdatePreferences(p => p.Filters.ExcludeDeckUnsupported = value);
+                UpdateDeckCompatibilityPreferences();
+            }
+        }
+    }
+
+    public bool IncludeDeckVerified
+    {
+        get => _includeDeckVerified;
+        set
+        {
+            if (SetProperty(ref _includeDeckVerified, value) && !_isHydrating)
+            {
+                UpdateDeckCompatibilityPreferences();
+            }
+        }
+    }
+
+    public bool IncludeDeckPlayable
+    {
+        get => _includeDeckPlayable;
+        set
+        {
+            if (SetProperty(ref _includeDeckPlayable, value) && !_isHydrating)
+            {
+                UpdateDeckCompatibilityPreferences();
+            }
+        }
+    }
+
+    public bool IncludeDeckUnsupported
+    {
+        get => _includeDeckUnsupported;
+        set
+        {
+            if (SetProperty(ref _includeDeckUnsupported, value) && !_isHydrating)
+            {
+                UpdateDeckCompatibilityPreferences();
             }
         }
     }
@@ -73,6 +115,45 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
             if (SetProperty(ref _recentGameExclusionCount, normalized) && !_isHydrating)
             {
                 UpdatePreferences(p => p.RecentGameExclusionCount = normalized);
+            }
+        }
+    }
+
+    public double InstallStateWeight
+    {
+        get => _installStateWeight;
+        set
+        {
+            var normalized = Math.Clamp(value, 0d, 2d);
+            if (SetProperty(ref _installStateWeight, normalized) && !_isHydrating)
+            {
+                UpdatePreferences(p => p.Filters.InstallStateWeight = normalized);
+            }
+        }
+    }
+
+    public double LastPlayedWeight
+    {
+        get => _lastPlayedWeight;
+        set
+        {
+            var normalized = Math.Clamp(value, 0d, 2d);
+            if (SetProperty(ref _lastPlayedWeight, normalized) && !_isHydrating)
+            {
+                UpdatePreferences(p => p.Filters.LastPlayedRecencyWeight = normalized);
+            }
+        }
+    }
+
+    public double DeckCompatibilityWeight
+    {
+        get => _deckCompatibilityWeight;
+        set
+        {
+            var normalized = Math.Clamp(value, 0d, 2d);
+            if (SetProperty(ref _deckCompatibilityWeight, normalized) && !_isHydrating)
+            {
+                UpdatePreferences(p => p.Filters.DeckCompatibilityWeight = normalized);
             }
         }
     }
@@ -178,7 +259,11 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
         try
         {
             RequireInstalled = preferences.Filters.RequireInstalled;
-            ExcludeDeckUnsupported = preferences.Filters.ExcludeDeckUnsupported;
+            var allowedCompatibility = preferences.Filters.AllowedDeckCompatibility;
+            IncludeDeckUnknown = allowedCompatibility.HasFlag(DeckCompatibilityFilter.Unknown);
+            IncludeDeckVerified = allowedCompatibility.HasFlag(DeckCompatibilityFilter.Verified);
+            IncludeDeckPlayable = allowedCompatibility.HasFlag(DeckCompatibilityFilter.Playable);
+            IncludeDeckUnsupported = allowedCompatibility.HasFlag(DeckCompatibilityFilter.Unsupported);
 
             var categories = preferences.Filters.IncludedCategories ?? new List<ProductCategory>();
             IncludeGames = categories.Contains(ProductCategory.Game);
@@ -189,6 +274,10 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
             IncludeOther = categories.Contains(ProductCategory.Other);
 
             RecentGameExclusionCount = preferences.RecentGameExclusionCount;
+
+            InstallStateWeight = preferences.Filters.InstallStateWeight;
+            LastPlayedWeight = preferences.Filters.LastPlayedRecencyWeight;
+            DeckCompatibilityWeight = preferences.Filters.DeckCompatibilityWeight;
 
             var requiredCollection = preferences.Filters.RequiredCollection;
             if (!string.IsNullOrWhiteSpace(requiredCollection) &&
@@ -268,6 +357,40 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
         UpdatePreferences(p =>
         {
             p.Filters.IncludedCategories = BuildSelectedCategories();
+        });
+    }
+
+    private void UpdateDeckCompatibilityPreferences()
+    {
+        UpdatePreferences(p =>
+        {
+            var allowed = DeckCompatibilityFilter.None;
+            if (IncludeDeckUnknown)
+            {
+                allowed |= DeckCompatibilityFilter.Unknown;
+            }
+
+            if (IncludeDeckVerified)
+            {
+                allowed |= DeckCompatibilityFilter.Verified;
+            }
+
+            if (IncludeDeckPlayable)
+            {
+                allowed |= DeckCompatibilityFilter.Playable;
+            }
+
+            if (IncludeDeckUnsupported)
+            {
+                allowed |= DeckCompatibilityFilter.Unsupported;
+            }
+
+            if (allowed == DeckCompatibilityFilter.None)
+            {
+                allowed = DeckCompatibilityFilter.All;
+            }
+
+            p.Filters.AllowedDeckCompatibility = allowed;
         });
     }
 

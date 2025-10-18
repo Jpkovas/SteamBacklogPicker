@@ -9,12 +9,70 @@ public sealed class SelectionPreferences
         get
         {
             Filters ??= new SelectionFilters();
-            return Filters.ExcludeDeckUnsupported;
+            return !Filters.AllowedDeckCompatibility.HasFlag(DeckCompatibilityFilter.Unsupported);
         }
         set
         {
             Filters ??= new SelectionFilters();
-            Filters.ExcludeDeckUnsupported = value;
+            Filters.AllowedDeckCompatibility = value
+                ? Filters.AllowedDeckCompatibility & ~DeckCompatibilityFilter.Unsupported
+                : Filters.AllowedDeckCompatibility | DeckCompatibilityFilter.Unsupported;
+        }
+    }
+
+    public DeckCompatibilityFilter AllowedDeckCompatibility
+    {
+        get
+        {
+            Filters ??= new SelectionFilters();
+            return Filters.AllowedDeckCompatibility;
+        }
+        set
+        {
+            Filters ??= new SelectionFilters();
+            Filters.AllowedDeckCompatibility = value;
+        }
+    }
+
+    public double InstallStateWeight
+    {
+        get
+        {
+            Filters ??= new SelectionFilters();
+            return Filters.InstallStateWeight;
+        }
+        set
+        {
+            Filters ??= new SelectionFilters();
+            Filters.InstallStateWeight = value;
+        }
+    }
+
+    public double LastPlayedRecencyWeight
+    {
+        get
+        {
+            Filters ??= new SelectionFilters();
+            return Filters.LastPlayedRecencyWeight;
+        }
+        set
+        {
+            Filters ??= new SelectionFilters();
+            Filters.LastPlayedRecencyWeight = value;
+        }
+    }
+
+    public double DeckCompatibilityWeight
+    {
+        get
+        {
+            Filters ??= new SelectionFilters();
+            return Filters.DeckCompatibilityWeight;
+        }
+        set
+        {
+            Filters ??= new SelectionFilters();
+            Filters.DeckCompatibilityWeight = value;
         }
     }
 
