@@ -169,6 +169,10 @@ public sealed class SteamGameLibraryServiceTests
         public string? GetCurrentUserSteamId() => currentSteamId;
 
         public IReadOnlyList<SteamCollectionDefinition> GetCollections() => collections;
+
+        public void Invalidate()
+        {
+        }
     }
     [Fact]
     public async Task GetLibraryAsync_ShouldTagGamesWithDynamicCollections()
