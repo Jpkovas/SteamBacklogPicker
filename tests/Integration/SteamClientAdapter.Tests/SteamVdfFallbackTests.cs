@@ -111,6 +111,20 @@ public sealed class SteamVdfFallbackTests : IDisposable
     }
 
     [Fact]
+    public void Invalidate_ReloadsAppInfoMetadata()
+    {
+        var fallback = CreateFallback();
+
+        _ = fallback.GetKnownApps();
+        Assert.True(fallback.IsSubscribedFromFamilySharing(20u));
+
+        fallback.Invalidate();
+        _ = fallback.GetKnownApps();
+
+        Assert.True(fallback.IsSubscribedFromFamilySharing(20u));
+    }
+
+    [Fact]
     public void GetKnownApps_ReturnsMetadataForAllDiscoveredTitles()
     {
         var fallback = CreateFallback();

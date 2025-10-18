@@ -191,6 +191,7 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
             _collectionDefinitions = null;
             _collectionsSource = null;
             _currentSteamId = null;
+            _appInfoLoaded = false;
         }
     }
 
