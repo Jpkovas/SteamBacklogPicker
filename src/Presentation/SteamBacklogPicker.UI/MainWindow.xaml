@@ -45,6 +45,11 @@
             <Setter Property="TextOptions.TextFormattingMode" Value="Display" />
         </Style>
 
+        <Style x:Key="SectionSupportingTextStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{StaticResource MutedForegroundBrush}" />
+        </Style>
+
         <Style x:Key="BaseButtonStyle" TargetType="Button">
             <Setter Property="Foreground" Value="White" />
             <Setter Property="Background" Value="{StaticResource SurfaceAltBrush}" />
@@ -407,6 +412,29 @@
                           Style="{StaticResource FilterCheckBoxStyle}"
                           IsChecked="{Binding Preferences.ExcludeDeckUnsupported, Mode=TwoWay}"
                           AutomationProperties.Name="{DynamicResource Filters_ExcludeDeckUnsupported}" />
+
+                <TextBlock Text="{DynamicResource Filters_RecentExclusionLabel}"
+                           Style="{StaticResource SectionLabelTextStyle}" />
+
+                <Slider Minimum="0"
+                        Maximum="10"
+                        Value="{Binding Preferences.RecentGameExclusionCount, Mode=TwoWay}"
+                        TickFrequency="1"
+                        IsSnapToTickEnabled="True"
+                        SmallChange="1"
+                        LargeChange="1"
+                        Margin="0,0,0,4"
+                        AutomationProperties.Name="{DynamicResource Filters_RecentExclusionLabel}"
+                        AutomationProperties.HelpText="{DynamicResource Filters_RecentExclusion_HelpText}" />
+
+                <StackPanel Orientation="Horizontal"
+                            Margin="0,0,0,12">
+                    <TextBlock Text="{DynamicResource Filters_RecentExclusion_ValuePrefix}"
+                               Style="{StaticResource SectionSupportingTextStyle}"
+                               Margin="0,0,4,0" />
+                    <TextBlock Text="{Binding Preferences.RecentGameExclusionCount}"
+                               Style="{StaticResource SectionSupportingTextStyle}" />
+                </StackPanel>
 
                 <TextBlock Text="{DynamicResource Filters_ContentTypesLabel}"
                            Style="{StaticResource SectionLabelTextStyle}" />

@@ -79,6 +79,26 @@ public sealed class SelectionPreferencesViewModelTests
         viewModel.ExcludeDeckUnsupported.Should().BeFalse();
     }
 
+    [Fact]
+    public void RecentGameExclusionCount_ShouldUpdatePreferences()
+    {
+        var initialPreferences = new SelectionPreferences
+        {
+            RecentGameExclusionCount = 2,
+        };
+
+        var engine = new FakeSelectionEngine(initialPreferences);
+        var localization = new FakeLocalizationService();
+        var viewModel = new SelectionPreferencesViewModel(engine, localization);
+
+        viewModel.RecentGameExclusionCount.Should().Be(2);
+
+        viewModel.RecentGameExclusionCount = 4;
+
+        engine.LastUpdatedPreferences.RecentGameExclusionCount.Should().Be(4);
+        viewModel.RecentGameExclusionCount.Should().Be(4);
+    }
+
     private sealed class FakeSelectionEngine : ISelectionEngine
     {
         private SelectionPreferences _preferences;
@@ -127,6 +147,9 @@ public sealed class SelectionPreferencesViewModelTests
         public string GetString(string key) => key switch
         {
             "Filters_NoCollection" => "Nenhuma coleção",
+            "Filters_RecentExclusionLabel" => "Sorteios recentes",
+            "Filters_RecentExclusion_HelpText" => "Quantidade de sorteios recentes a ignorar",
+            "Filters_RecentExclusion_ValuePrefix" => "Ignorar últimos:",
             _ => key,
         };
 
