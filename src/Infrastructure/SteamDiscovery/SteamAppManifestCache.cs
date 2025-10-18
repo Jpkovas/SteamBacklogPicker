@@ -43,12 +43,14 @@ public sealed class SteamAppManifestCache : IDisposable
         }
     }
 
-    public void Refresh()
+    public bool Refresh()
     {
         lock (_syncRoot)
         {
             var libraries = GetNormalizedLibraries();
+            var librariesChanged = !_knownLibraries.SetEquals(libraries);
             RefreshFromLibrariesNoLock(libraries);
+            return librariesChanged;
         }
     }
 

@@ -36,8 +36,13 @@ public sealed class SteamGameLibraryService : IGameLibraryService
             _libraryLocator.Refresh();
             cancellationToken.ThrowIfCancellationRequested();
 
-            _cache.Refresh();
+            var librariesChanged = _cache.Refresh();
             cancellationToken.ThrowIfCancellationRequested();
+
+            if (librariesChanged)
+            {
+                _fallback.Invalidate();
+            }
 
             var installedGames = _cache.GetInstalledGames();
             var knownApps = _fallback.GetKnownApps();

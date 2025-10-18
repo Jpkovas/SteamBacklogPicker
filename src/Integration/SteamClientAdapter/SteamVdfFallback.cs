@@ -24,6 +24,8 @@ public interface ISteamVdfFallback
     string? GetCurrentUserSteamId();
 
     IReadOnlyList<SteamCollectionDefinition> GetCollections();
+
+    void Invalidate();
 }
 
 public sealed class SteamVdfFallback : ISteamVdfFallback
@@ -37,6 +39,10 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
     private readonly Dictionary<uint, string> _appTypes = new();
     private readonly Dictionary<uint, IReadOnlyList<int>> _appCategories = new();
     private readonly Dictionary<uint, SteamDeckCompatibility> _appDeckCompatibility = new();
+    private readonly object _cacheLock = new();
+    private IReadOnlyDictionary<uint, SteamAppDefinition>? _cachedAppDefinitions;
+    private CacheSnapshot? _cachedAppSnapshot;
+    private IReadOnlyDictionary<uint, SteamAppDefinition>? _collectionsSource;
     private IReadOnlyList<SteamCollectionDefinition>? _collectionDefinitions;
     private bool _appInfoLoaded;
     private string? _currentSteamId;
@@ -64,70 +70,159 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
 
     public IReadOnlyDictionary<uint, SteamAppDefinition> GetKnownApps()
     {
-        return LoadAppDefinitions();
+        lock (_cacheLock)
+        {
+            if (_cachedAppDefinitions is not null &&
+                _cachedAppSnapshot is not null &&
+                CacheIsFresh(_cachedAppSnapshot))
+            {
+                return _cachedAppDefinitions;
+            }
+        }
+
+        var result = LoadAppDefinitions();
+
+        lock (_cacheLock)
+        {
+            if (_cachedAppDefinitions is not null &&
+                _cachedAppSnapshot is not null &&
+                CacheIsFresh(_cachedAppSnapshot))
+            {
+                return _cachedAppDefinitions;
+            }
+
+            _cachedAppDefinitions = result.Definitions;
+            _cachedAppSnapshot = result.Snapshot;
+            _currentSteamId = result.SteamId;
+            _collectionDefinitions = null;
+            _collectionsSource = null;
+
+            return _cachedAppDefinitions;
+        }
     }
 
     public string? GetCurrentUserSteamId()
     {
-        if (_currentSteamId is not null)
+        lock (_cacheLock)
         {
-            return _currentSteamId;
+            if (_currentSteamId is not null)
+            {
+                return _currentSteamId;
+            }
         }
 
         // Ensure metadata is loaded so that we attempt to resolve the user id.
         _ = GetKnownApps();
-        return _currentSteamId;
+
+        lock (_cacheLock)
+        {
+            return _currentSteamId;
+        }
     }
 
     public IReadOnlyList<SteamCollectionDefinition> GetCollections()
     {
-        var cached = _collectionDefinitions;
-        if (cached is not null)
+        while (true)
         {
-            return cached;
-        }
+            IReadOnlyDictionary<uint, SteamAppDefinition>? definitionsSnapshot;
+            IReadOnlyList<SteamCollectionDefinition>? cachedCollections;
 
-        _ = GetKnownApps();
-        var steamId = GetCurrentUserSteamId();
-        if (string.IsNullOrWhiteSpace(steamId))
-        {
-            cached = Array.Empty<SteamCollectionDefinition>();
-        }
-        else
-        {
-            cached = LoadCollectionsFromCloudStorage(steamId!);
-        }
+            lock (_cacheLock)
+            {
+                definitionsSnapshot = _cachedAppDefinitions;
+                cachedCollections = _collectionDefinitions;
 
-        _collectionDefinitions = cached;
-        return cached;
+                if (definitionsSnapshot is not null &&
+                    cachedCollections is not null &&
+                    ReferenceEquals(_collectionsSource, definitionsSnapshot))
+                {
+                    return cachedCollections;
+                }
+            }
+
+            _ = GetKnownApps();
+
+            string? steamId;
+            lock (_cacheLock)
+            {
+                definitionsSnapshot = _cachedAppDefinitions;
+                cachedCollections = _collectionDefinitions;
+
+                if (definitionsSnapshot is not null &&
+                    cachedCollections is not null &&
+                    ReferenceEquals(_collectionsSource, definitionsSnapshot))
+                {
+                    return cachedCollections;
+                }
+
+                steamId = _currentSteamId;
+            }
+
+            IReadOnlyList<SteamCollectionDefinition> loadedCollections;
+            if (string.IsNullOrWhiteSpace(steamId))
+            {
+                loadedCollections = Array.Empty<SteamCollectionDefinition>();
+            }
+            else
+            {
+                loadedCollections = LoadCollectionsFromCloudStorage(steamId);
+            }
+
+            lock (_cacheLock)
+            {
+                if (!ReferenceEquals(definitionsSnapshot, _cachedAppDefinitions))
+                {
+                    continue;
+                }
+
+                _collectionDefinitions = loadedCollections;
+                _collectionsSource = definitionsSnapshot;
+                return loadedCollections;
+            }
+        }
     }
 
-    private IReadOnlyDictionary<uint, SteamAppDefinition> LoadAppDefinitions()
+    public void Invalidate()
     {
+        lock (_cacheLock)
+        {
+            _cachedAppDefinitions = null;
+            _cachedAppSnapshot = null;
+            _collectionDefinitions = null;
+            _collectionsSource = null;
+            _currentSteamId = null;
+        }
+    }
+
+    private AppDefinitionsCache LoadAppDefinitions()
+    {
+        _familySharingCache.Clear();
+
+        var dependencies = new Dictionary<string, CacheDependency>(StringComparer.OrdinalIgnoreCase);
         var loginUsersPath = Path.Combine(_steamDirectory, "config", "loginusers.vdf");
+        TrackDependency(dependencies, loginUsersPath, DependencyKind.File);
+
         if (!_files.FileExists(loginUsersPath))
         {
-            return new Dictionary<uint, SteamAppDefinition>();
+            return new AppDefinitionsCache(new Dictionary<uint, SteamAppDefinition>(), null, new CacheSnapshot(dependencies.Values.ToArray()));
         }
 
         var loginUsers = _textParser.Parse(_files.ReadAllText(loginUsersPath));
         var usersNode = loginUsers.FindPath("users") ?? FindChildCaseInsensitive(loginUsers, "users");
         if (usersNode is null)
         {
-            return new Dictionary<uint, SteamAppDefinition>();
+            return new AppDefinitionsCache(new Dictionary<uint, SteamAppDefinition>(), null, new CacheSnapshot(dependencies.Values.ToArray()));
         }
 
         var steamId = FindMostRecentUser(usersNode);
         if (steamId is null)
         {
-            return new Dictionary<uint, SteamAppDefinition>();
+            return new AppDefinitionsCache(new Dictionary<uint, SteamAppDefinition>(), null, new CacheSnapshot(dependencies.Values.ToArray()));
         }
-        _currentSteamId = steamId;
-        _collectionDefinitions = null;
 
-        var definitions = LoadDefinitionsFromLocalConfig(steamId);
-        AddLibraryCacheEntries(steamId, definitions);
-        var collections = LoadCollectionsFromSharedConfig(steamId);
+        var definitions = LoadDefinitionsFromLocalConfig(steamId, dependencies);
+        AddLibraryCacheEntries(steamId, definitions, dependencies);
+        var collections = LoadCollectionsFromSharedConfig(steamId, dependencies);
 
         foreach (var (appId, appCollections) in collections)
         {
@@ -136,16 +231,17 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
 
         ApplyAppMetadata(definitions);
 
-        return definitions;
+        return new AppDefinitionsCache(definitions, steamId, new CacheSnapshot(dependencies.Values.ToArray()));
     }
 
-    private Dictionary<uint, SteamAppDefinition> LoadDefinitionsFromLocalConfig(string steamId)
+    private Dictionary<uint, SteamAppDefinition> LoadDefinitionsFromLocalConfig(string steamId, IDictionary<string, CacheDependency> dependencies)
     {
         var definitions = new Dictionary<uint, SteamAppDefinition>();
 
         foreach (var candidate in GetUserDirectoryCandidates(steamId))
         {
             var localConfigPath = Path.Combine(_steamDirectory, "userdata", candidate, "config", "localconfig.vdf");
+            TrackDependency(dependencies, localConfigPath, DependencyKind.File);
             if (!_files.FileExists(localConfigPath))
             {
                 continue;
@@ -203,11 +299,12 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
         return definitions;
     }
 
-    private void AddLibraryCacheEntries(string steamId, Dictionary<uint, SteamAppDefinition> definitions)
+    private void AddLibraryCacheEntries(string steamId, Dictionary<uint, SteamAppDefinition> definitions, IDictionary<string, CacheDependency> dependencies)
     {
         foreach (var candidate in GetUserDirectoryCandidates(steamId))
         {
             var libraryCachePath = Path.Combine(_steamDirectory, "userdata", candidate, "config", "librarycache");
+            TrackDependency(dependencies, libraryCachePath, DependencyKind.Directory);
             if (!Directory.Exists(libraryCachePath))
             {
                 continue;
@@ -215,6 +312,7 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
 
             foreach (var path in Directory.EnumerateFiles(libraryCachePath, "*.json", SearchOption.TopDirectoryOnly))
             {
+                TrackDependency(dependencies, path, DependencyKind.File);
                 var fileName = Path.GetFileNameWithoutExtension(path);
                 if (!uint.TryParse(fileName, NumberStyles.Integer, CultureInfo.InvariantCulture, out var appId))
                 {
@@ -231,13 +329,14 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
         }
     }
 
-    private Dictionary<uint, IReadOnlyList<string>> LoadCollectionsFromSharedConfig(string steamId)
+    private Dictionary<uint, IReadOnlyList<string>> LoadCollectionsFromSharedConfig(string steamId, IDictionary<string, CacheDependency> dependencies)
     {
         var result = new Dictionary<uint, HashSet<string>>();
 
         foreach (var candidate in GetUserDirectoryCandidates(steamId))
         {
             var sharedConfigPath = Path.Combine(_steamDirectory, "userdata", candidate, "7", "remote", "sharedconfig.vdf");
+            TrackDependency(dependencies, sharedConfigPath, DependencyKind.File);
             if (!_files.FileExists(sharedConfigPath))
             {
                 continue;
@@ -1029,6 +1128,113 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
 
         return compatibility != SteamDeckCompatibility.Unknown;
     }
+
+    private static bool CacheIsFresh(CacheSnapshot snapshot)
+    {
+        foreach (var dependency in snapshot.Dependencies)
+        {
+            if (!IsDependencyCurrent(dependency))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool IsDependencyCurrent(CacheDependency dependency)
+    {
+        try
+        {
+            var exists = dependency.Kind == DependencyKind.File
+                ? File.Exists(dependency.Path)
+                : Directory.Exists(dependency.Path);
+
+            if (exists != dependency.Exists)
+            {
+                return false;
+            }
+
+            if (!exists)
+            {
+                return true;
+            }
+
+            var currentTimestamp = dependency.Kind == DependencyKind.File
+                ? File.GetLastWriteTimeUtc(dependency.Path)
+                : Directory.GetLastWriteTimeUtc(dependency.Path);
+
+            return currentTimestamp == dependency.LastWriteTimeUtc;
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
+    private static void TrackDependency(
+        IDictionary<string, CacheDependency> dependencies,
+        string path,
+        DependencyKind kind)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return;
+        }
+
+        dependencies[path] = CreateDependency(path, kind);
+    }
+
+    private static CacheDependency CreateDependency(string path, DependencyKind kind)
+    {
+        bool exists;
+        DateTime lastWriteTimeUtc;
+
+        try
+        {
+            if (kind == DependencyKind.File)
+            {
+                exists = File.Exists(path);
+                lastWriteTimeUtc = exists ? File.GetLastWriteTimeUtc(path) : DateTime.MinValue;
+            }
+            else
+            {
+                exists = Directory.Exists(path);
+                lastWriteTimeUtc = exists ? Directory.GetLastWriteTimeUtc(path) : DateTime.MinValue;
+            }
+        }
+        catch (IOException)
+        {
+            exists = false;
+            lastWriteTimeUtc = DateTime.MinValue;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            exists = false;
+            lastWriteTimeUtc = DateTime.MinValue;
+        }
+
+        return new CacheDependency(path, kind, exists, lastWriteTimeUtc);
+    }
+
+    private enum DependencyKind
+    {
+        File,
+        Directory
+    }
+
+    private sealed record CacheSnapshot(IReadOnlyList<CacheDependency> Dependencies);
+
+    private sealed record CacheDependency(string Path, DependencyKind Kind, bool Exists, DateTime LastWriteTimeUtc);
+
+    private sealed record AppDefinitionsCache(
+        IReadOnlyDictionary<uint, SteamAppDefinition> Definitions,
+        string? SteamId,
+        CacheSnapshot Snapshot);
 }
 
 
