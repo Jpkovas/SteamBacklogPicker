@@ -218,7 +218,7 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
             var normalized = value ?? string.Empty;
             if (SetProperty(ref _moodTagsText, normalized) && !_isHydrating)
             {
-                UpdatePreferences(p => p.Filters.MoodTags = ParseMoodTags(normalized));
+                UpdatePreferences(p => p.Filters.MoodTags = ParseMoodTags(normalized), rehydrate: false);
             }
         }
     }
@@ -312,12 +312,15 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
         UpdateNoCollectionOption();
     }
 
-    private void UpdatePreferences(Action<SelectionPreferences> updater)
+    private void UpdatePreferences(Action<SelectionPreferences> updater, bool rehydrate = true)
     {
         var preferences = _selectionEngine.GetPreferences();
         updater(preferences);
         _selectionEngine.UpdatePreferences(preferences);
-        Apply(preferences);
+        if (rehydrate)
+        {
+            Apply(preferences);
+        }
         PreferencesChanged?.Invoke(this, preferences);
     }
 
