@@ -14,6 +14,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamClientAdapter", "src\I
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamHooks", "src\Integration\SteamHooks\SteamHooks.csproj", "{0D38DF05-E826-405B-8F4E-27A2EEEC3B3C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CompletionTimes", "src\Integration\CompletionTimes\CompletionTimes.csproj", "{1ADF070A-9535-49CB-96DF-C742DDED6E7B}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamDiscovery.Tests", "tests\Infrastructure\SteamDiscovery.Tests\SteamDiscovery.Tests.csproj", "{F9A50B94-7F77-45D6-9F95-D829C1279E4F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamClientAdapter.Tests", "tests\Integration\SteamClientAdapter.Tests\SteamClientAdapter.Tests.csproj", "{95FBF269-6707-43C5-A7F3-196AB2740A4B}"
@@ -55,9 +57,13 @@ Global
 		{8F4A2F72-3D5E-4EDE-A9E2-7C77E7F42C40}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8F4A2F72-3D5E-4EDE-A9E2-7C77E7F42C40}.Release|Any CPU.Build.0 = Release|Any CPU
 		{0D38DF05-E826-405B-8F4E-27A2EEEC3B3C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0D38DF05-E826-405B-8F4E-27A2EEEC3B3C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0D38DF05-E826-405B-8F4E-27A2EEEC3B3C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0D38DF05-E826-405B-8F4E-27A2EEEC3B3C}.Release|Any CPU.Build.0 = Release|Any CPU
+            {0D38DF05-E826-405B-8F4E-27A2EEEC3B3C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+            {0D38DF05-E826-405B-8F4E-27A2EEEC3B3C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+            {0D38DF05-E826-405B-8F4E-27A2EEEC3B3C}.Release|Any CPU.Build.0 = Release|Any CPU
+            {1ADF070A-9535-49CB-96DF-C742DDED6E7B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+            {1ADF070A-9535-49CB-96DF-C742DDED6E7B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+            {1ADF070A-9535-49CB-96DF-C742DDED6E7B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+            {1ADF070A-9535-49CB-96DF-C742DDED6E7B}.Release|Any CPU.Build.0 = Release|Any CPU
 		{F9A50B94-7F77-45D6-9F95-D829C1279E4F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{F9A50B94-7F77-45D6-9F95-D829C1279E4F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F9A50B94-7F77-45D6-9F95-D829C1279E4F}.Release|Any CPU.ActiveCfg = Release|Any CPU

@@ -128,6 +128,12 @@ public sealed class SelectionPreferencesViewModelTests
         public GameEntry PickNext(IEnumerable<GameEntry> games) => throw new NotSupportedException();
 
         public IReadOnlyList<GameEntry> FilterGames(IEnumerable<GameEntry> games) => throw new NotSupportedException();
+
+        public GameUserData GetUserData(uint appId) => GameUserData.Empty;
+
+        public void UpdateUserData(uint appId, GameUserData userData)
+        {
+        }
     }
 
     private sealed class FakeLocalizationService : ILocalizationService

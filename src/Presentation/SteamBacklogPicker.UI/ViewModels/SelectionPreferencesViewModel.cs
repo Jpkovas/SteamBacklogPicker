@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Linq;
 using Domain;
 using Domain.Selection;
@@ -20,11 +21,22 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
     private bool _includeTools;
     private bool _includeVideos;
     private bool _includeOther;
+    private bool _includeStatusUnspecified = true;
+    private bool _includeStatusWishlist = true;
+    private bool _includeStatusBacklog = true;
+    private bool _includeStatusPlaying = true;
+    private bool _includeStatusCompleted = true;
+    private bool _includeStatusAbandoned = true;
+    private string _maxPlaytimeHours = string.Empty;
+    private string _maxSessionHours = string.Empty;
+    private string _maxCompletionHours = string.Empty;
     private bool _isHydrating;
     private readonly ObservableCollection<string> _collectionOptions = new();
     private string _noCollectionOption = string.Empty;
     private string _selectedCollection = string.Empty;
     private int _recentGameExclusionCount;
+
+    private static readonly BacklogStatus[] AllStatuses = Enum.GetValues<BacklogStatus>();
 
     public SelectionPreferencesViewModel(ISelectionEngine selectionEngine, ILocalizationService localizationService)
     {
@@ -170,6 +182,114 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
         }
     }
 
+    public bool IncludeStatusUnspecified
+    {
+        get => _includeStatusUnspecified;
+        set
+        {
+            if (SetProperty(ref _includeStatusUnspecified, value) && !_isHydrating)
+            {
+                UpdateStatusFilters();
+            }
+        }
+    }
+
+    public bool IncludeStatusWishlist
+    {
+        get => _includeStatusWishlist;
+        set
+        {
+            if (SetProperty(ref _includeStatusWishlist, value) && !_isHydrating)
+            {
+                UpdateStatusFilters();
+            }
+        }
+    }
+
+    public bool IncludeStatusBacklog
+    {
+        get => _includeStatusBacklog;
+        set
+        {
+            if (SetProperty(ref _includeStatusBacklog, value) && !_isHydrating)
+            {
+                UpdateStatusFilters();
+            }
+        }
+    }
+
+    public bool IncludeStatusPlaying
+    {
+        get => _includeStatusPlaying;
+        set
+        {
+            if (SetProperty(ref _includeStatusPlaying, value) && !_isHydrating)
+            {
+                UpdateStatusFilters();
+            }
+        }
+    }
+
+    public bool IncludeStatusCompleted
+    {
+        get => _includeStatusCompleted;
+        set
+        {
+            if (SetProperty(ref _includeStatusCompleted, value) && !_isHydrating)
+            {
+                UpdateStatusFilters();
+            }
+        }
+    }
+
+    public bool IncludeStatusAbandoned
+    {
+        get => _includeStatusAbandoned;
+        set
+        {
+            if (SetProperty(ref _includeStatusAbandoned, value) && !_isHydrating)
+            {
+                UpdateStatusFilters();
+            }
+        }
+    }
+
+    public string MaxPlaytimeHours
+    {
+        get => _maxPlaytimeHours;
+        set
+        {
+            if (SetProperty(ref _maxPlaytimeHours, NormalizeInput(value)) && !_isHydrating)
+            {
+                UpdateTimeFilters();
+            }
+        }
+    }
+
+    public string MaxSessionHours
+    {
+        get => _maxSessionHours;
+        set
+        {
+            if (SetProperty(ref _maxSessionHours, NormalizeInput(value)) && !_isHydrating)
+            {
+                UpdateTimeFilters();
+            }
+        }
+    }
+
+    public string MaxCompletionHours
+    {
+        get => _maxCompletionHours;
+        set
+        {
+            if (SetProperty(ref _maxCompletionHours, NormalizeInput(value)) && !_isHydrating)
+            {
+                UpdateTimeFilters();
+            }
+        }
+    }
+
     public void Apply(SelectionPreferences preferences)
     {
         ArgumentNullException.ThrowIfNull(preferences);
@@ -200,6 +320,19 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
             SelectedCollection = string.IsNullOrWhiteSpace(requiredCollection)
                 ? _noCollectionOption
                 : requiredCollection;
+
+            var statuses = preferences.Filters.IncludedStatuses ?? new List<BacklogStatus>();
+            var includeAll = statuses.Count == 0;
+            IncludeStatusUnspecified = includeAll || statuses.Contains(BacklogStatus.Unspecified);
+            IncludeStatusWishlist = includeAll || statuses.Contains(BacklogStatus.Wishlist);
+            IncludeStatusBacklog = includeAll || statuses.Contains(BacklogStatus.Backlog);
+            IncludeStatusPlaying = includeAll || statuses.Contains(BacklogStatus.Playing);
+            IncludeStatusCompleted = includeAll || statuses.Contains(BacklogStatus.Completed);
+            IncludeStatusAbandoned = includeAll || statuses.Contains(BacklogStatus.Abandoned);
+
+            MaxPlaytimeHours = FormatHours(preferences.Filters.MaxPlaytime);
+            MaxSessionHours = FormatHours(preferences.Filters.MaxTargetSessionLength);
+            MaxCompletionHours = FormatHours(preferences.Filters.MaxEstimatedCompletionTime);
         }
         finally
         {
@@ -271,6 +404,32 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
         });
     }
 
+    private void UpdateStatusFilters()
+    {
+        UpdatePreferences(p =>
+        {
+            var selected = BuildSelectedStatuses();
+            if (selected.Count == AllStatuses.Length)
+            {
+                p.Filters.IncludedStatuses = new List<BacklogStatus>();
+            }
+            else
+            {
+                p.Filters.IncludedStatuses = selected;
+            }
+        });
+    }
+
+    private void UpdateTimeFilters()
+    {
+        UpdatePreferences(p =>
+        {
+            p.Filters.MaxPlaytime = ParseHours(_maxPlaytimeHours);
+            p.Filters.MaxTargetSessionLength = ParseHours(_maxSessionHours);
+            p.Filters.MaxEstimatedCompletionTime = ParseHours(_maxCompletionHours);
+        });
+    }
+
     private List<ProductCategory> BuildSelectedCategories()
     {
         var categories = new List<ProductCategory>();
@@ -307,6 +466,42 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
         return categories;
     }
 
+    private List<BacklogStatus> BuildSelectedStatuses()
+    {
+        var statuses = new List<BacklogStatus>();
+        if (IncludeStatusUnspecified)
+        {
+            statuses.Add(BacklogStatus.Unspecified);
+        }
+
+        if (IncludeStatusWishlist)
+        {
+            statuses.Add(BacklogStatus.Wishlist);
+        }
+
+        if (IncludeStatusBacklog)
+        {
+            statuses.Add(BacklogStatus.Backlog);
+        }
+
+        if (IncludeStatusPlaying)
+        {
+            statuses.Add(BacklogStatus.Playing);
+        }
+
+        if (IncludeStatusCompleted)
+        {
+            statuses.Add(BacklogStatus.Completed);
+        }
+
+        if (IncludeStatusAbandoned)
+        {
+            statuses.Add(BacklogStatus.Abandoned);
+        }
+
+        return statuses;
+    }
+
     private void OnLanguageChanged(object? sender, EventArgs e)
     {
         RefreshLocalization();
@@ -336,5 +531,27 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
             _selectedCollection = _noCollectionOption;
             OnPropertyChanged(nameof(SelectedCollection));
         }
+    }
+
+    private static string NormalizeInput(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+
+    private static string FormatHours(TimeSpan? value)
+    {
+        return value.HasValue ? value.Value.TotalHours.ToString("0.##", CultureInfo.CurrentCulture) : string.Empty;
+    }
+
+    private static TimeSpan? ParseHours(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        if (double.TryParse(value, NumberStyles.Float, CultureInfo.CurrentCulture, out var hours) && hours > 0)
+        {
+            return TimeSpan.FromHours(hours);
+        }
+
+        return null;
     }
 }

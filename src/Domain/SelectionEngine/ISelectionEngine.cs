@@ -12,6 +12,10 @@ public interface ISelectionEngine
 
     void ClearHistory();
 
+    GameUserData GetUserData(uint appId);
+
+    void UpdateUserData(uint appId, GameUserData userData);
+
     GameEntry PickNext(IEnumerable<GameEntry> games);
 
     IReadOnlyList<GameEntry> FilterGames(IEnumerable<GameEntry> games);

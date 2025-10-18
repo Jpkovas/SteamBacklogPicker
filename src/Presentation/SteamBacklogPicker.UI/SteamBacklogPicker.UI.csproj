@@ -10,12 +10,14 @@
     <PackageReference Include="Clowd.Squirrel" Version="2.11.1" />
     <PackageReference Include="CommunityToolkit.WinUI.Notifications" Version="7.1.2" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Domain\Domain.csproj" />
     <ProjectReference Include="..\..\Infrastructure\SteamDiscovery\SteamDiscovery.csproj" />
     <ProjectReference Include="..\..\Infrastructure\Telemetry\Telemetry.csproj" />
     <ProjectReference Include="..\..\Integration\SteamClientAdapter\SteamClientAdapter.csproj" />
+    <ProjectReference Include="..\..\Integration\CompletionTimes\CompletionTimes.csproj" />
     <ProjectReference Include="..\..\Integration\ValveFormatParser\ValveFormatParser.csproj" />
   </ItemGroup>
   <ItemGroup>

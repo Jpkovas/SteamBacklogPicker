@@ -80,6 +80,154 @@ public sealed class SelectionEngineTests
     }
 
     [Fact]
+    public void UpdateUserData_ShouldPersistAcrossSessions()
+    {
+        var settingsPath = CreateSettingsPath();
+        try
+        {
+            var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
+            var userData = new GameUserData
+            {
+                Status = BacklogStatus.Playing,
+                Notes = "Halfway through",
+                Playtime = TimeSpan.FromHours(5),
+                TargetSessionLength = TimeSpan.FromHours(2),
+                EstimatedCompletionTime = TimeSpan.FromHours(12),
+                EstimatedCompletionFetchedAt = DateTimeOffset.UnixEpoch,
+            };
+
+            engine.UpdateUserData(4242u, userData);
+
+            var reloaded = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
+            var stored = reloaded.GetUserData(4242u);
+
+            stored.Status.Should().Be(BacklogStatus.Playing);
+            stored.Notes.Should().Be("Halfway through");
+            stored.Playtime.Should().Be(TimeSpan.FromHours(5));
+            stored.TargetSessionLength.Should().Be(TimeSpan.FromHours(2));
+            stored.EstimatedCompletionTime.Should().Be(TimeSpan.FromHours(12));
+        }
+        finally
+        {
+            Cleanup(settingsPath);
+        }
+    }
+
+    [Fact]
+    public void FilterGames_ShouldRespectStatusFilters()
+    {
+        var settingsPath = CreateSettingsPath();
+        try
+        {
+            var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
+            var preferences = engine.GetPreferences();
+            preferences.Filters.IncludedStatuses = new List<BacklogStatus> { BacklogStatus.Playing };
+            engine.UpdatePreferences(preferences);
+
+            engine.UpdateUserData(1u, new GameUserData { Status = BacklogStatus.Playing });
+            engine.UpdateUserData(2u, new GameUserData { Status = BacklogStatus.Completed });
+
+            var games = new[]
+            {
+                new GameEntry { AppId = 1, Title = "Playing", InstallState = InstallState.Installed, OwnershipType = OwnershipType.Owned },
+                new GameEntry { AppId = 2, Title = "Completed", InstallState = InstallState.Installed, OwnershipType = OwnershipType.Owned },
+            };
+
+            var filtered = engine.FilterGames(games);
+
+            filtered.Should().ContainSingle(game => game.AppId == 1u);
+            filtered[0].UserData.Status.Should().Be(BacklogStatus.Playing);
+        }
+        finally
+        {
+            Cleanup(settingsPath);
+        }
+    }
+
+    [Fact]
+    public void FilterGames_ShouldRespectTimeFilters()
+    {
+        var settingsPath = CreateSettingsPath();
+        try
+        {
+            var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
+            var preferences = engine.GetPreferences();
+            preferences.Filters.MaxPlaytime = TimeSpan.FromHours(10);
+            preferences.Filters.MaxEstimatedCompletionTime = TimeSpan.FromHours(20);
+            engine.UpdatePreferences(preferences);
+
+            engine.UpdateUserData(1u, new GameUserData
+            {
+                Playtime = TimeSpan.FromHours(5),
+                EstimatedCompletionTime = TimeSpan.FromHours(12),
+            });
+            engine.UpdateUserData(2u, new GameUserData
+            {
+                Playtime = TimeSpan.FromHours(12),
+                EstimatedCompletionTime = TimeSpan.FromHours(12),
+            });
+            engine.UpdateUserData(3u, new GameUserData
+            {
+                Playtime = TimeSpan.FromHours(6),
+                EstimatedCompletionTime = TimeSpan.FromHours(24),
+            });
+
+            var games = new[]
+            {
+                new GameEntry { AppId = 1, Title = "Eligible", InstallState = InstallState.Installed, OwnershipType = OwnershipType.Owned },
+                new GameEntry { AppId = 2, Title = "TooMuchPlaytime", InstallState = InstallState.Installed, OwnershipType = OwnershipType.Owned },
+                new GameEntry { AppId = 3, Title = "TooLongCompletion", InstallState = InstallState.Installed, OwnershipType = OwnershipType.Owned },
+            };
+
+            var filtered = engine.FilterGames(games);
+
+            filtered.Should().ContainSingle(game => game.AppId == 1u);
+        }
+        finally
+        {
+            Cleanup(settingsPath);
+        }
+    }
+
+    [Fact]
+    public void FilterGames_ShouldRespectTargetSessionLengthFilter()
+    {
+        var settingsPath = CreateSettingsPath();
+        try
+        {
+            var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
+            var preferences = engine.GetPreferences();
+            preferences.Filters.MaxTargetSessionLength = TimeSpan.FromHours(2);
+            engine.UpdatePreferences(preferences);
+
+            engine.UpdateUserData(1u, new GameUserData
+            {
+                TargetSessionLength = TimeSpan.FromHours(1.5),
+            });
+            engine.UpdateUserData(2u, new GameUserData
+            {
+                TargetSessionLength = TimeSpan.FromHours(3),
+            });
+            engine.UpdateUserData(3u, new GameUserData());
+
+            var games = new[]
+            {
+                new GameEntry { AppId = 1, Title = "ShortSession", InstallState = InstallState.Installed, OwnershipType = OwnershipType.Owned },
+                new GameEntry { AppId = 2, Title = "LongSession", InstallState = InstallState.Installed, OwnershipType = OwnershipType.Owned },
+                new GameEntry { AppId = 3, Title = "UnsetSession", InstallState = InstallState.Installed, OwnershipType = OwnershipType.Owned },
+            };
+
+            var filtered = engine.FilterGames(games);
+
+            filtered.Select(game => game.AppId).Should().BeEquivalentTo(new[] { 1u, 3u });
+        }
+        finally
+        {
+            Cleanup(settingsPath);
+        }
+    }
+
+    [Fact]
     public void PickNext_ShouldProduceDeterministicSequence_WhenSeedIsProvided()
     {
         var games = new[]

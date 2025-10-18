@@ -48,4 +48,6 @@ public sealed record class GameEntry
     public IReadOnlyCollection<int> StoreCategoryIds { get; init; } = Array.Empty<int>();
 
     public SteamDeckCompatibility DeckCompatibility { get; init; } = SteamDeckCompatibility.Unknown;
+
+    public GameUserData UserData { get; init; } = GameUserData.Empty;
 }

@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
         mc:Ignorable="d"
         Title="Steam Backlog Picker"
         Width="1200"
@@ -385,6 +386,14 @@
         </Style>
 
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        <Style x:Key="SurfaceTextBoxStyle" TargetType="TextBox">
+            <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="BorderBrush" Value="{StaticResource SurfaceBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="10" />
+            <Setter Property="Margin" Value="0,4,0,0" />
+        </Style>
     </Window.Resources>
     <Grid Margin="32">
         <Grid.RowDefinitions>
@@ -466,6 +475,59 @@
                               AutomationProperties.Name="{DynamicResource Filters_IncludeOther}" />
                 </StackPanel>
 
+                <TextBlock Text="{DynamicResource Filters_StatusLabel}"
+                           Style="{StaticResource SectionLabelTextStyle}" />
+
+                <StackPanel>
+                    <CheckBox Content="{DynamicResource BacklogStatus_Unspecified}"
+                              Style="{StaticResource FilterCheckBoxStyle}"
+                              IsChecked="{Binding Preferences.IncludeStatusUnspecified, Mode=TwoWay}"
+                              AutomationProperties.Name="{DynamicResource BacklogStatus_Unspecified}" />
+                    <CheckBox Content="{DynamicResource BacklogStatus_Wishlist}"
+                              Style="{StaticResource FilterCheckBoxStyle}"
+                              IsChecked="{Binding Preferences.IncludeStatusWishlist, Mode=TwoWay}"
+                              AutomationProperties.Name="{DynamicResource BacklogStatus_Wishlist}" />
+                    <CheckBox Content="{DynamicResource BacklogStatus_Backlog}"
+                              Style="{StaticResource FilterCheckBoxStyle}"
+                              IsChecked="{Binding Preferences.IncludeStatusBacklog, Mode=TwoWay}"
+                              AutomationProperties.Name="{DynamicResource BacklogStatus_Backlog}" />
+                    <CheckBox Content="{DynamicResource BacklogStatus_Playing}"
+                              Style="{StaticResource FilterCheckBoxStyle}"
+                              IsChecked="{Binding Preferences.IncludeStatusPlaying, Mode=TwoWay}"
+                              AutomationProperties.Name="{DynamicResource BacklogStatus_Playing}" />
+                    <CheckBox Content="{DynamicResource BacklogStatus_Completed}"
+                              Style="{StaticResource FilterCheckBoxStyle}"
+                              IsChecked="{Binding Preferences.IncludeStatusCompleted, Mode=TwoWay}"
+                              AutomationProperties.Name="{DynamicResource BacklogStatus_Completed}" />
+                    <CheckBox Content="{DynamicResource BacklogStatus_Abandoned}"
+                              Style="{StaticResource FilterCheckBoxStyle}"
+                              IsChecked="{Binding Preferences.IncludeStatusAbandoned, Mode=TwoWay}"
+                              AutomationProperties.Name="{DynamicResource BacklogStatus_Abandoned}" />
+                </StackPanel>
+
+                <TextBlock Text="{DynamicResource Filters_TimeLimitsLabel}"
+                           Style="{StaticResource SectionLabelTextStyle}" />
+
+                <StackPanel>
+                    <TextBlock Text="{DynamicResource Filters_MaxPlaytimeLabel}"
+                               Style="{StaticResource SectionSupportingTextStyle}" />
+                    <TextBox Text="{Binding Preferences.MaxPlaytimeHours, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             Style="{StaticResource SurfaceTextBoxStyle}"
+                             AutomationProperties.Name="{DynamicResource Filters_MaxPlaytimeLabel}" />
+                    <TextBlock Text="{DynamicResource Filters_MaxSessionLabel}"
+                               Style="{StaticResource SectionSupportingTextStyle}"
+                               Margin="0,8,0,0" />
+                    <TextBox Text="{Binding Preferences.MaxSessionHours, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             Style="{StaticResource SurfaceTextBoxStyle}"
+                             AutomationProperties.Name="{DynamicResource Filters_MaxSessionLabel}" />
+                    <TextBlock Text="{DynamicResource Filters_MaxCompletionLabel}"
+                               Style="{StaticResource SectionSupportingTextStyle}"
+                               Margin="0,8,0,0" />
+                    <TextBox Text="{Binding Preferences.MaxCompletionHours, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             Style="{StaticResource SurfaceTextBoxStyle}"
+                             AutomationProperties.Name="{DynamicResource Filters_MaxCompletionLabel}" />
+                </StackPanel>
+
                 <TextBlock Text="{DynamicResource Filters_CollectionLabel}"
                            Style="{StaticResource SectionLabelTextStyle}" />
 
@@ -527,6 +589,7 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
@@ -774,6 +837,89 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
+                <StackPanel Grid.Row="4" Margin="0,8,0,0">
+                    <TextBlock Text="{DynamicResource GameDetails_BacklogSectionTitle}"
+                               Style="{StaticResource SectionLabelTextStyle}" />
+                    <ComboBox ItemsSource="{Binding SelectedGame.StatusOptions}"
+                              SelectedItem="{Binding SelectedGame.SelectedStatusOption, Mode=TwoWay}"
+                              DisplayMemberPath="DisplayName"
+                              Style="{StaticResource SurfaceComboBoxStyle}"
+                              IsEnabled="{Binding SelectedGame.CanEditUserData}"
+                              Margin="0,4,0,0"
+                              AutomationProperties.Name="{DynamicResource GameDetails_StatusAutomation}" />
+                    <TextBlock Text="{DynamicResource GameDetails_PersonalNotesLabel}"
+                               Style="{StaticResource SectionLabelTextStyle}"
+                               Margin="0,16,0,4" />
+                    <TextBox Text="{Binding SelectedGame.PersonalNotes, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             AcceptsReturn="True"
+                             MinHeight="80"
+                             TextWrapping="Wrap"
+                             Padding="10"
+                             BorderBrush="{StaticResource SurfaceBorderBrush}"
+                             BorderThickness="1"
+                             Background="{StaticResource SurfaceBrush}"
+                             IsEnabled="{Binding SelectedGame.CanEditUserData}"
+                             AutomationProperties.Name="{DynamicResource GameDetails_PersonalNotesAutomation}" />
+                    <Grid Margin="0,16,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="{DynamicResource GameDetails_PlaytimeLabel}"
+                                       Style="{StaticResource SectionLabelTextStyle}" />
+                            <TextBox Text="{Binding SelectedGame.PlaytimeHoursText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     Padding="10"
+                                     BorderBrush="{StaticResource SurfaceBorderBrush}"
+                                     BorderThickness="1"
+                                     Background="{StaticResource SurfaceBrush}"
+                                     IsEnabled="{Binding SelectedGame.CanEditUserData}"
+                                     AutomationProperties.Name="{DynamicResource GameDetails_PlaytimeAutomation}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                            <TextBlock Text="{DynamicResource GameDetails_TargetSessionLabel}"
+                                       Style="{StaticResource SectionLabelTextStyle}" />
+                            <TextBox Text="{Binding SelectedGame.TargetSessionHoursText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     Padding="10"
+                                     BorderBrush="{StaticResource SurfaceBorderBrush}"
+                                     BorderThickness="1"
+                                     Background="{StaticResource SurfaceBrush}"
+                                     IsEnabled="{Binding SelectedGame.CanEditUserData}"
+                                     AutomationProperties.Name="{DynamicResource GameDetails_TargetSessionAutomation}" />
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock Text="{Binding SelectedGame.EstimatedCompletionText}"
+                               Style="{StaticResource SectionSupportingTextStyle}"
+                               Margin="0,12,0,0" />
+                    <TextBlock Text="{Binding SelectedGame.ProgressSummary}"
+                               Style="{StaticResource SectionSupportingTextStyle}"
+                               Margin="0,4,0,0" />
+                    <TextBlock Text="{Binding SelectedGame.ErrorMessage}"
+                               Foreground="#FFE07070"
+                               Margin="0,8,0,0"
+                               TextWrapping="Wrap">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Visible" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedGame.ErrorMessage}" Value="">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding SelectedGame.ErrorMessage}" Value="{x:Null}">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <Button Content="{DynamicResource GameDetails_SaveButton}"
+                            Style="{StaticResource BaseButtonStyle}"
+                            Command="{Binding SelectedGame.SaveUserDataCommand}"
+                            Margin="0,16,0,0"
+                            Height="40"
+                            IsEnabled="{Binding SelectedGame.CanEditUserData}"
+                            AutomationProperties.Name="{DynamicResource GameDetails_SaveButtonAutomation}" />
+                </StackPanel>
             </Grid>
         </Border>
         <StackPanel Grid.Row="1"

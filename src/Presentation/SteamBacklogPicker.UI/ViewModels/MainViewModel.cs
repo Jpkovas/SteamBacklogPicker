@@ -18,6 +18,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly IGameArtLocator _artLocator;
     private readonly IToastNotificationService _toastNotificationService;
     private readonly ILocalizationService _localizationService;
+    private readonly IGameUserDataService _userDataService;
     private readonly List<GameEntry> _library = new();
     private readonly GameDetailsViewModel _emptyGame;
     private int _eligibleGameCount;
@@ -31,20 +32,22 @@ public sealed class MainViewModel : ObservableObject
         IGameLibraryService libraryService,
         IGameArtLocator artLocator,
         IToastNotificationService toastNotificationService,
-        ILocalizationService localizationService)
+        ILocalizationService localizationService,
+        IGameUserDataService userDataService)
     {
         _selectionEngine = selectionEngine ?? throw new ArgumentNullException(nameof(selectionEngine));
         _libraryService = libraryService ?? throw new ArgumentNullException(nameof(libraryService));
         _artLocator = artLocator ?? throw new ArgumentNullException(nameof(artLocator));
         _toastNotificationService = toastNotificationService ?? throw new ArgumentNullException(nameof(toastNotificationService));
         _localizationService = localizationService ?? throw new ArgumentNullException(nameof(localizationService));
+        _userDataService = userDataService ?? throw new ArgumentNullException(nameof(userDataService));
 
         _localizationService.LanguageChanged += OnLanguageChanged;
 
         Preferences = new SelectionPreferencesViewModel(_selectionEngine, _localizationService);
         Preferences.PreferencesChanged += OnPreferencesChanged;
 
-        _emptyGame = GameDetailsViewModel.CreateEmpty(_localizationService);
+        _emptyGame = GameDetailsViewModel.CreateEmpty(_localizationService, _userDataService);
         _selectedGame = _emptyGame;
 
         RefreshCommand = new AsyncRelayCommand(RefreshLibraryAsync);
@@ -175,7 +178,7 @@ public sealed class MainViewModel : ObservableObject
             await Task.Delay(850).ConfigureAwait(true);
 
             var game = _selectionEngine.PickNext(_library);
-            ApplySelection(game);
+            await ApplySelectionAsync(game).ConfigureAwait(true);
             SetStatus(loc => loc.GetString("Status_Drawn", game.Title));
         }
         catch (Exception ex)
@@ -188,12 +191,14 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
-    private void ApplySelection(GameEntry game)
+    private async Task ApplySelectionAsync(GameEntry game)
     {
         var coverPath = _artLocator.FindHeroImage(game.AppId);
-        var details = GameDetailsViewModel.FromGame(game, coverPath, _localizationService);
+        var userData = await _userDataService.LoadAsync(game).ConfigureAwait(true);
+        var enriched = game with { UserData = userData };
+        var details = GameDetailsViewModel.FromGame(enriched, coverPath, _localizationService, _userDataService);
         SelectedGame = details;
-        _toastNotificationService.ShowGameSelected(game, coverPath);
+        _toastNotificationService.ShowGameSelected(enriched, coverPath);
     }
 
     private void LaunchGame()

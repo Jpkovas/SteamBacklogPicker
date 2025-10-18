@@ -5,13 +5,15 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog.Events;
+using Domain.Completion;
+using Domain.Selection;
 using Infrastructure.Telemetry;
+using Integration.CompletionTimes;
 using SteamBacklogPicker.UI.Services;
 using SteamBacklogPicker.UI.ViewModels;
 using SteamClientAdapter;
 using SteamDiscovery;
 using ValveFormatParser;
-using Domain.Selection;
 
 namespace SteamBacklogPicker.UI;
 
@@ -109,11 +111,16 @@ public partial class App : Application
         });
         services.AddSingleton<SteamAppManifestCache>();
         services.AddSingleton<ISelectionEngine>(_ => new SelectionEngine());
+        services.AddHttpClient<ICompletionTimeFetcher, HowLongToBeatCompletionTimeFetcher>();
         services.AddSingleton<IGameLibraryService, SteamGameLibraryService>();
         services.AddSingleton<IGameArtLocator, SteamGameArtLocator>();
         services.AddSingleton<ILocalizationService, LocalizationService>();
         services.AddSingleton<IToastNotificationService, ToastNotificationService>();
         services.AddSingleton<IAppUpdateService, SquirrelUpdateService>();
+        services.AddSingleton<IGameUserDataService>(sp =>
+            new GameUserDataService(
+                sp.GetRequiredService<ISelectionEngine>(),
+                sp.GetService<ICompletionTimeFetcher>()));
         services.AddSingleton<MainViewModel>();
         services.AddTransient<MainWindow>();
 

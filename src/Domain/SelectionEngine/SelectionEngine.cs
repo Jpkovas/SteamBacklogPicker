@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -79,6 +80,32 @@ public sealed class SelectionEngine : ISelectionEngine
         lock (_syncRoot)
         {
             _state.History.Clear();
+            SaveSettings();
+        }
+    }
+
+    public GameUserData GetUserData(uint appId)
+    {
+        lock (_syncRoot)
+        {
+            return GetUserDataUnsafe(appId);
+        }
+    }
+
+    public void UpdateUserData(uint appId, GameUserData userData)
+    {
+        lock (_syncRoot)
+        {
+            var normalized = NormalizeUserData(userData);
+            if (normalized.IsEmpty)
+            {
+                _state.UserData.Remove(appId);
+            }
+            else
+            {
+                _state.UserData[appId] = normalized;
+            }
+
             SaveSettings();
         }
     }
@@ -178,6 +205,32 @@ public sealed class SelectionEngine : ISelectionEngine
             settings.RandomPosition = 0;
         }
 
+        settings.UserData ??= new Dictionary<uint, GameUserData>();
+        var removals = new List<uint>();
+        foreach (var pair in settings.UserData)
+        {
+            if (pair.Value is null)
+            {
+                removals.Add(pair.Key);
+                continue;
+            }
+
+            var normalized = NormalizeUserData(pair.Value);
+            if (normalized.IsEmpty)
+            {
+                removals.Add(pair.Key);
+            }
+            else if (!ReferenceEquals(normalized, pair.Value))
+            {
+                settings.UserData[pair.Key] = normalized;
+            }
+        }
+
+        foreach (var key in removals)
+        {
+            settings.UserData.Remove(key);
+        }
+
         TrimHistory(settings);
     }
 
@@ -213,6 +266,8 @@ public sealed class SelectionEngine : ISelectionEngine
             : null;
         var requiredCollection = filters.RequiredCollection;
         var filterByCollection = !string.IsNullOrWhiteSpace(requiredCollection);
+        var statusesFilter = filters.IncludedStatuses;
+        var filterByStatus = statusesFilter.Count > 0;
         var results = new List<GameEntry>();
 
         foreach (var game in games)
@@ -228,6 +283,34 @@ public sealed class SelectionEngine : ISelectionEngine
             }
 
             if (filters.ExcludeDeckUnsupported && game.DeckCompatibility == SteamDeckCompatibility.Unsupported)
+            {
+                continue;
+            }
+
+            var userData = GetUserDataUnsafe(game.AppId);
+
+            if (filterByStatus && !statusesFilter.Contains(userData.Status))
+            {
+                continue;
+            }
+
+            if (filters.MaxPlaytime is TimeSpan maxPlaytime &&
+                userData.Playtime is TimeSpan playtime &&
+                playtime > maxPlaytime)
+            {
+                continue;
+            }
+
+            if (filters.MaxTargetSessionLength is TimeSpan maxSession &&
+                userData.TargetSessionLength is TimeSpan target &&
+                target > maxSession)
+            {
+                continue;
+            }
+
+            if (filters.MaxEstimatedCompletionTime is TimeSpan maxCompletion &&
+                userData.EstimatedCompletionTime is TimeSpan estimate &&
+                estimate > maxCompletion)
             {
                 continue;
             }
@@ -252,10 +335,57 @@ public sealed class SelectionEngine : ISelectionEngine
                 }
             }
 
-            results.Add(game);
+            results.Add(AttachUserData(game, userData));
         }
 
         return results;
+    }
+
+    private GameUserData GetUserDataUnsafe(uint appId)
+    {
+        if (_state.UserData.TryGetValue(appId, out var value))
+        {
+            return value;
+        }
+
+        return GameUserData.Empty;
+    }
+
+    private static GameEntry AttachUserData(GameEntry game, GameUserData userData)
+    {
+        return game.UserData == userData ? game : game with { UserData = userData };
+    }
+
+    private static GameUserData NormalizeUserData(GameUserData? userData)
+    {
+        if (userData is null)
+        {
+            return GameUserData.Empty;
+        }
+
+        var status = Enum.IsDefined(userData.Status) ? userData.Status : BacklogStatus.Unspecified;
+        var notes = string.IsNullOrWhiteSpace(userData.Notes) ? string.Empty : userData.Notes.Trim();
+
+        static TimeSpan? NormalizeDuration(TimeSpan? value)
+        {
+            if (!value.HasValue)
+            {
+                return null;
+            }
+
+            return value.Value <= TimeSpan.Zero ? null : value;
+        }
+
+        var normalized = userData with
+        {
+            Status = status,
+            Notes = notes,
+            Playtime = NormalizeDuration(userData.Playtime),
+            TargetSessionLength = NormalizeDuration(userData.TargetSessionLength),
+            EstimatedCompletionTime = NormalizeDuration(userData.EstimatedCompletionTime),
+        };
+
+        return normalized;
     }
 
     private HashSet<uint> GetExcludedAppIds()
