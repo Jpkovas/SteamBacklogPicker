@@ -145,9 +145,5 @@ public sealed class SteamApiMocks
         public bool IsSubscribedFromFamilySharing(uint appId) => FamilySharingPredicate?.Invoke(appId) ?? false;
 
         public string? GetCurrentUserSteamId() => CurrentSteamId;
-
-        public void Invalidate()
-        {
-        }
     }
 }

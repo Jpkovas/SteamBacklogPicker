@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using SteamClientAdapter;
 using System.Linq;
@@ -111,20 +110,6 @@ public sealed class SteamVdfFallbackTests : IDisposable
     }
 
     [Fact]
-    public void Invalidate_ReloadsAppInfoMetadata()
-    {
-        var fallback = CreateFallback();
-
-        _ = fallback.GetKnownApps();
-        Assert.True(fallback.IsSubscribedFromFamilySharing(20u));
-
-        fallback.Invalidate();
-        _ = fallback.GetKnownApps();
-
-        Assert.True(fallback.IsSubscribedFromFamilySharing(20u));
-    }
-
-    [Fact]
     public void GetKnownApps_ReturnsMetadataForAllDiscoveredTitles()
     {
         var fallback = CreateFallback();
@@ -150,43 +135,6 @@ public sealed class SteamVdfFallbackTests : IDisposable
         Assert.Equal("Not Installed", available.Name);
         Assert.Contains("Backlog", available.Collections);
         Assert.Contains("Jogáveis no Deck", available.Collections);
-    }
-
-    [Fact]
-    public void GetKnownApps_ReusesCacheUntilDependenciesChange()
-    {
-        var accessor = new CountingFileAccessor();
-        var fallback = new SteamVdfFallback(
-            _steamRoot,
-            accessor,
-            new ValveTextVdfParser(),
-            new ValveBinaryVdfParser());
-
-        var loginUsersPath = Path.Combine(_steamRoot, "config", "loginusers.vdf");
-        var localConfigPath = Path.Combine(
-            _steamRoot,
-            "userdata",
-            "76561198000000000",
-            "config",
-            "localconfig.vdf");
-
-        _ = fallback.GetKnownApps();
-
-        var initialLoginReads = accessor.GetReadAllTextCount(loginUsersPath);
-        var initialLocalReads = accessor.GetReadAllTextCount(localConfigPath);
-
-        _ = fallback.GetKnownApps();
-
-        Assert.Equal(initialLoginReads, accessor.GetReadAllTextCount(loginUsersPath));
-        Assert.Equal(initialLocalReads, accessor.GetReadAllTextCount(localConfigPath));
-
-        var updatedTimestamp = File.GetLastWriteTimeUtc(localConfigPath).AddMinutes(1);
-        File.SetLastWriteTimeUtc(localConfigPath, updatedTimestamp);
-
-        _ = fallback.GetKnownApps();
-
-        Assert.True(accessor.GetReadAllTextCount(localConfigPath) > initialLocalReads);
-        Assert.True(accessor.GetReadAllTextCount(loginUsersPath) > initialLoginReads);
     }
 
     public void Dispose()
@@ -231,42 +179,5 @@ public sealed class SteamVdfFallbackTests : IDisposable
         public Stream OpenRead(string path) => File.OpenRead(path);
 
         public string ReadAllText(string path) => File.ReadAllText(path);
-    }
-
-    private sealed class CountingFileAccessor : IFileAccessor
-    {
-        private readonly object sync = new();
-        private readonly Dictionary<string, int> readCounts = new(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, int> openCounts = new(StringComparer.OrdinalIgnoreCase);
-
-        public int GetReadAllTextCount(string path)
-        {
-            lock (sync)
-            {
-                return readCounts.TryGetValue(path, out var count) ? count : 0;
-            }
-        }
-
-        public bool FileExists(string path) => File.Exists(path);
-
-        public Stream OpenRead(string path)
-        {
-            Increment(openCounts, path);
-            return File.OpenRead(path);
-        }
-
-        public string ReadAllText(string path)
-        {
-            Increment(readCounts, path);
-            return File.ReadAllText(path);
-        }
-
-        private void Increment(Dictionary<string, int> counts, string path)
-        {
-            lock (sync)
-            {
-                counts[path] = counts.TryGetValue(path, out var existing) ? existing + 1 : 1;
-            }
-        }
     }
 }

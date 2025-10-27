@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Domain;
@@ -18,9 +17,6 @@ public sealed class MainViewModel : ObservableObject
     private readonly IGameArtLocator _artLocator;
     private readonly IToastNotificationService _toastNotificationService;
     private readonly ILocalizationService _localizationService;
-    private readonly IGameCompletionEstimator _completionEstimator;
-    private readonly INetworkStatusService _networkStatusService;
-    private readonly Func<DateTimeOffset> _clock;
     private readonly List<GameEntry> _library = new();
     private readonly GameDetailsViewModel _emptyGame;
     private int _eligibleGameCount;
@@ -34,19 +30,13 @@ public sealed class MainViewModel : ObservableObject
         IGameLibraryService libraryService,
         IGameArtLocator artLocator,
         IToastNotificationService toastNotificationService,
-        ILocalizationService localizationService,
-        IGameCompletionEstimator completionEstimator,
-        INetworkStatusService networkStatusService,
-        Func<DateTimeOffset>? clock = null)
+        ILocalizationService localizationService)
     {
         _selectionEngine = selectionEngine ?? throw new ArgumentNullException(nameof(selectionEngine));
         _libraryService = libraryService ?? throw new ArgumentNullException(nameof(libraryService));
         _artLocator = artLocator ?? throw new ArgumentNullException(nameof(artLocator));
         _toastNotificationService = toastNotificationService ?? throw new ArgumentNullException(nameof(toastNotificationService));
         _localizationService = localizationService ?? throw new ArgumentNullException(nameof(localizationService));
-        _completionEstimator = completionEstimator ?? throw new ArgumentNullException(nameof(completionEstimator));
-        _networkStatusService = networkStatusService ?? throw new ArgumentNullException(nameof(networkStatusService));
-        _clock = clock ?? (() => DateTimeOffset.UtcNow);
 
         _localizationService.LanguageChanged += OnLanguageChanged;
 
@@ -88,17 +78,7 @@ public sealed class MainViewModel : ObservableObject
                 return;
             }
 
-            if (_selectedGame is not null)
-            {
-                _selectedGame.UserDataChanged -= OnSelectedGameUserDataChanged;
-            }
-
             _selectedGame = value;
-
-            if (_selectedGame is not null && !ReferenceEquals(_selectedGame, _emptyGame))
-            {
-                _selectedGame.UserDataChanged += OnSelectedGameUserDataChanged;
-            }
 
             OnPropertyChanged();
             LaunchCommand.RaiseCanExecuteChanged();
@@ -130,55 +110,22 @@ public sealed class MainViewModel : ObservableObject
     {
         SetStatus(loc => loc.GetString("Status_LoadingLibrary"));
         _library.Clear();
-        var synchronizationContext = SynchronizationContext.Current;
-        var uiScheduler = synchronizationContext is null
-            ? TaskScheduler.Current
-            : TaskScheduler.FromCurrentSynchronizationContext();
         try
         {
-            var games = await _libraryService.GetLibraryAsync().ConfigureAwait(false);
-            var userData = _selectionEngine.GetUserDataSnapshot();
-            await Task.Factory.StartNew(
-                    () =>
-                    {
-                        _library.Clear();
-                        var ordered = games
-                            .OrderBy(game => game.Title, StringComparer.CurrentCultureIgnoreCase)
-                            .ThenBy(game => game.AppId)
-                            .Select(game => MergeUserData(game, userData))
-                            .ToList();
-                        _library.AddRange(ordered);
-                        Preferences.UpdateCollections(GetAvailableCollections());
-                        RehydrateSelectedGame();
-                        UpdateEligibilitySummary();
-                    },
-                    CancellationToken.None,
-                    TaskCreationOptions.DenyChildAttach,
-                    uiScheduler)
-                .ConfigureAwait(false);
+            var games = await _libraryService.GetLibraryAsync().ConfigureAwait(true);
+            _library.AddRange(games.OrderBy(game => game.Title, StringComparer.CurrentCultureIgnoreCase));
+            Preferences.UpdateCollections(GetAvailableCollections());
+            UpdateEligibilitySummary();
         }
         catch (Exception ex)
         {
-            await Task.Factory.StartNew(
-                    () =>
-                    {
-                        _eligibleGameCount = 0;
-                        SetStatusRaw(ex.Message);
-                        Preferences.UpdateCollections(Array.Empty<string>());
-                    },
-                    CancellationToken.None,
-                    TaskCreationOptions.DenyChildAttach,
-                    uiScheduler)
-                .ConfigureAwait(false);
+            _eligibleGameCount = 0;
+            SetStatusRaw(ex.Message);
+            Preferences.UpdateCollections(Array.Empty<string>());
         }
         finally
         {
-            await Task.Factory.StartNew(
-                    () => DrawCommand.RaiseCanExecuteChanged(),
-                    CancellationToken.None,
-                    TaskCreationOptions.DenyChildAttach,
-                    uiScheduler)
-                .ConfigureAwait(false);
+            DrawCommand.RaiseCanExecuteChanged();
         }
     }
 
@@ -217,9 +164,8 @@ public sealed class MainViewModel : ObservableObject
     private void ApplySelection(GameEntry game)
     {
         var coverPath = _artLocator.FindHeroImage(game.AppId);
-        var details = GameDetailsViewModel.FromGame(game, coverPath, _localizationService, _selectionEngine, _completionEstimator, _networkStatusService, _clock);
+        var details = GameDetailsViewModel.FromGame(game, coverPath, _localizationService);
         SelectedGame = details;
-        _ = details.EnsureEstimateAsync();
         _toastNotificationService.ShowGameSelected(game, coverPath);
     }
 
@@ -268,36 +214,6 @@ public sealed class MainViewModel : ObservableObject
             .Distinct(StringComparer.OrdinalIgnoreCase);
     }
 
-    private static GameEntry MergeUserData(GameEntry game, IReadOnlyDictionary<uint, GameUserData> userData)
-    {
-        if (userData.TryGetValue(game.AppId, out var data))
-        {
-            return game with { UserData = data };
-        }
-
-        return game with { UserData = new GameUserData() };
-    }
-
-    private void RehydrateSelectedGame()
-    {
-        if (ReferenceEquals(SelectedGame, _emptyGame))
-        {
-            return;
-        }
-
-        var match = _library.FirstOrDefault(game => game.AppId == SelectedGame.AppId);
-        if (match.AppId == 0)
-        {
-            SelectedGame = _emptyGame;
-            return;
-        }
-
-        var coverPath = _artLocator.FindHeroImage(match.AppId);
-        var refreshed = GameDetailsViewModel.FromGame(match, coverPath, _localizationService, _selectionEngine, _completionEstimator, _networkStatusService, _clock);
-        SelectedGame = refreshed;
-        _ = refreshed.EnsureEstimateAsync();
-    }
-
     private void UpdateEligibilitySummary()
     {
         IReadOnlyList<GameEntry> eligibleGames;
@@ -343,25 +259,6 @@ public sealed class MainViewModel : ObservableObject
         }
 
         DrawCommand.RaiseCanExecuteChanged();
-    }
-
-    private void OnSelectedGameUserDataChanged(object? sender, GameUserData data)
-    {
-        if (sender is not GameDetailsViewModel details)
-        {
-            return;
-        }
-
-        for (var i = 0; i < _library.Count; i++)
-        {
-            if (_library[i].AppId == details.AppId)
-            {
-                _library[i] = _library[i] with { UserData = data };
-                break;
-            }
-        }
-
-        UpdateEligibilitySummary();
     }
 
     private void ChangeLanguage(object? parameter)

@@ -25,165 +25,141 @@ public sealed class SteamGameLibraryService : IGameLibraryService
         _fallback = fallback ?? throw new ArgumentNullException(nameof(fallback));
     }
 
-    public async Task<IReadOnlyList<GameEntry>> GetLibraryAsync(CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<GameEntry>> GetLibraryAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        _libraryLocator.Refresh();
+        _cache.Refresh();
 
-        var ordered = await Task.Run(() =>
+        var installedGames = _cache.GetInstalledGames();
+        var knownApps = _fallback.GetKnownApps();
+        var collectionDefinitions = _fallback.GetCollections();
+
+        var results = new Dictionary<uint, GameEntry>();
+        foreach (var game in installedGames)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            var enriched = game;
+            var isFamilyShared = _fallback.IsSubscribedFromFamilySharing(game.AppId);
 
-            _libraryLocator.Refresh();
-            cancellationToken.ThrowIfCancellationRequested();
-
-            var librariesChanged = _cache.Refresh();
-            cancellationToken.ThrowIfCancellationRequested();
-
-            if (librariesChanged)
+            if (knownApps.TryGetValue(game.AppId, out var definition))
             {
-                _fallback.Invalidate();
-            }
-
-            var installedGames = _cache.GetInstalledGames();
-            var knownApps = _fallback.GetKnownApps();
-            var collectionDefinitions = _fallback.GetCollections();
-
-            cancellationToken.ThrowIfCancellationRequested();
-
-            var results = new Dictionary<uint, GameEntry>();
-            foreach (var game in installedGames)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                var enriched = game;
-                var isFamilyShared = _fallback.IsSubscribedFromFamilySharing(game.AppId);
-
-                if (knownApps.TryGetValue(game.AppId, out var definition))
+                if (!string.IsNullOrWhiteSpace(definition.Name) && !string.Equals(enriched.Title, definition.Name, StringComparison.Ordinal))
                 {
-                    if (!string.IsNullOrWhiteSpace(definition.Name) && !string.Equals(enriched.Title, definition.Name, StringComparison.Ordinal))
-                    {
-                        enriched = enriched with { Title = definition.Name };
-                    }
-
-                    if (definition.Collections.Count > 0)
-                    {
-                        var combinedTags = (enriched.Tags ?? Array.Empty<string>())
-                            .Concat(definition.Collections)
-                            .Distinct(StringComparer.OrdinalIgnoreCase)
-                            .ToArray();
-                        enriched = enriched with { Tags = combinedTags };
-                    }
-
-                    if (definition.StoreCategoryIds.Count > 0)
-                    {
-                        enriched = enriched with { StoreCategoryIds = definition.StoreCategoryIds };
-                    }
-
-                    if (definition.DeckCompatibility != SteamDeckCompatibility.Unknown)
-                    {
-                        enriched = enriched with { DeckCompatibility = definition.DeckCompatibility };
-                    }
-
-                    var category = MapProductCategory(definition.Type);
-                    if (enriched.ProductCategory != category)
-                    {
-                        enriched = enriched with { ProductCategory = category };
-                    }
-
-                    var desiredOwnership = isFamilyShared ? OwnershipType.FamilyShared : OwnershipType.Owned;
-                    if (enriched.OwnershipType != desiredOwnership)
-                    {
-                        enriched = enriched with { OwnershipType = desiredOwnership };
-                    }
-
-                    if (isFamilyShared)
-                    {
-                        if (enriched.InstallState != InstallState.Shared)
-                        {
-                            enriched = enriched with { InstallState = InstallState.Shared };
-                        }
-                    }
-                    else if (definition.IsInstalled && enriched.InstallState != InstallState.Installed)
-                    {
-                        enriched = enriched with { InstallState = InstallState.Installed };
-                    }
-                }
-                else if (isFamilyShared)
-                {
-                    if (enriched.OwnershipType != OwnershipType.FamilyShared || enriched.InstallState != InstallState.Shared)
-                    {
-                        enriched = enriched with
-                        {
-                            OwnershipType = OwnershipType.FamilyShared,
-                            InstallState = InstallState.Shared
-                        };
-                    }
+                    enriched = enriched with { Title = definition.Name };
                 }
 
-                results[game.AppId] = enriched;
+                if (definition.Collections.Count > 0)
+                {
+                    var combinedTags = (enriched.Tags ?? Array.Empty<string>())
+                        .Concat(definition.Collections)
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToArray();
+                    enriched = enriched with { Tags = combinedTags };
+                }
+
+                if (definition.StoreCategoryIds.Count > 0)
+                {
+                    enriched = enriched with { StoreCategoryIds = definition.StoreCategoryIds };
+                }
+
+                if (definition.DeckCompatibility != SteamDeckCompatibility.Unknown)
+                {
+                    enriched = enriched with { DeckCompatibility = definition.DeckCompatibility };
+                }
+
+                var category = MapProductCategory(definition.Type);
+                if (enriched.ProductCategory != category)
+                {
+                    enriched = enriched with { ProductCategory = category };
+                }
+
+                var desiredOwnership = isFamilyShared ? OwnershipType.FamilyShared : OwnershipType.Owned;
+                if (enriched.OwnershipType != desiredOwnership)
+                {
+                    enriched = enriched with { OwnershipType = desiredOwnership };
+                }
+
+                if (isFamilyShared)
+                {
+                    if (enriched.InstallState != InstallState.Shared)
+                    {
+                        enriched = enriched with { InstallState = InstallState.Shared };
+                    }
+                }
+                else if (definition.IsInstalled && enriched.InstallState != InstallState.Installed)
+                {
+                    enriched = enriched with { InstallState = InstallState.Installed };
+                }
+            }
+            else if (isFamilyShared)
+            {
+                if (enriched.OwnershipType != OwnershipType.FamilyShared || enriched.InstallState != InstallState.Shared)
+                {
+                    enriched = enriched with
+                    {
+                        OwnershipType = OwnershipType.FamilyShared,
+                        InstallState = InstallState.Shared
+                    };
+                }
             }
 
-            foreach (var (appId, definition) in knownApps)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
+            results[game.AppId] = enriched;
+        }
 
-                if (results.ContainsKey(appId))
+        foreach (var (appId, definition) in knownApps)
+        {
+            if (results.ContainsKey(appId))
+            {
+                continue;
+            }
+
+            var isFamilyShared = _fallback.IsSubscribedFromFamilySharing(appId);
+            var ownership = isFamilyShared ? OwnershipType.FamilyShared : OwnershipType.Owned;
+            var installState = ownership == OwnershipType.FamilyShared
+                ? InstallState.Shared
+                : (definition.IsInstalled ? InstallState.Installed : InstallState.Available);
+
+            var title = !string.IsNullOrWhiteSpace(definition.Name) ? definition.Name! : $"App {appId}";
+            var category = MapProductCategory(definition.Type);
+
+            results[appId] = new GameEntry
+            {
+                AppId = appId,
+                Title = title,
+                OwnershipType = ownership,
+                InstallState = installState,
+                ProductCategory = category,
+                Tags = definition.Collections ?? Array.Empty<string>(),
+                StoreCategoryIds = definition.StoreCategoryIds ?? Array.Empty<int>(),
+                DeckCompatibility = definition.DeckCompatibility
+            };
+        }
+
+        if (collectionDefinitions.Count > 0)
+        {
+            var membership = BuildCollectionMembership(collectionDefinitions, results);
+            foreach (var (appId, names) in membership)
+            {
+                if (!results.TryGetValue(appId, out var entry))
                 {
                     continue;
                 }
 
-                var isFamilyShared = _fallback.IsSubscribedFromFamilySharing(appId);
-                var ownership = isFamilyShared ? OwnershipType.FamilyShared : OwnershipType.Owned;
-                var installState = ownership == OwnershipType.FamilyShared
-                    ? InstallState.Shared
-                    : (definition.IsInstalled ? InstallState.Installed : InstallState.Available);
+                var merged = (entry.Tags ?? Array.Empty<string>())
+                    .Concat(names)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
 
-                var title = !string.IsNullOrWhiteSpace(definition.Name) ? definition.Name! : $"App {appId}";
-                var category = MapProductCategory(definition.Type);
-
-                results[appId] = new GameEntry
-                {
-                    AppId = appId,
-                    Title = title,
-                    OwnershipType = ownership,
-                    InstallState = installState,
-                    ProductCategory = category,
-                    Tags = definition.Collections ?? Array.Empty<string>(),
-                    StoreCategoryIds = definition.StoreCategoryIds ?? Array.Empty<int>(),
-                    DeckCompatibility = definition.DeckCompatibility
-                };
+                results[appId] = entry with { Tags = merged };
             }
+        }
 
-            if (collectionDefinitions.Count > 0)
-            {
-                var membership = BuildCollectionMembership(collectionDefinitions, results);
-                foreach (var (appId, names) in membership)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
+        var ordered = results.Values
+            .OrderBy(game => game.Title, StringComparer.CurrentCultureIgnoreCase)
+            .ThenBy(game => game.AppId)
+            .ToList();
 
-                    if (!results.TryGetValue(appId, out var entry))
-                    {
-                        continue;
-                    }
-
-                    var merged = (entry.Tags ?? Array.Empty<string>())
-                        .Concat(names)
-                        .Distinct(StringComparer.OrdinalIgnoreCase)
-                        .ToArray();
-
-                    results[appId] = entry with { Tags = merged };
-                }
-            }
-
-            cancellationToken.ThrowIfCancellationRequested();
-
-            return (IReadOnlyList<GameEntry>)results.Values
-                .OrderBy(game => game.Title, StringComparer.CurrentCultureIgnoreCase)
-                .ThenBy(game => game.AppId)
-                .ToList();
-        }, cancellationToken).ConfigureAwait(false);
-
-        return ordered;
+        return Task.FromResult<IReadOnlyList<GameEntry>>(ordered);
     }
 
     private static ProductCategory MapProductCategory(string? type)
@@ -299,12 +275,43 @@ public sealed class SteamGameLibraryService : IGameLibraryService
         return option switch
         {
             1 => entry.InstallState is InstallState.Installed or InstallState.Shared,
-            3 => GameEntryCapabilities.SupportsVirtualReality(entry),
-            7 => GameEntryCapabilities.SupportsSinglePlayer(entry),
-            8 => GameEntryCapabilities.SupportsMultiplayer(entry),
+            3 => SupportsVr(entry),
+            7 => SupportsSinglePlayer(entry),
+            8 => SupportsMultiplayer(entry),
             13 => entry.DeckCompatibility is SteamDeckCompatibility.Verified or SteamDeckCompatibility.Playable,
             _ => false,
         };
+    }
+
+    private static bool SupportsSinglePlayer(GameEntry entry)
+        => entry.StoreCategoryIds.Any(id => id == 2);
+
+    private static bool SupportsMultiplayer(GameEntry entry)
+        => entry.StoreCategoryIds.Any(id => id is 1 or 9 or 38 or 48 or 49);
+
+    private static bool SupportsVr(GameEntry entry)
+    {
+        foreach (var category in entry.StoreCategoryIds)
+        {
+            switch (category)
+            {
+                case 31:
+                case 32:
+                case 33:
+                case 34:
+                case 35:
+                case 36:
+                case 37:
+                case 38:
+                case 39:
+                case 52:
+                case 53:
+                case 54:
+                    return true;
+            }
+        }
+
+        return false;
     }
 
 }

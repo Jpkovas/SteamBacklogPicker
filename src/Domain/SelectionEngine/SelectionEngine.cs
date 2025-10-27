@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -81,52 +80,6 @@ public sealed class SelectionEngine : ISelectionEngine
         {
             _state.History.Clear();
             SaveSettings();
-        }
-    }
-
-    public GameUserData GetUserData(uint appId)
-    {
-        lock (_syncRoot)
-        {
-            if (_state.UserData.TryGetValue(appId, out var data))
-            {
-                return data;
-            }
-
-            return new GameUserData();
-        }
-    }
-
-    public IReadOnlyDictionary<uint, GameUserData> GetUserDataSnapshot()
-    {
-        lock (_syncRoot)
-        {
-            return new Dictionary<uint, GameUserData>(_state.UserData);
-        }
-    }
-
-    public void UpdateUserData(uint appId, GameUserData userData)
-    {
-        ArgumentNullException.ThrowIfNull(userData);
-
-        lock (_syncRoot)
-        {
-            var normalized = userData.Normalize();
-            var changed = false;
-            if (IsUserDataEmpty(normalized))
-            {
-                changed = _state.UserData.Remove(appId);
-            }
-            else if (!_state.UserData.TryGetValue(appId, out var existing) || existing != normalized)
-            {
-                _state.UserData[appId] = normalized;
-                changed = true;
-            }
-
-            if (changed)
-            {
-                SaveSettings();
-            }
         }
     }
 
@@ -225,25 +178,6 @@ public sealed class SelectionEngine : ISelectionEngine
             settings.RandomPosition = 0;
         }
 
-        settings.UserData ??= new Dictionary<uint, GameUserData>();
-        var toRemove = new List<uint>();
-        foreach (var (appId, data) in settings.UserData.ToArray())
-        {
-            var normalized = data.Normalize();
-            if (IsUserDataEmpty(normalized))
-            {
-                toRemove.Add(appId);
-                continue;
-            }
-
-            settings.UserData[appId] = normalized;
-        }
-
-        foreach (var appId in toRemove)
-        {
-            settings.UserData.Remove(appId);
-        }
-
         TrimHistory(settings);
     }
 
@@ -279,17 +213,6 @@ public sealed class SelectionEngine : ISelectionEngine
             : null;
         var requiredCollection = filters.RequiredCollection;
         var filterByCollection = !string.IsNullOrWhiteSpace(requiredCollection);
-        var allowedCompatibility = filters.AllowedDeckCompatibility;
-        var allowedStatuses = filters.AllowedBacklogStatuses;
-        var filterByStatus = allowedStatuses != BacklogStatusFilter.All;
-        var requireSinglePlayer = filters.RequireSinglePlayer;
-        var requireMultiplayer = filters.RequireMultiplayer;
-        var requireVr = filters.RequireVr;
-        var moodTags = filters.MoodTags ?? new List<string>();
-        var filterByMood = moodTags.Count > 0;
-        var minimumPlaytime = filters.MinimumPlaytime;
-        var maximumTargetSessionLength = filters.MaximumTargetSessionLength;
-        var maximumEstimatedCompletionTime = filters.MaximumEstimatedCompletionTime;
         var results = new List<GameEntry>();
 
         foreach (var game in games)
@@ -299,56 +222,17 @@ public sealed class SelectionEngine : ISelectionEngine
                 continue;
             }
 
-            var enriched = AttachUserData(game);
-            var userData = enriched.UserData;
-
-            if (filters.RequireInstalled && enriched.InstallState is not (InstallState.Installed or InstallState.Shared))
+            if (filters.RequireInstalled && game.InstallState is not (InstallState.Installed or InstallState.Shared))
             {
                 continue;
             }
 
-            if (filterByStatus && !IsStatusAllowed(userData.Status, allowedStatuses))
+            if (filters.ExcludeDeckUnsupported && game.DeckCompatibility == SteamDeckCompatibility.Unsupported)
             {
                 continue;
             }
 
-            if (requireSinglePlayer && !GameEntryCapabilities.SupportsSinglePlayer(enriched))
-            {
-                continue;
-            }
-
-            if (requireMultiplayer && !GameEntryCapabilities.SupportsMultiplayer(enriched))
-            {
-                continue;
-            }
-
-            if (requireVr && !GameEntryCapabilities.SupportsVirtualReality(enriched))
-            {
-                continue;
-            }
-
-            if (minimumPlaytime is { } minimum && (!userData.Playtime.HasValue || userData.Playtime.Value < minimum))
-            {
-                continue;
-            }
-
-            if (maximumTargetSessionLength is { } maxSession && userData.TargetSessionLength is { } sessionLength && sessionLength > maxSession)
-            {
-                continue;
-            }
-
-            if (maximumEstimatedCompletionTime is { } maxEstimate && userData.EstimatedCompletionTime is { } estimate && estimate > maxEstimate)
-            {
-                continue;
-            }
-
-            var compatibility = GetCompatibilityFlag(enriched.DeckCompatibility);
-            if ((allowedCompatibility & compatibility) == 0)
-            {
-                continue;
-            }
-
-            var category = enriched.ProductCategory;
+            var category = game.ProductCategory;
             if (category == ProductCategory.Unknown)
             {
                 category = ProductCategory.Game;
@@ -361,31 +245,18 @@ public sealed class SelectionEngine : ISelectionEngine
 
             if (filterByCollection)
             {
-                var tags = enriched.Tags;
+                var tags = game.Tags;
                 if (tags is null || !tags.Any(tag => string.Equals(tag, requiredCollection, StringComparison.OrdinalIgnoreCase)))
                 {
                     continue;
                 }
             }
 
-            if (filterByMood && !GameEntryCapabilities.MatchesMoodTags(enriched, moodTags))
-            {
-                continue;
-            }
-
-            results.Add(enriched);
+            results.Add(game);
         }
 
         return results;
     }
-
-    private static DeckCompatibilityFilter GetCompatibilityFlag(SteamDeckCompatibility compatibility) => compatibility switch
-    {
-        SteamDeckCompatibility.Verified => DeckCompatibilityFilter.Verified,
-        SteamDeckCompatibility.Playable => DeckCompatibilityFilter.Playable,
-        SteamDeckCompatibility.Unsupported => DeckCompatibilityFilter.Unsupported,
-        _ => DeckCompatibilityFilter.Unknown,
-    };
 
     private HashSet<uint> GetExcludedAppIds()
     {
@@ -404,54 +275,13 @@ public sealed class SelectionEngine : ISelectionEngine
         return set;
     }
 
-    private GameEntry AttachUserData(GameEntry game)
-    {
-        if (_state.UserData.TryGetValue(game.AppId, out var persisted))
-        {
-            return game with { UserData = persisted };
-        }
-
-        var provided = game.UserData.Normalize();
-        if (IsUserDataEmpty(provided))
-        {
-            return game with { UserData = new GameUserData() };
-        }
-
-        return game with { UserData = provided };
-    }
-
-    private static bool IsStatusAllowed(BacklogStatus status, BacklogStatusFilter allowed)
-    {
-        var flag = status switch
-        {
-            BacklogStatus.Wishlist => BacklogStatusFilter.Wishlist,
-            BacklogStatus.Backlog => BacklogStatusFilter.Backlog,
-            BacklogStatus.Playing => BacklogStatusFilter.Playing,
-            BacklogStatus.Completed => BacklogStatusFilter.Completed,
-            BacklogStatus.Shelved => BacklogStatusFilter.Shelved,
-            BacklogStatus.Abandoned => BacklogStatusFilter.Abandoned,
-            _ => BacklogStatusFilter.Uncategorized,
-        };
-
-        return (allowed & flag) != 0;
-    }
-
-    private static bool IsUserDataEmpty(GameUserData data) =>
-        data.Status == BacklogStatus.Uncategorized
-        && string.IsNullOrWhiteSpace(data.Notes)
-        && data.Playtime is null
-        && data.TargetSessionLength is null
-        && data.EstimatedCompletionTime is null
-        && data.EstimatedCompletionTimeUpdatedAt is null;
-
     private GameEntry ChooseGame(IReadOnlyList<GameEntry> candidates)
     {
         var weights = new double[candidates.Count];
         double total = 0;
-        var referenceTime = _clock();
         for (var i = 0; i < candidates.Count; i++)
         {
-            weights[i] = Math.Max(0, GetWeight(candidates[i], referenceTime));
+            weights[i] = Math.Max(0, GetWeight(candidates[i]));
             total += weights[i];
         }
 
@@ -481,101 +311,7 @@ public sealed class SelectionEngine : ISelectionEngine
         return candidates[^1];
     }
 
-    private double GetWeight(GameEntry game, DateTimeOffset referenceTime)
-    {
-        var filters = _state.Preferences.Filters ?? new SelectionFilters();
-        var weight = 1d;
-
-        weight *= ComputeInstallStateMultiplier(game, filters.InstallStateWeight);
-        weight *= ComputeLastPlayedMultiplier(game, referenceTime, filters.LastPlayedRecencyWeight);
-        weight *= ComputeDeckCompatibilityMultiplier(game, filters.DeckCompatibilityWeight);
-
-        return weight;
-    }
-
-    private static double ComputeInstallStateMultiplier(GameEntry game, double sliderValue)
-    {
-        var normalized = NormalizeSlider(sliderValue);
-        var bias = normalized - 1d;
-        var isInstalled = game.InstallState is InstallState.Installed or InstallState.Shared;
-        var multiplier = isInstalled ? 1d + bias : 1d - bias;
-        return Math.Clamp(multiplier, 0d, 2d);
-    }
-
-    private static double ComputeLastPlayedMultiplier(GameEntry game, DateTimeOffset referenceTime, double sliderValue)
-    {
-        var normalized = NormalizeSlider(sliderValue);
-        var bias = normalized - 1d;
-        if (Math.Abs(bias) < 0.0001d)
-        {
-            return 1d;
-        }
-
-        var recencyScore = GetRecencyScore(game, referenceTime);
-        var recencyNormalized = (recencyScore * 2d) - 1d;
-        var multiplier = 1d + bias * recencyNormalized;
-        return Math.Clamp(multiplier, 0d, 2d);
-    }
-
-    private static double GetRecencyScore(GameEntry game, DateTimeOffset referenceTime)
-    {
-        if (game.LastPlayed is null)
-        {
-            return 1d;
-        }
-
-        var lastPlayed = game.LastPlayed.Value;
-        if (lastPlayed >= referenceTime)
-        {
-            return 0d;
-        }
-
-        var days = (referenceTime - lastPlayed).TotalDays;
-        const double maxDays = 180d;
-        if (days >= maxDays)
-        {
-            return 1d;
-        }
-
-        if (days <= 0)
-        {
-            return 0d;
-        }
-
-        return Math.Clamp(days / maxDays, 0d, 1d);
-    }
-
-    private static double ComputeDeckCompatibilityMultiplier(GameEntry game, double sliderValue)
-    {
-        var normalized = NormalizeSlider(sliderValue);
-        var bias = normalized - 1d;
-        if (Math.Abs(bias) < 0.0001d)
-        {
-            return 1d;
-        }
-
-        var compatibilityScore = game.DeckCompatibility switch
-        {
-            SteamDeckCompatibility.Verified => 1d,
-            SteamDeckCompatibility.Playable => 0.75d,
-            SteamDeckCompatibility.Unsupported => 0d,
-            _ => 0.5d,
-        };
-
-        var compatibilityNormalized = (compatibilityScore * 2d) - 1d;
-        var multiplier = 1d + bias * compatibilityNormalized;
-        return Math.Clamp(multiplier, 0d, 2d);
-    }
-
-    private static double NormalizeSlider(double value)
-    {
-        if (double.IsNaN(value) || double.IsInfinity(value))
-        {
-            return 1d;
-        }
-
-        return Math.Clamp(value, 0d, 2d);
-    }
+    private static double GetWeight(GameEntry game) => 1d;
 
     private double NextRandom()
     {

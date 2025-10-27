@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace Domain.Selection;
 
 internal sealed class SelectionSettings
@@ -9,6 +7,4 @@ internal sealed class SelectionSettings
     public List<SelectionHistoryEntry> History { get; set; } = new();
 
     public int RandomPosition { get; set; }
-
-    public Dictionary<uint, GameUserData> UserData { get; set; } = new();
 }

@@ -222,10 +222,6 @@ public sealed class SteamAppManifestCacheTests
         public string? GetCurrentUserSteamId() => steamId;
 
         public IReadOnlyList<SteamCollectionDefinition> GetCollections() => Array.Empty<SteamCollectionDefinition>();
-
-        public void Invalidate()
-        {
-        }
     }
 
     private sealed class FakeLibraryLocator : ISteamLibraryLocator
