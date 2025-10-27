@@ -11,7 +11,6 @@ SteamBacklogPicker is a Windows desktop app that helps you pick the next game fr
 - Highlight install status alongside the selected game so you know whether you can jump in immediately.
 - Showcase rich cover art, tags, and ownership context for the drawn game, falling back to Steam's CDN when the local cache is missing.
 - Enjoy a refreshed dark theme with responsive cards, clearer calls to action, and an animated "Sorteando" overlay while the picker spins.
-- Track personal backlog status, session targets, playtime notes, and offline-friendly HowLongToBeat completion estimates alongside every game.
 - Weighted randomisation and long-form descriptions remain on the roadmap and will arrive in a future update.
 - Emit structured logs and (optional) telemetry to help with troubleshooting.
 
