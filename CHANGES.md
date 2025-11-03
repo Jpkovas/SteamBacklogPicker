@@ -1,5 +1,6 @@
 # Recent Changes
 
+- Bundled the Microsoft.Data.Sqlite native provider so Epic catalog caches load SQLite fixtures in tests.
 - Fixed Epic catalog parsing to read camelCase fields and updated cache tests to validate namespaced identifiers.
 - Added Epic discovery unit tests with local fixtures, refreshed multi-store selection coverage, and documented Epic cache requirements and offline guarantees.
 - Added a combined Steam/Epic library flow with storefront filters, UI indicators, and updated tests covering the new providers.
