@@ -1,3 +1,3 @@
 # Quick Changes
 
-- Added Epic cache tests and docs covering offline guarantees and multi-store selection.
+- Fixed Epic catalog parsing to accept camelCase fields and adjusted Epic cache tests for namespaced IDs.

@@ -370,10 +370,10 @@ public sealed class EpicCatalogCache : IDisposable
 
     private EpicCatalogItem? ParseCatalogElement(JsonElement element)
     {
-        var catalogItemId = TryGetString(element, "CatalogItemId", "id", "offerId");
-        var catalogNamespace = TryGetString(element, "CatalogNamespace", "namespace", "namespaceId");
+        var catalogItemId = TryGetString(element, "CatalogItemId", "catalogItemId", "id", "offerId");
+        var catalogNamespace = TryGetString(element, "CatalogNamespace", "catalogNamespace", "namespace", "namespaceId");
         var appName = TryGetString(element, "AppName", "appName", "technicalName");
-        var title = TryGetString(element, "DisplayName", "title", "name", "appTitle") ??
+        var title = TryGetString(element, "DisplayName", "displayName", "title", "name", "appTitle") ??
                     appName ?? catalogItemId;
 
         if (string.IsNullOrWhiteSpace(title) && string.IsNullOrWhiteSpace(catalogItemId))
@@ -422,7 +422,7 @@ public sealed class EpicCatalogCache : IDisposable
 
         if (root.ValueKind == JsonValueKind.Object)
         {
-            foreach (var property in new[] { "elements", "items", "data", "CatalogItems" })
+            foreach (var property in new[] { "elements", "items", "data", "CatalogItems", "catalogItems" })
             {
                 if (root.TryGetProperty(property, out var collection) && collection.ValueKind == JsonValueKind.Array)
                 {

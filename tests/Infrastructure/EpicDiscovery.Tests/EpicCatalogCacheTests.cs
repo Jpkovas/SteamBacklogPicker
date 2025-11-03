@@ -34,10 +34,10 @@ public sealed class EpicCatalogCacheTests : IDisposable
         entries.Should().HaveCount(2);
         entries.Should().Contain(entry =>
             entry.Id.Storefront == Storefront.EpicGamesStore &&
-            entry.Id.StoreSpecificId == "fngame" &&
+            entry.Id.StoreSpecificId == "fn:fngame" &&
             entry.Tags.Contains("action"));
         entries.Should().Contain(entry =>
-            entry.Id.StoreSpecificId == "rlgame" &&
+            entry.Id.StoreSpecificId == "rocket:rlgame" &&
             entry.Tags.Contains("sports") &&
             entry.Tags.Contains("soccer"));
     }
@@ -58,11 +58,11 @@ public sealed class EpicCatalogCacheTests : IDisposable
 
         entries.Should().HaveCount(2);
         entries.Should().Contain(entry =>
-            entry.Id.StoreSpecificId == "fngame" &&
+            entry.Id.StoreSpecificId == "fn:fngame" &&
             entry.Title == "Fortnite Deluxe" &&
             entry.Tags.Contains("battle-royale"));
         entries.Should().Contain(entry =>
-            entry.Id.StoreSpecificId == "rlgame" &&
+            entry.Id.StoreSpecificId == "rocket:rlgame" &&
             entry.Tags.Contains("sports"));
     }
 

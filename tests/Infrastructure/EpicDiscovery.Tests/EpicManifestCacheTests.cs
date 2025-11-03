@@ -33,7 +33,7 @@ public sealed class EpicManifestCacheTests : IDisposable
         games.Should().ContainSingle();
         var entry = games.Single();
         entry.Id.Storefront.Should().Be(Storefront.EpicGamesStore);
-        entry.Id.StoreSpecificId.Should().Be("fngame");
+        entry.Id.StoreSpecificId.Should().Be("fn:fngame");
         entry.InstallState.Should().Be(InstallState.Installed);
         entry.SizeOnDisk.Should().Be(123456789);
         entry.LastPlayed.Should().Be(DateTimeOffset.Parse("2024-01-05T13:15:00Z"));
