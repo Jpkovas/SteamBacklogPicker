@@ -235,8 +235,14 @@ public sealed class EpicCatalogCache : IDisposable
 
     private static bool IsCatalogTable(string tableName)
     {
+        if (string.IsNullOrWhiteSpace(tableName))
+        {
+            return false;
+        }
+
         return tableName.Contains("catalog", StringComparison.OrdinalIgnoreCase) ||
-               tableName.Contains("item", StringComparison.OrdinalIgnoreCase);
+               tableName.Contains("item", StringComparison.OrdinalIgnoreCase) ||
+               tableName.Contains("offer", StringComparison.OrdinalIgnoreCase);
     }
 
     private EpicCatalogItem? ParseCatalogRow(SqliteDataReader reader)
