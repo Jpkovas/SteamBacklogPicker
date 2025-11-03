@@ -62,7 +62,7 @@ public sealed record class GameIdentifier : IComparable<GameIdentifier>
         return $"{Storefront}:{StoreSpecificId}";
     }
 
-    public virtual bool Equals(GameIdentifier? other)
+    public bool Equals(GameIdentifier? other)
     {
         if (ReferenceEquals(this, other))
         {
