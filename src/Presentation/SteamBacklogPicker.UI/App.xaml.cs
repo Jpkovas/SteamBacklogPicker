@@ -12,6 +12,7 @@ using SteamClientAdapter;
 using SteamDiscovery;
 using ValveFormatParser;
 using Domain.Selection;
+using EpicDiscovery;
 
 namespace SteamBacklogPicker.UI;
 
@@ -61,6 +62,16 @@ public partial class App : Application
             cache.Dispose();
         }
 
+        if (_serviceProvider.GetService<EpicManifestCache>() is { } epicManifest)
+        {
+            epicManifest.Dispose();
+        }
+
+        if (_serviceProvider.GetService<EpicCatalogCache>() is { } epicCatalog)
+        {
+            epicCatalog.Dispose();
+        }
+
         if (_serviceProvider.GetService<ISteamClientAdapter>() is IDisposable adapter)
         {
             adapter.Dispose();
@@ -87,6 +98,7 @@ public partial class App : Application
         services.AddSingleton<ISteamLibraryFoldersParser, SteamLibraryFoldersParser>();
         services.AddSingleton<ISteamLibraryLocator, SteamLibraryLocator>();
         services.AddSingleton<IFileAccessor, DefaultFileAccessor>();
+        services.AddEpicDiscovery();
         services.AddSingleton<INativeLibraryLoader, DefaultNativeLibraryLoader>();
         services.AddSingleton<ISteamEnvironment, SteamEnvironment>();
         services.AddSingleton<ISteamVdfFallback>(sp =>

@@ -1,0 +1,29 @@
+using System;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace EpicDiscovery;
+
+public static class ServiceCollectionExtensions
+{
+    public static IServiceCollection AddEpicDiscovery(this IServiceCollection services, Action<EpicLauncherLocatorOptions>? configure = null)
+    {
+        if (services is null)
+        {
+            throw new ArgumentNullException(nameof(services));
+        }
+
+        services.AddOptions<EpicLauncherLocatorOptions>();
+
+        if (configure is not null)
+        {
+            services.Configure(configure);
+        }
+
+        services.AddSingleton<IEpicLauncherLocator, EpicLauncherLocator>();
+        services.AddSingleton<EpicManifestCache>();
+        services.AddSingleton<EpicCatalogCache>();
+        services.AddSingleton<IEpicGameLibrary, EpicGameLibrary>();
+
+        return services;
+    }
+}
