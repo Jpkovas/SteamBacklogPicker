@@ -3,7 +3,7 @@ using Domain;
 
 namespace EpicDiscovery;
 
-internal sealed record class EpicCatalogItem
+public sealed record class EpicCatalogItem
 {
     public GameIdentifier Id { get; init; } = GameIdentifier.Unknown;
 
