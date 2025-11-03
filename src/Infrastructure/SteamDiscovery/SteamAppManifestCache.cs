@@ -14,9 +14,9 @@ public sealed class SteamAppManifestCache : IDisposable
     private readonly ISteamVdfFallback _fallback;
     private readonly ValveTextVdfParser _parser;
     private readonly object _syncRoot = new();
-    private readonly Dictionary<uint, GameEntry> _entries = new();
-    private readonly Dictionary<uint, string> _manifestPathByAppId = new();
-    private readonly Dictionary<string, uint> _appIdByManifestPath = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<GameIdentifier, GameEntry> _entries = new();
+    private readonly Dictionary<GameIdentifier, string> _manifestPathById = new();
+    private readonly Dictionary<string, GameIdentifier> _idByManifestPath = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, FileSystemWatcher> _watchers = new(StringComparer.OrdinalIgnoreCase);
     private HashSet<string> _knownLibraries = new(StringComparer.OrdinalIgnoreCase);
     private GameEntry[] _cachedEntries = Array.Empty<GameEntry>();
@@ -117,7 +117,7 @@ public sealed class SteamAppManifestCache : IDisposable
             }
         }
 
-        foreach (var existingPath in _appIdByManifestPath.Keys.ToList())
+        foreach (var existingPath in _idByManifestPath.Keys.ToList())
         {
             if (!seenPaths.Contains(existingPath) || !File.Exists(existingPath))
             {
@@ -132,9 +132,10 @@ public sealed class SteamAppManifestCache : IDisposable
     {
         if (TryLoadManifest(manifestPath, installedSet, out var entry))
         {
-            _entries[entry.AppId] = entry;
-            _manifestPathByAppId[entry.AppId] = manifestPath;
-            _appIdByManifestPath[manifestPath] = entry.AppId;
+            var id = entry.Id;
+            _entries[id] = entry;
+            _manifestPathById[id] = manifestPath;
+            _idByManifestPath[manifestPath] = id;
         }
         else
         {
@@ -205,7 +206,7 @@ public sealed class SteamAppManifestCache : IDisposable
 
             entry = new GameEntry
             {
-                AppId = appId,
+                Id = GameIdentifier.ForSteam(appId),
                 Title = title,
                 OwnershipType = ownershipType,
                 InstallState = installState,
@@ -335,11 +336,11 @@ public sealed class SteamAppManifestCache : IDisposable
 
     private void RemoveEntryByPathNoLock(string manifestPath)
     {
-        if (!_appIdByManifestPath.TryGetValue(manifestPath, out var appId))
+        if (!_idByManifestPath.TryGetValue(manifestPath, out var id))
         {
             if (TryGetAppIdFromPath(manifestPath, out var extracted))
             {
-                appId = extracted;
+                id = GameIdentifier.ForSteam(extracted);
             }
             else
             {
@@ -347,17 +348,17 @@ public sealed class SteamAppManifestCache : IDisposable
             }
         }
 
-        _appIdByManifestPath.Remove(manifestPath);
+        _idByManifestPath.Remove(manifestPath);
 
-        if (_manifestPathByAppId.TryGetValue(appId, out var storedPath) &&
+        if (_manifestPathById.TryGetValue(id, out var storedPath) &&
             string.Equals(storedPath, manifestPath, StringComparison.OrdinalIgnoreCase))
         {
-            _manifestPathByAppId.Remove(appId);
-            _entries.Remove(appId);
+            _manifestPathById.Remove(id);
+            _entries.Remove(id);
         }
-        else if (!_manifestPathByAppId.ContainsKey(appId))
+        else if (!_manifestPathById.ContainsKey(id))
         {
-            _entries.Remove(appId);
+            _entries.Remove(id);
         }
 
         UpdateCachedEntriesNoLock();
@@ -381,7 +382,7 @@ public sealed class SteamAppManifestCache : IDisposable
     {
         _cachedEntries = _entries.Values
             .OrderBy(entry => entry.Title, StringComparer.OrdinalIgnoreCase)
-            .ThenBy(entry => entry.AppId)
+            .ThenBy(entry => entry.Id, GameIdentifier.Comparer)
             .ToArray();
     }
 
@@ -515,8 +516,8 @@ public sealed class SteamAppManifestCache : IDisposable
 
             _watchers.Clear();
             _entries.Clear();
-            _manifestPathByAppId.Clear();
-            _appIdByManifestPath.Clear();
+            _manifestPathById.Clear();
+            _idByManifestPath.Clear();
             _cachedEntries = Array.Empty<GameEntry>();
             _initialized = false;
         }

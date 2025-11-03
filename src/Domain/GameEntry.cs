@@ -29,7 +29,9 @@ public enum ProductCategory
 
 public sealed record class GameEntry
 {
-    public uint AppId { get; init; }
+    public GameIdentifier Id { get; init; } = GameIdentifier.Unknown;
+
+    public uint? SteamAppId => Id.SteamAppId;
 
     public string Title { get; init; } = string.Empty;
 

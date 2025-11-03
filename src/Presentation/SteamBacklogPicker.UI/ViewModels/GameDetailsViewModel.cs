@@ -14,7 +14,7 @@ public sealed class GameDetailsViewModel : ObservableObject
 
     private GameDetailsViewModel(
         ILocalizationService localizationService,
-        uint appId,
+        GameIdentifier id,
         string title,
         string? coverImagePath,
         InstallState installState,
@@ -23,7 +23,7 @@ public sealed class GameDetailsViewModel : ObservableObject
         bool isPlaceholder)
     {
         _localizationService = localizationService ?? throw new ArgumentNullException(nameof(localizationService));
-        AppId = appId;
+        Id = id;
         _title = title;
         CoverImagePath = coverImagePath;
         InstallState = installState;
@@ -37,7 +37,7 @@ public sealed class GameDetailsViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(localizationService);
         return new GameDetailsViewModel(
             localizationService,
-            0,
+            GameIdentifier.Unknown,
             localizationService.GetString("GameDetails_NoSelectionTitle"),
             null,
             InstallState.Unknown,
@@ -46,7 +46,9 @@ public sealed class GameDetailsViewModel : ObservableObject
             true);
     }
 
-    public uint AppId { get; }
+    public GameIdentifier Id { get; }
+
+    public uint? SteamAppId => Id.SteamAppId;
 
     public string Title
     {
@@ -62,9 +64,9 @@ public sealed class GameDetailsViewModel : ObservableObject
 
     public IReadOnlyList<string> Tags { get; }
 
-    public bool CanLaunch => InstallState == InstallState.Installed;
+    public bool CanLaunch => InstallState == InstallState.Installed && SteamAppId.HasValue;
 
-    public bool CanInstall => InstallState is InstallState.Available or InstallState.Shared;
+    public bool CanInstall => SteamAppId.HasValue && InstallState is InstallState.Available or InstallState.Shared;
 
     public string InstallationStatus => InstallState switch
     {
@@ -95,7 +97,7 @@ public sealed class GameDetailsViewModel : ObservableObject
                    ?? Array.Empty<string>();
         return new GameDetailsViewModel(
             localizationService,
-            game.AppId,
+            game.Id,
             game.Title,
             coverPath,
             game.InstallState,
