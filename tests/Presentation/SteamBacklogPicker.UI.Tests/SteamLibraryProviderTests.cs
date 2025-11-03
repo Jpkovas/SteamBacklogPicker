@@ -14,7 +14,7 @@ using Xunit;
 
 namespace SteamBacklogPicker.UI.Tests;
 
-public sealed class SteamGameLibraryServiceTests
+public sealed class SteamLibraryProviderTests
 {
     [Fact]
     public async Task GetLibraryAsync_ShouldPromoteInstallState_WhenFallbackReportsInstallation()
@@ -33,9 +33,9 @@ public sealed class SteamGameLibraryServiceTests
             sharedAppIds: Array.Empty<uint>());
         using var cache = new SteamAppManifestCache(locator, adapter, fallback, new ValveTextVdfParser());
 
-        var service = new SteamGameLibraryService(cache, locator, fallback);
+        var provider = new SteamLibraryProvider(cache, locator, fallback);
 
-        var results = await service.GetLibraryAsync();
+        var results = await provider.GetLibraryAsync();
 
         var entry = results.Should().ContainSingle(game => game.Id == GameIdentifier.ForSteam(appId)).Subject;
         entry.InstallState.Should().Be(InstallState.Installed);
@@ -59,9 +59,9 @@ public sealed class SteamGameLibraryServiceTests
             sharedAppIds: Array.Empty<uint>());
         using var cache = new SteamAppManifestCache(locator, adapter, fallback, new ValveTextVdfParser());
 
-        var service = new SteamGameLibraryService(cache, locator, fallback);
+        var provider = new SteamLibraryProvider(cache, locator, fallback);
 
-        var results = await service.GetLibraryAsync();
+        var results = await provider.GetLibraryAsync();
 
         var entry = results.Should().ContainSingle(game => game.Id == GameIdentifier.ForSteam(appId)).Subject;
         entry.ProductCategory.Should().Be(ProductCategory.Software);
@@ -74,7 +74,7 @@ public sealed class SteamGameLibraryServiceTests
 
         public TestLibraryEnvironment()
         {
-            root = Path.Combine(Path.GetTempPath(), "SteamGameLibraryServiceTests", Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture));
+            root = Path.Combine(Path.GetTempPath(), "SteamLibraryProviderTests", Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture));
             Directory.CreateDirectory(SteamAppsPath);
         }
 
@@ -202,9 +202,9 @@ public sealed class SteamGameLibraryServiceTests
             });
 
         using var cache = new SteamAppManifestCache(locator, adapter, fallback, new ValveTextVdfParser());
-        var service = new SteamGameLibraryService(cache, locator, fallback);
+        var provider = new SteamLibraryProvider(cache, locator, fallback);
 
-        var results = await service.GetLibraryAsync();
+        var results = await provider.GetLibraryAsync();
 
         var entry = results.Should().ContainSingle(game => game.Id == GameIdentifier.ForSteam(appId)).Subject;
         entry.Tags.Should().Contain("Jogáveis no Deck");

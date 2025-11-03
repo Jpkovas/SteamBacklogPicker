@@ -1,21 +1,21 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Domain;
-using SteamDiscovery;
-using System.Linq;
 using SteamClientAdapter;
+using SteamDiscovery;
 
 namespace SteamBacklogPicker.UI.Services;
 
-public sealed class SteamGameLibraryService : IGameLibraryService
+public sealed class SteamLibraryProvider : IGameLibraryProvider
 {
     private readonly SteamAppManifestCache _cache;
     private readonly ISteamLibraryLocator _libraryLocator;
     private readonly ISteamVdfFallback _fallback;
 
-    public SteamGameLibraryService(
+    public SteamLibraryProvider(
         SteamAppManifestCache cache,
         ISteamLibraryLocator libraryLocator,
         ISteamVdfFallback fallback)
@@ -25,7 +25,9 @@ public sealed class SteamGameLibraryService : IGameLibraryService
         _fallback = fallback ?? throw new ArgumentNullException(nameof(fallback));
     }
 
-    public Task<IReadOnlyList<GameEntry>> GetLibraryAsync(CancellationToken cancellationToken = default)
+    public Storefront Storefront => Storefront.Steam;
+
+    public Task<IReadOnlyCollection<GameEntry>> GetLibraryAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         _libraryLocator.Refresh();
@@ -166,7 +168,7 @@ public sealed class SteamGameLibraryService : IGameLibraryService
             .ThenBy(game => game.Id, GameIdentifier.Comparer)
             .ToList();
 
-        return Task.FromResult<IReadOnlyList<GameEntry>>(ordered);
+        return Task.FromResult<IReadOnlyCollection<GameEntry>>(ordered);
     }
 
     private static ProductCategory MapProductCategory(string? type)

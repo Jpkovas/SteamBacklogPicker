@@ -20,6 +20,8 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
     private bool _includeTools;
     private bool _includeVideos;
     private bool _includeOther;
+    private bool _includeSteam = true;
+    private bool _includeEpic = true;
     private bool _isHydrating;
     private readonly ObservableCollection<string> _collectionOptions = new();
     private string _noCollectionOption = string.Empty;
@@ -156,6 +158,30 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
         }
     }
 
+    public bool IncludeSteam
+    {
+        get => _includeSteam;
+        set
+        {
+            if (SetProperty(ref _includeSteam, value) && !_isHydrating)
+            {
+                UpdateStorefrontPreferences();
+            }
+        }
+    }
+
+    public bool IncludeEpic
+    {
+        get => _includeEpic;
+        set
+        {
+            if (SetProperty(ref _includeEpic, value) && !_isHydrating)
+            {
+                UpdateStorefrontPreferences();
+            }
+        }
+    }
+
     public void Apply(SelectionPreferences preferences)
     {
         ArgumentNullException.ThrowIfNull(preferences);
@@ -173,6 +199,18 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
             IncludeTools = categories.Contains(ProductCategory.Tool);
             IncludeVideos = categories.Contains(ProductCategory.Video);
             IncludeOther = categories.Contains(ProductCategory.Other);
+
+            var storefronts = preferences.Filters.IncludedStorefronts ?? new List<Storefront>();
+            if (storefronts.Count == 0)
+            {
+                IncludeSteam = true;
+                IncludeEpic = true;
+            }
+            else
+            {
+                IncludeSteam = storefronts.Contains(Storefront.Steam);
+                IncludeEpic = storefronts.Contains(Storefront.EpicGamesStore);
+            }
 
             var requiredCollection = preferences.Filters.RequiredCollection;
             if (!string.IsNullOrWhiteSpace(requiredCollection) &&
@@ -289,6 +327,30 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
         }
 
         return categories;
+    }
+
+    private void UpdateStorefrontPreferences()
+    {
+        UpdatePreferences(p =>
+        {
+            p.Filters.IncludedStorefronts = BuildSelectedStorefronts();
+        });
+    }
+
+    private List<Storefront> BuildSelectedStorefronts()
+    {
+        var storefronts = new List<Storefront>();
+        if (IncludeSteam)
+        {
+            storefronts.Add(Storefront.Steam);
+        }
+
+        if (IncludeEpic)
+        {
+            storefronts.Add(Storefront.EpicGamesStore);
+        }
+
+        return storefronts;
     }
 
     private void OnLanguageChanged(object? sender, EventArgs e)

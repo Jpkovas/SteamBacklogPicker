@@ -121,7 +121,9 @@ public partial class App : Application
         });
         services.AddSingleton<SteamAppManifestCache>();
         services.AddSingleton<ISelectionEngine>(_ => new SelectionEngine());
-        services.AddSingleton<IGameLibraryService, SteamGameLibraryService>();
+        services.AddSingleton<IGameLibraryProvider, SteamLibraryProvider>();
+        services.AddSingleton<IGameLibraryProvider, EpicLibraryProvider>();
+        services.AddSingleton<IGameLibraryService, CombinedGameLibraryService>();
         services.AddSingleton<IGameArtLocator, SteamGameArtLocator>();
         services.AddSingleton<ILocalizationService, LocalizationService>();
         services.AddSingleton<IToastNotificationService, ToastNotificationService>();

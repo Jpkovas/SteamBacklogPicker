@@ -50,6 +50,24 @@ public sealed class GameDetailsViewModel : ObservableObject
 
     public uint? SteamAppId => Id.SteamAppId;
 
+    public Storefront Storefront => Id.Storefront;
+
+    public bool HasStorefront => Storefront != Storefront.Unknown;
+
+    public string StorefrontDisplayName => Storefront switch
+    {
+        Storefront.Steam => _localizationService.GetString("Storefront_Steam"),
+        Storefront.EpicGamesStore => _localizationService.GetString("Storefront_Epic"),
+        _ => _localizationService.GetString("Storefront_Unknown"),
+    };
+
+    public string StorefrontGlyph => Storefront switch
+    {
+        Storefront.Steam => "🟦",
+        Storefront.EpicGamesStore => "🟪",
+        _ => string.Empty,
+    };
+
     public string Title
     {
         get => _title;
@@ -87,6 +105,7 @@ public sealed class GameDetailsViewModel : ObservableObject
         }
 
         OnPropertyChanged(nameof(InstallationStatus));
+        OnPropertyChanged(nameof(StorefrontDisplayName));
     }
 
     public static GameDetailsViewModel FromGame(GameEntry game, string? coverPath, ILocalizationService localizationService)

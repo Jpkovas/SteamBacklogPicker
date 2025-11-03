@@ -1,4 +1,4 @@
 # TODO
 
-- Add cover art and launch/install integrations for non-Steam storefront entries now that GameIdentifier supports them.
-- Surface Epic Games Store entries in the UI library grid using `IEpicGameLibrary` once presentation logic is ready.
+- Implement storefront-specific cover art retrieval for Epic titles instead of falling back to empty placeholders.
+- Wire up launch/install actions for Epic Games Store entries once the launcher protocol strategy is defined.

@@ -79,6 +79,33 @@ public sealed class SelectionPreferencesViewModelTests
         viewModel.ExcludeDeckUnsupported.Should().BeFalse();
     }
 
+    [Fact]
+    public void StorefrontToggles_ShouldUpdatePreferences()
+    {
+        var initialPreferences = new SelectionPreferences
+        {
+            Filters = new SelectionFilters
+            {
+                IncludedStorefronts = new List<Storefront> { Storefront.Steam },
+            },
+        };
+
+        var engine = new FakeSelectionEngine(initialPreferences);
+        var localization = new FakeLocalizationService();
+        var viewModel = new SelectionPreferencesViewModel(engine, localization);
+
+        viewModel.IncludeEpic.Should().BeFalse();
+        viewModel.IncludeSteam.Should().BeTrue();
+
+        viewModel.IncludeEpic = true;
+
+        engine.LastUpdatedPreferences.Filters.IncludedStorefronts.Should().Contain(Storefront.EpicGamesStore);
+        engine.LastUpdatedPreferences.Filters.IncludedStorefronts.Should().Contain(Storefront.Steam);
+
+        viewModel.IncludeSteam = false;
+        engine.LastUpdatedPreferences.Filters.IncludedStorefronts.Should().ContainSingle(store => store == Storefront.EpicGamesStore);
+    }
+
     private sealed class FakeSelectionEngine : ISelectionEngine
     {
         private SelectionPreferences _preferences;
