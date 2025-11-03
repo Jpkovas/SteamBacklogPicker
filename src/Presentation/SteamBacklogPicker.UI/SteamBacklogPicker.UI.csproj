@@ -13,6 +13,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Domain\Domain.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\EpicDiscovery\EpicDiscovery.csproj" />
     <ProjectReference Include="..\..\Infrastructure\SteamDiscovery\SteamDiscovery.csproj" />
     <ProjectReference Include="..\..\Infrastructure\Telemetry\Telemetry.csproj" />
     <ProjectReference Include="..\..\Integration\SteamClientAdapter\SteamClientAdapter.csproj" />
