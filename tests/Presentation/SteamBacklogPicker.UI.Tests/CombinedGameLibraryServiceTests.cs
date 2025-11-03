@@ -29,15 +29,26 @@ public sealed class CombinedGameLibraryServiceTests
             OwnershipType = OwnershipType.Owned,
         };
 
+        var gogGame = new GameEntry
+        {
+            Id = new GameIdentifier { Storefront = Storefront.Gog, StoreSpecificId = "epic-1" },
+            Title = "GOG Port",
+            InstallState = InstallState.Installed,
+            OwnershipType = OwnershipType.Owned,
+        };
+
         var service = new CombinedGameLibraryService(new[]
         {
             new FakeLibraryProvider(Storefront.Steam, steamGame),
             new FakeLibraryProvider(Storefront.EpicGamesStore, epicGame),
+            new FakeLibraryProvider(Storefront.Gog, gogGame),
         });
 
         var results = await service.GetLibraryAsync();
 
-        results.Should().Contain(new[] { steamGame, epicGame });
+        results.Should().Contain(new[] { steamGame, epicGame, gogGame });
+        results.Should().Contain(entry => entry.Id.Storefront == Storefront.EpicGamesStore && entry.Id.StoreSpecificId == "epic-1");
+        results.Should().Contain(entry => entry.Id.Storefront == Storefront.Gog && entry.Id.StoreSpecificId == "epic-1");
     }
 
     [Fact]

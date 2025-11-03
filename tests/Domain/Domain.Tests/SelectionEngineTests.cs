@@ -186,6 +186,12 @@ public sealed class SelectionEngineTests
                 HistoryLimit = 10,
             });
 
+            var epicId = new GameIdentifier
+            {
+                Storefront = Storefront.EpicGamesStore,
+                StoreSpecificId = "fngame",
+            };
+
             var games = new[]
             {
                 new GameEntry
@@ -220,6 +226,14 @@ public sealed class SelectionEngineTests
                     OwnershipType = OwnershipType.Owned,
                     ProductCategory = ProductCategory.Game,
                 },
+                new GameEntry
+                {
+                    Id = epicId,
+                    Title = "Epic Installed",
+                    InstallState = InstallState.Installed,
+                    OwnershipType = OwnershipType.Owned,
+                    ProductCategory = ProductCategory.Game,
+                },
             };
 
             var filtered = engine.FilterGames(games);
@@ -229,6 +243,7 @@ public sealed class SelectionEngineTests
                 GameIdentifier.ForSteam(1),
                 GameIdentifier.ForSteam(2),
                 GameIdentifier.ForSteam(3),
+                epicId,
             });
         }
         finally

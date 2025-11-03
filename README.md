@@ -1,6 +1,6 @@
 # SteamBacklogPicker
 
-SteamBacklogPicker is a Windows desktop app that helps you pick the next game from your Steam backlog without relying on any cloud services. The application reads data directly from the Steam client installed on your PC, so everything stays on your machine and works even when you are offline.
+SteamBacklogPicker is a Windows desktop app that helps you pick the next game from your Steam and Epic libraries without relying on any cloud services. The application reads data directly from the Steam client and Epic Games Launcher caches installed on your PC, so everything stays on your machine and works even when you are offline.
 
 ## Why players use SteamBacklogPicker
 
@@ -20,6 +20,7 @@ SteamBacklogPicker is a Windows desktop app that helps you pick the next game fr
 - 64-bit CPU with support for AVX.
 - 4 GB RAM and 512 MB free storage.
 - Steam client installed with access to the `steamapps` manifest files.
+- (Optional) Epic Games Launcher installed so the app can read `%PROGRAMDATA%\Epic\EpicGamesLauncher\Data\Manifests` and `%LOCALAPPDATA%\EpicGamesLauncher\Saved\Data\Catalog` / `%APPDATA%\Epic\EpicGamesLauncher\Saved\Data\Catalog` caches when available.
 
 ## Installation
 
@@ -40,6 +41,12 @@ SteamBacklogPicker is a Windows desktop app that helps you pick the next game fr
    ```powershell
    dotnet run --project src/Presentation/SteamBacklogPicker.UI/SteamBacklogPicker.UI.csproj
    ```
+
+## Epic Games Store integration
+
+- Epic entries are surfaced by scanning the same directories the Epic Games Launcher uses for manifests and catalog caches, with overrides available through configuration.
+- The app never authenticates against Epic services; it parses the local `.item`, `.json`, and `.sqlite` caches so Epic titles remain available offline alongside your Steam library.
+- When the launcher relocates its cache folders you can point SteamBacklogPicker at the new location via the `EpicDiscovery` options in `appsettings.json`.
 
 ## Telemetry and privacy
 
