@@ -9,7 +9,21 @@ public sealed class SelectionHistoryEntry
     public uint AppId
     {
         get => Id.SteamAppId ?? 0;
-        set => Id = value == 0 ? GameIdentifier.Unknown : GameIdentifier.ForSteam(value);
+        set
+        {
+            if (value == 0)
+            {
+                if (Id != GameIdentifier.Unknown && Id.Storefront != Storefront.Steam)
+                {
+                    return;
+                }
+
+                Id = GameIdentifier.Unknown;
+                return;
+            }
+
+            Id = GameIdentifier.ForSteam(value);
+        }
     }
 
     public string Title { get; set; } = string.Empty;
