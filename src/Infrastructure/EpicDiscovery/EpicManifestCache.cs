@@ -424,23 +424,26 @@ public sealed class EpicManifestCache : IDisposable
 
     public void Dispose()
     {
-        if (disposed)
+        lock (syncRoot)
         {
-            return;
+            if (disposed)
+            {
+                return;
+            }
+
+            disposed = true;
+
+            foreach (var watcher in watchers.Values)
+            {
+                watcher.EnableRaisingEvents = false;
+                watcher.Created -= OnManifestChanged;
+                watcher.Changed -= OnManifestChanged;
+                watcher.Deleted -= OnManifestChanged;
+                watcher.Renamed -= OnManifestRenamed;
+                watcher.Dispose();
+            }
+
+            watchers.Clear();
         }
-
-        disposed = true;
-
-        foreach (var watcher in watchers.Values)
-        {
-            watcher.EnableRaisingEvents = false;
-            watcher.Created -= OnManifestChanged;
-            watcher.Changed -= OnManifestChanged;
-            watcher.Deleted -= OnManifestChanged;
-            watcher.Renamed -= OnManifestRenamed;
-            watcher.Dispose();
-        }
-
-        watchers.Clear();
     }
 }

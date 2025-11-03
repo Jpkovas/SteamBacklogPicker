@@ -634,23 +634,26 @@ public sealed class EpicCatalogCache : IDisposable
 
     public void Dispose()
     {
-        if (disposed)
+        lock (syncRoot)
         {
-            return;
+            if (disposed)
+            {
+                return;
+            }
+
+            disposed = true;
+
+            foreach (var watcher in watchers.Values)
+            {
+                watcher.EnableRaisingEvents = false;
+                watcher.Changed -= OnCacheChanged;
+                watcher.Created -= OnCacheChanged;
+                watcher.Deleted -= OnCacheChanged;
+                watcher.Renamed -= OnCacheRenamed;
+                watcher.Dispose();
+            }
+
+            watchers.Clear();
         }
-
-        disposed = true;
-
-        foreach (var watcher in watchers.Values)
-        {
-            watcher.EnableRaisingEvents = false;
-            watcher.Changed -= OnCacheChanged;
-            watcher.Created -= OnCacheChanged;
-            watcher.Deleted -= OnCacheChanged;
-            watcher.Renamed -= OnCacheRenamed;
-            watcher.Dispose();
-        }
-
-        watchers.Clear();
     }
 }
