@@ -22,6 +22,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamClientAdapter.Tests", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamHooks.Tests", "tests\Integration\SteamHooks.Tests\SteamHooks.Tests.csproj", "{68B8938C-AA19-4B82-BBCD-2436C91B63E6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EpicDiscovery.Tests", "tests\Infrastructure\EpicDiscovery.Tests\EpicDiscovery.Tests.csproj", "{D8F5EA8E-4CE8-4FAD-9261-FECAE2106642}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Domain.Tests", "tests\Domain\Domain.Tests\Domain.Tests.csproj", "{5D890464-01BE-48F5-941A-3886DEA2126B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamBacklogPicker.UI", "src\Presentation\SteamBacklogPicker.UI\SteamBacklogPicker.UI.csproj", "{A939EBF4-C1F2-4A98-A5D6-3C42E4733533}"
@@ -76,6 +78,10 @@ Global
 		{68B8938C-AA19-4B82-BBCD-2436C91B63E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{68B8938C-AA19-4B82-BBCD-2436C91B63E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{68B8938C-AA19-4B82-BBCD-2436C91B63E6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D8F5EA8E-4CE8-4FAD-9261-FECAE2106642}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D8F5EA8E-4CE8-4FAD-9261-FECAE2106642}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D8F5EA8E-4CE8-4FAD-9261-FECAE2106642}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D8F5EA8E-4CE8-4FAD-9261-FECAE2106642}.Release|Any CPU.Build.0 = Release|Any CPU
 		{5D890464-01BE-48F5-941A-3886DEA2126B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{5D890464-01BE-48F5-941A-3886DEA2126B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5D890464-01BE-48F5-941A-3886DEA2126B}.Release|Any CPU.ActiveCfg = Release|Any CPU

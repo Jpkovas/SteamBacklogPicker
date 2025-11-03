@@ -3,12 +3,12 @@
 ## Getting started
 
 1. **Install the application** using the MSIX package, Winget, or Squirrel bootstrapper as described in the [README](../README.md).
-2. Launch SteamBacklogPicker from the Start Menu. On first launch the app scans your Steam libraries; this may take a few minutes for very large collections.
+2. Launch SteamBacklogPicker from the Start Menu. On first launch the app scans your Steam and Epic libraries by reading their local cache folders; this may take a few minutes for very large collections.
 3. When prompted, decide whether you want to share anonymous telemetry. Telemetry is optional and can be toggled later.
 
 ## Navigating the interface
 
-- **Library overview** – Displays the total number of detected titles, filters, and quick actions such as refreshing manifests.
+- **Library overview** – Displays the total number of detected titles across Steam and Epic, filters, and quick actions such as refreshing manifests.
 - **Game card** – Shows the game selected by the backlog engine, including cover art, tags, playtime, and install status.
 - **Filters panel** – Use the checkboxes and sliders to prioritise installed games, exclude multiplayer-only titles, or boost favourites.
 - **Action buttons** –
@@ -31,9 +31,16 @@
 ## Troubleshooting
 
 - If SteamBacklogPicker cannot find your libraries, open **Settings → Steam locations** and add custom library paths.
+- Epic titles require access to the launcher caches under `%PROGRAMDATA%\Epic\EpicGamesLauncher\Data\Manifests` and `%LOCALAPPDATA%\EpicGamesLauncher\Saved\Data\Catalog`; add overrides in the settings file if you keep them elsewhere.
 - When the Steam API is not available, the app falls back to the cached manifests stored in `%LOCALAPPDATA%\SteamBacklogPicker\cache`.
 - Review the latest log file and share it with support if you encounter crashes or repeated selection failures.
 - Reset preferences by deleting `%LOCALAPPDATA%\SteamBacklogPicker\telemetry-consent.json` and `%APPDATA%\SteamBacklogPicker\settings.json` while the app is closed.
+
+## Offline usage
+
+- The picker works entirely with data on disk; if Steam or Epic is offline the app still reads the last synced manifests and catalog caches.
+- Refresh operations simply rescan the local directories above, so you can disconnect from the internet after both launchers have written their latest metadata.
+- All selections and history remain local to `%APPDATA%\SteamBacklogPicker`, and no online account linking is required.
 
 ## Support
 
