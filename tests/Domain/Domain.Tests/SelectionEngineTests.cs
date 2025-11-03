@@ -486,6 +486,52 @@ public sealed class SelectionEngineTests
         }
     }
 
+    [Fact]
+    public void FilterGames_ShouldRespectStorefrontFilters()
+    {
+        var settingsPath = CreateSettingsPath();
+        try
+        {
+            var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
+            engine.UpdatePreferences(new SelectionPreferences
+            {
+                Filters = new SelectionFilters
+                {
+                    IncludedStorefronts = new List<Storefront> { Storefront.Steam },
+                },
+            });
+
+            var steamGame = new GameEntry
+            {
+                Id = GameIdentifier.ForSteam(101),
+                Title = "Steam",
+                InstallState = InstallState.Installed,
+                OwnershipType = OwnershipType.Owned,
+            };
+
+            var epicGame = new GameEntry
+            {
+                Id = new GameIdentifier
+                {
+                    Storefront = Storefront.EpicGamesStore,
+                    StoreSpecificId = "101",
+                },
+                Title = "Epic",
+                InstallState = InstallState.Installed,
+                OwnershipType = OwnershipType.Owned,
+            };
+
+            var filtered = engine.FilterGames(new[] { steamGame, epicGame });
+
+            filtered.Should().ContainSingle(game => game.Id == steamGame.Id);
+            filtered.Should().NotContain(game => game.Id == epicGame.Id);
+        }
+        finally
+        {
+            Cleanup(settingsPath);
+        }
+    }
+
     private static IReadOnlyList<uint> RunSelectionSequence(IEnumerable<GameEntry> games, SelectionPreferences preferences, string settingsPath, int picks)
     {
         var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);

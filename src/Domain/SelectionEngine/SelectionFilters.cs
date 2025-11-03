@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using Domain;
 
 namespace Domain.Selection;
 
@@ -13,6 +14,8 @@ public sealed class SelectionFilters
 
     public List<ProductCategory> IncludedCategories { get; set; } = new() { ProductCategory.Game };
 
+    public List<Storefront> IncludedStorefronts { get; set; } = new();
+
     public SelectionFilters Clone()
     {
         return new SelectionFilters
@@ -21,6 +24,7 @@ public sealed class SelectionFilters
             ExcludeDeckUnsupported = ExcludeDeckUnsupported,
             RequiredCollection = RequiredCollection,
             IncludedCategories = IncludedCategories is null ? new List<ProductCategory>() : new List<ProductCategory>(IncludedCategories),
+            IncludedStorefronts = IncludedStorefronts is null ? new List<Storefront>() : new List<Storefront>(IncludedStorefronts),
         };
     }
 
@@ -37,6 +41,15 @@ public sealed class SelectionFilters
         else
         {
             IncludedCategories = IncludedCategories
+                .Distinct()
+                .ToList();
+        }
+
+        IncludedStorefronts ??= new List<Storefront>();
+        if (IncludedStorefronts.Count > 0)
+        {
+            IncludedStorefronts = IncludedStorefronts
+                .Where(store => store != Storefront.Unknown)
                 .Distinct()
                 .ToList();
         }

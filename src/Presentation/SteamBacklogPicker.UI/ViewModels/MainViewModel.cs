@@ -163,7 +163,7 @@ public sealed class MainViewModel : ObservableObject
 
     private void ApplySelection(GameEntry game)
     {
-        var coverPath = game.SteamAppId is uint appId ? _artLocator.FindHeroImage(appId) : null;
+        var coverPath = _artLocator.FindHeroImage(game);
         var details = GameDetailsViewModel.FromGame(game, coverPath, _localizationService);
         SelectedGame = details;
         _toastNotificationService.ShowGameSelected(game, coverPath);

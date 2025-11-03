@@ -223,6 +223,10 @@ public sealed class SelectionEngine : ISelectionEngine
         var allowedCategorySet = filterByCategory
             ? new HashSet<ProductCategory>(allowedCategories)
             : null;
+        var allowedStorefronts = filters.IncludedStorefronts;
+        var allowedStorefrontSet = allowedStorefronts is not null && allowedStorefronts.Count > 0
+            ? new HashSet<Storefront>(allowedStorefronts)
+            : null;
         var requiredCollection = filters.RequiredCollection;
         var filterByCollection = !string.IsNullOrWhiteSpace(requiredCollection);
         var results = new List<GameEntry>();
@@ -240,6 +244,11 @@ public sealed class SelectionEngine : ISelectionEngine
             }
 
             if (filters.ExcludeDeckUnsupported && game.DeckCompatibility == SteamDeckCompatibility.Unsupported)
+            {
+                continue;
+            }
+
+            if (allowedStorefrontSet is not null && !allowedStorefrontSet.Contains(game.Id.Storefront))
             {
                 continue;
             }

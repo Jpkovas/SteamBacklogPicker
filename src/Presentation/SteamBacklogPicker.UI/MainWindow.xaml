@@ -438,6 +438,20 @@
                               AutomationProperties.Name="{DynamicResource Filters_IncludeOther}" />
                 </StackPanel>
 
+                <TextBlock Text="{DynamicResource Filters_StorefrontsLabel}"
+                           Style="{StaticResource SectionLabelTextStyle}" />
+
+                <StackPanel>
+                    <CheckBox Content="{DynamicResource Filters_IncludeSteam}"
+                              Style="{StaticResource FilterCheckBoxStyle}"
+                              IsChecked="{Binding Preferences.IncludeSteam, Mode=TwoWay}"
+                              AutomationProperties.Name="{DynamicResource Filters_IncludeSteam}" />
+                    <CheckBox Content="{DynamicResource Filters_IncludeEpic}"
+                              Style="{StaticResource FilterCheckBoxStyle}"
+                              IsChecked="{Binding Preferences.IncludeEpic, Mode=TwoWay}"
+                              AutomationProperties.Name="{DynamicResource Filters_IncludeEpic}" />
+                </StackPanel>
+
                 <TextBlock Text="{DynamicResource Filters_CollectionLabel}"
                            Style="{StaticResource SectionLabelTextStyle}" />
 
@@ -511,6 +525,23 @@
                                Margin="0,6,0,0"
                                TextWrapping="Wrap"
                                AutomationProperties.Name="{DynamicResource GameDetails_SelectedTitleAutomation}" />
+                    <Border Margin="0,8,0,0"
+                            Background="{StaticResource TagBrush}"
+                            BorderBrush="{StaticResource TagBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="10"
+                            Padding="10,4"
+                            Visibility="{Binding SelectedGame.HasStorefront, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding SelectedGame.StorefrontGlyph}"
+                                       FontSize="12"
+                                       Margin="0,0,6,0"
+                                       Foreground="{StaticResource MutedForegroundBrush}" />
+                            <TextBlock Text="{Binding SelectedGame.StorefrontDisplayName}"
+                                       FontSize="12"
+                                       Foreground="{StaticResource MutedForegroundBrush}" />
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
                 <Border Grid.Row="1"
                         Height="360"

@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using Domain;
 using SteamDiscovery;
 
 namespace SteamBacklogPicker.UI.Services;
@@ -13,7 +14,18 @@ public sealed class SteamGameArtLocator : IGameArtLocator
         _libraryLocator = libraryLocator ?? throw new ArgumentNullException(nameof(libraryLocator));
     }
 
-    public string? FindHeroImage(uint appId)
+    public string? FindHeroImage(GameEntry game)
+    {
+        ArgumentNullException.ThrowIfNull(game);
+
+        return game.Id.Storefront switch
+        {
+            Storefront.Steam when game.SteamAppId is uint appId => FindSteamHeroImage(appId),
+            _ => null,
+        };
+    }
+
+    private string? FindSteamHeroImage(uint appId)
     {
         if (appId == 0)
         {
