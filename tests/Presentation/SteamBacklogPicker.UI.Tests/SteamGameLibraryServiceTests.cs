@@ -37,7 +37,7 @@ public sealed class SteamGameLibraryServiceTests
 
         var results = await service.GetLibraryAsync();
 
-        var entry = results.Should().ContainSingle(game => game.AppId == appId).Subject;
+        var entry = results.Should().ContainSingle(game => game.Id == GameIdentifier.ForSteam(appId)).Subject;
         entry.InstallState.Should().Be(InstallState.Installed);
         entry.OwnershipType.Should().Be(OwnershipType.Owned);
         entry.ProductCategory.Should().Be(ProductCategory.Game);
@@ -63,7 +63,7 @@ public sealed class SteamGameLibraryServiceTests
 
         var results = await service.GetLibraryAsync();
 
-        var entry = results.Should().ContainSingle(game => game.AppId == appId).Subject;
+        var entry = results.Should().ContainSingle(game => game.Id == GameIdentifier.ForSteam(appId)).Subject;
         entry.ProductCategory.Should().Be(ProductCategory.Software);
         entry.InstallState.Should().Be(InstallState.Available);
     }
@@ -206,7 +206,7 @@ public sealed class SteamGameLibraryServiceTests
 
         var results = await service.GetLibraryAsync();
 
-        var entry = results.Should().ContainSingle(game => game.AppId == appId).Subject;
+        var entry = results.Should().ContainSingle(game => game.Id == GameIdentifier.ForSteam(appId)).Subject;
         entry.Tags.Should().Contain("Jogáveis no Deck");
     }
 }

@@ -23,7 +23,8 @@ public sealed class SteamAppManifestCacheTests
         var games = cache.GetInstalledGames();
 
         var game = Assert.Single(games);
-        Assert.Equal(42u, game.AppId);
+        Assert.Equal(GameIdentifier.ForSteam(42), game.Id);
+        Assert.Equal(42u, game.SteamAppId);
         Assert.Equal("Test Game", game.Title);
         Assert.Equal(OwnershipType.Owned, game.OwnershipType);
         Assert.Equal(InstallState.Installed, game.InstallState);

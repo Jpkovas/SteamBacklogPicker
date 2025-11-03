@@ -163,7 +163,7 @@ public sealed class MainViewModel : ObservableObject
 
     private void ApplySelection(GameEntry game)
     {
-        var coverPath = _artLocator.FindHeroImage(game.AppId);
+        var coverPath = game.SteamAppId is uint appId ? _artLocator.FindHeroImage(appId) : null;
         var details = GameDetailsViewModel.FromGame(game, coverPath, _localizationService);
         SelectedGame = details;
         _toastNotificationService.ShowGameSelected(game, coverPath);
@@ -171,22 +171,22 @@ public sealed class MainViewModel : ObservableObject
 
     private void LaunchGame()
     {
-        if (!SelectedGame.CanLaunch)
+        if (!SelectedGame.CanLaunch || SelectedGame.SteamAppId is not uint appId)
         {
             return;
         }
 
-        OpenSteamUri($"steam://run/{SelectedGame.AppId}");
+        OpenSteamUri($"steam://run/{appId}");
     }
 
     private void InstallGame()
     {
-        if (!SelectedGame.CanInstall)
+        if (!SelectedGame.CanInstall || SelectedGame.SteamAppId is not uint appId)
         {
             return;
         }
 
-        OpenSteamUri($"steam://install/{SelectedGame.AppId}");
+        OpenSteamUri($"steam://install/{appId}");
     }
 
     private void OpenSteamUri(string uri)
@@ -233,7 +233,7 @@ public sealed class MainViewModel : ObservableObject
         var total = _library.Count;
 
         if (!ReferenceEquals(SelectedGame, _emptyGame) &&
-            !eligibleGames.Any(game => game.AppId == SelectedGame.AppId))
+            !eligibleGames.Any(game => game.Id == SelectedGame.Id))
         {
             SelectedGame = _emptyGame;
         }

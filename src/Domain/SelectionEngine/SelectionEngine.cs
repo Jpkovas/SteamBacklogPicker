@@ -11,7 +11,7 @@ public sealed class SelectionEngine : ISelectionEngine
     private readonly Func<DateTimeOffset> _clock;
     private readonly object _syncRoot = new();
     private SelectionSettings _state;
-    private static readonly HashSet<uint> EmptyExcludedIds = new();
+    private static readonly HashSet<GameIdentifier> EmptyExcludedIds = new();
     private Random? _seededRandom;
     private int? _seededRandomSeed;
     private int _seededRandomPosition;
@@ -66,7 +66,7 @@ public sealed class SelectionEngine : ISelectionEngine
             return _state.History
                 .Select(entry => new SelectionHistoryEntry
                 {
-                    AppId = entry.AppId,
+                    Id = entry.Id,
                     Title = entry.Title,
                     SelectedAt = entry.SelectedAt,
                 })
@@ -172,6 +172,18 @@ public sealed class SelectionEngine : ISelectionEngine
         foreach (var entry in settings.History)
         {
             entry.Title ??= string.Empty;
+            if (entry.Id is null || entry.Id.Storefront == Storefront.Unknown)
+            {
+                var legacyAppId = entry.AppId;
+                if (legacyAppId != 0)
+                {
+                    entry.Id = GameIdentifier.ForSteam(legacyAppId);
+                }
+                else if (entry.Id is null)
+                {
+                    entry.Id = GameIdentifier.Unknown;
+                }
+            }
         }
         if (settings.RandomPosition < 0)
         {
@@ -204,7 +216,7 @@ public sealed class SelectionEngine : ISelectionEngine
     private List<GameEntry> ApplyFilters(IEnumerable<GameEntry> games)
     {
         var filters = _state.Preferences.Filters;
-        var excludedIds = GetExcludedAppIds();
+        var excludedIds = GetExcludedGameIds();
         var skipExclusionCheck = excludedIds.Count == 0;
         var allowedCategories = filters.IncludedCategories;
         var filterByCategory = allowedCategories.Count > 0;
@@ -217,7 +229,7 @@ public sealed class SelectionEngine : ISelectionEngine
 
         foreach (var game in games)
         {
-            if (!skipExclusionCheck && excludedIds.Contains(game.AppId))
+            if (!skipExclusionCheck && excludedIds.Contains(game.Id))
             {
                 continue;
             }
@@ -258,7 +270,7 @@ public sealed class SelectionEngine : ISelectionEngine
         return results;
     }
 
-    private HashSet<uint> GetExcludedAppIds()
+    private HashSet<GameIdentifier> GetExcludedGameIds()
     {
         var toExclude = Math.Min(_state.Preferences.RecentGameExclusionCount, _state.History.Count);
         if (toExclude <= 0)
@@ -266,10 +278,10 @@ public sealed class SelectionEngine : ISelectionEngine
             return EmptyExcludedIds;
         }
 
-        var set = new HashSet<uint>();
+        var set = new HashSet<GameIdentifier>();
         for (var i = _state.History.Count - toExclude; i < _state.History.Count; i++)
         {
-            set.Add(_state.History[i].AppId);
+            set.Add(_state.History[i].Id);
         }
 
         return set;
@@ -348,7 +360,7 @@ public sealed class SelectionEngine : ISelectionEngine
         {
             _state.History.Add(new SelectionHistoryEntry
             {
-                AppId = selected.AppId,
+                Id = selected.Id,
                 Title = selected.Title,
                 SelectedAt = _clock(),
             });

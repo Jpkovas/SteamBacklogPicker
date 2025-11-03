@@ -32,16 +32,21 @@ public sealed class SteamGameLibraryService : IGameLibraryService
         _cache.Refresh();
 
         var installedGames = _cache.GetInstalledGames();
-        var knownApps = _fallback.GetKnownApps();
+        var knownSteamApps = _fallback.GetKnownApps();
+        var knownApps = knownSteamApps.ToDictionary(
+            static pair => GameIdentifier.ForSteam(pair.Key),
+            static pair => pair.Value);
         var collectionDefinitions = _fallback.GetCollections();
 
-        var results = new Dictionary<uint, GameEntry>();
+        var results = new Dictionary<GameIdentifier, GameEntry>();
         foreach (var game in installedGames)
         {
             var enriched = game;
-            var isFamilyShared = _fallback.IsSubscribedFromFamilySharing(game.AppId);
+            var id = game.Id;
+            var steamAppId = game.SteamAppId;
+            var isFamilyShared = steamAppId.HasValue && _fallback.IsSubscribedFromFamilySharing(steamAppId.Value);
 
-            if (knownApps.TryGetValue(game.AppId, out var definition))
+            if (knownApps.TryGetValue(id, out var definition))
             {
                 if (!string.IsNullOrWhiteSpace(definition.Name) && !string.Equals(enriched.Title, definition.Name, StringComparison.Ordinal))
                 {
@@ -103,28 +108,30 @@ public sealed class SteamGameLibraryService : IGameLibraryService
                 }
             }
 
-            results[game.AppId] = enriched;
+            results[id] = enriched;
         }
 
-        foreach (var (appId, definition) in knownApps)
+        foreach (var (id, definition) in knownApps)
         {
-            if (results.ContainsKey(appId))
+            if (results.ContainsKey(id))
             {
                 continue;
             }
 
-            var isFamilyShared = _fallback.IsSubscribedFromFamilySharing(appId);
+            var isFamilyShared = id.SteamAppId is uint steamAppId && _fallback.IsSubscribedFromFamilySharing(steamAppId);
             var ownership = isFamilyShared ? OwnershipType.FamilyShared : OwnershipType.Owned;
             var installState = ownership == OwnershipType.FamilyShared
                 ? InstallState.Shared
                 : (definition.IsInstalled ? InstallState.Installed : InstallState.Available);
 
-            var title = !string.IsNullOrWhiteSpace(definition.Name) ? definition.Name! : $"App {appId}";
+            var title = !string.IsNullOrWhiteSpace(definition.Name)
+                ? definition.Name!
+                : $"App {id.StoreSpecificId}";
             var category = MapProductCategory(definition.Type);
 
-            results[appId] = new GameEntry
+            results[id] = new GameEntry
             {
-                AppId = appId,
+                Id = id,
                 Title = title,
                 OwnershipType = ownership,
                 InstallState = installState,
@@ -138,9 +145,9 @@ public sealed class SteamGameLibraryService : IGameLibraryService
         if (collectionDefinitions.Count > 0)
         {
             var membership = BuildCollectionMembership(collectionDefinitions, results);
-            foreach (var (appId, names) in membership)
+            foreach (var (id, names) in membership)
             {
-                if (!results.TryGetValue(appId, out var entry))
+                if (!results.TryGetValue(id, out var entry))
                 {
                     continue;
                 }
@@ -150,13 +157,13 @@ public sealed class SteamGameLibraryService : IGameLibraryService
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToArray();
 
-                results[appId] = entry with { Tags = merged };
+                results[id] = entry with { Tags = merged };
             }
         }
 
         var ordered = results.Values
             .OrderBy(game => game.Title, StringComparer.CurrentCultureIgnoreCase)
-            .ThenBy(game => game.AppId)
+            .ThenBy(game => game.Id, GameIdentifier.Comparer)
             .ToList();
 
         return Task.FromResult<IReadOnlyList<GameEntry>>(ordered);
@@ -180,11 +187,11 @@ public sealed class SteamGameLibraryService : IGameLibraryService
             _ => ProductCategory.Other,
         };
     }
-    private static Dictionary<uint, List<string>> BuildCollectionMembership(
+    private static Dictionary<GameIdentifier, List<string>> BuildCollectionMembership(
         IReadOnlyList<SteamCollectionDefinition> definitions,
-        Dictionary<uint, GameEntry> entries)
+        Dictionary<GameIdentifier, GameEntry> entries)
     {
-        var membership = new Dictionary<uint, List<string>>();
+        var membership = new Dictionary<GameIdentifier, List<string>>();
         if (definitions.Count == 0 || entries.Count == 0)
         {
             return membership;
@@ -198,12 +205,13 @@ public sealed class SteamGameLibraryService : IGameLibraryService
                 explicitSet = definition.ExplicitAppIds as HashSet<uint> ?? definition.ExplicitAppIds.ToHashSet();
                 foreach (var appId in explicitSet)
                 {
-                    if (!entries.ContainsKey(appId))
+                    var identifier = GameIdentifier.ForSteam(appId);
+                    if (!entries.ContainsKey(identifier))
                     {
                         continue;
                     }
 
-                    AddMembership(membership, appId, definition.Name);
+                    AddMembership(membership, identifier, definition.Name);
                 }
             }
 
@@ -212,16 +220,21 @@ public sealed class SteamGameLibraryService : IGameLibraryService
                 continue;
             }
 
-            foreach (var (appId, entry) in entries)
+            foreach (var (identifier, entry) in entries)
             {
-                if (explicitSet is not null && explicitSet.Contains(appId))
+                if (identifier.SteamAppId is not uint steamAppId)
+                {
+                    continue;
+                }
+
+                if (explicitSet is not null && explicitSet.Contains(steamAppId))
                 {
                     continue;
                 }
 
                 if (MatchesCollection(entry, definition))
                 {
-                    AddMembership(membership, appId, definition.Name);
+                    AddMembership(membership, identifier, definition.Name);
                 }
             }
         }
@@ -229,12 +242,12 @@ public sealed class SteamGameLibraryService : IGameLibraryService
         return membership;
     }
 
-    private static void AddMembership(Dictionary<uint, List<string>> membership, uint appId, string collectionName)
+    private static void AddMembership(Dictionary<GameIdentifier, List<string>> membership, GameIdentifier identifier, string collectionName)
     {
-        if (!membership.TryGetValue(appId, out var list))
+        if (!membership.TryGetValue(identifier, out var list))
         {
             list = new List<string>();
-            membership[appId] = list;
+            membership[identifier] = list;
         }
 
         if (!list.Any(existing => string.Equals(existing, collectionName, StringComparison.OrdinalIgnoreCase)))

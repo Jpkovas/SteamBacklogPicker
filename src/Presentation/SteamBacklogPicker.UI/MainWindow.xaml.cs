@@ -58,8 +58,8 @@ public partial class MainWindow : Window
             return;
         }
 
-        var appId = _viewModel.SelectedGame.AppId;
-        if (appId == 0)
+        var steamAppId = _viewModel.SelectedGame.SteamAppId;
+        if (steamAppId is null or 0)
         {
             image.Source = null;
             image.Visibility = Visibility.Collapsed;
@@ -75,7 +75,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        var nextUri = BuildCoverUri(nextStage, appId);
+        var nextUri = BuildCoverUri(nextStage, steamAppId.Value);
         if (!Uri.TryCreate(nextUri, UriKind.Absolute, out var uri))
         {
             image.Tag = "exhausted";

@@ -473,7 +473,7 @@
                         ClipToBounds="True">
                     <Grid x:Name="CoverVisualRoot"
                           Opacity="0"
-                          Tag="{Binding SelectedGame.AppId, NotifyOnTargetUpdated=True}">
+                          Tag="{Binding SelectedGame.SteamAppId, NotifyOnTargetUpdated=True}">
                         <Grid.RenderTransform>
                             <ScaleTransform x:Name="CoverRevealScale" ScaleX="1" ScaleY="1" />
                         </Grid.RenderTransform>

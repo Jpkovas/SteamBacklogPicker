@@ -32,7 +32,7 @@ public sealed class SelectionEngineTests
             {
                 new GameEntry
                 {
-                    AppId = 1,
+                    Id = GameIdentifier.ForSteam(1),
                     Title = "Eligible",
                     InstallState = InstallState.Installed,
                     OwnershipType = OwnershipType.Owned,
@@ -41,7 +41,7 @@ public sealed class SelectionEngineTests
                 },
                 new GameEntry
                 {
-                    AppId = 2,
+                    Id = GameIdentifier.ForSteam(2),
                     Title = "Not Installed",
                     InstallState = InstallState.Available,
                     OwnershipType = OwnershipType.Owned,
@@ -50,7 +50,7 @@ public sealed class SelectionEngineTests
                 },
                 new GameEntry
                 {
-                    AppId = 3,
+                    Id = GameIdentifier.ForSteam(3),
                     Title = "Different Category",
                     InstallState = InstallState.Installed,
                     OwnershipType = OwnershipType.Owned,
@@ -59,7 +59,7 @@ public sealed class SelectionEngineTests
                 },
                 new GameEntry
                 {
-                    AppId = 4,
+                    Id = GameIdentifier.ForSteam(4),
                     Title = "Family Shared Available",
                     InstallState = InstallState.Available,
                     OwnershipType = OwnershipType.FamilyShared,
@@ -70,8 +70,8 @@ public sealed class SelectionEngineTests
 
             var selected = engine.PickNext(games);
 
-            selected.AppId.Should().Be(1u);
-            engine.GetHistory().Should().ContainSingle(entry => entry.AppId == 1u);
+            selected.SteamAppId.Should().Be(1u);
+            engine.GetHistory().Should().ContainSingle(entry => entry.Id == GameIdentifier.ForSteam(1));
         }
         finally
         {
@@ -84,9 +84,9 @@ public sealed class SelectionEngineTests
     {
         var games = new[]
         {
-            new GameEntry { AppId = 10, Title = "First", InstallState = InstallState.Installed, OwnershipType = OwnershipType.Owned, Tags = new[] { "Strategy" } },
-            new GameEntry { AppId = 20, Title = "Second", InstallState = InstallState.Installed, OwnershipType = OwnershipType.Owned, Tags = new[] { "Puzzle" } },
-            new GameEntry { AppId = 30, Title = "Third", InstallState = InstallState.Installed, OwnershipType = OwnershipType.Owned, Tags = new[] { "Adventure" } },
+            new GameEntry { Id = GameIdentifier.ForSteam(10), Title = "First", InstallState = InstallState.Installed, OwnershipType = OwnershipType.Owned, Tags = new[] { "Strategy" } },
+            new GameEntry { Id = GameIdentifier.ForSteam(20), Title = "Second", InstallState = InstallState.Installed, OwnershipType = OwnershipType.Owned, Tags = new[] { "Puzzle" } },
+            new GameEntry { Id = GameIdentifier.ForSteam(30), Title = "Third", InstallState = InstallState.Installed, OwnershipType = OwnershipType.Owned, Tags = new[] { "Adventure" } },
         };
 
         var preferencesFactory = () => new SelectionPreferences
@@ -122,10 +122,10 @@ public sealed class SelectionEngineTests
     {
         var games = new[]
         {
-            new GameEntry { AppId = 10, Title = "First", InstallState = InstallState.Installed, OwnershipType = OwnershipType.Owned },
-            new GameEntry { AppId = 20, Title = "Second", InstallState = InstallState.Installed, OwnershipType = OwnershipType.Owned },
-            new GameEntry { AppId = 30, Title = "Third", InstallState = InstallState.Installed, OwnershipType = OwnershipType.Owned },
-            new GameEntry { AppId = 40, Title = "Fourth", InstallState = InstallState.Installed, OwnershipType = OwnershipType.Owned },
+            new GameEntry { Id = GameIdentifier.ForSteam(10), Title = "First", InstallState = InstallState.Installed, OwnershipType = OwnershipType.Owned },
+            new GameEntry { Id = GameIdentifier.ForSteam(20), Title = "Second", InstallState = InstallState.Installed, OwnershipType = OwnershipType.Owned },
+            new GameEntry { Id = GameIdentifier.ForSteam(30), Title = "Third", InstallState = InstallState.Installed, OwnershipType = OwnershipType.Owned },
+            new GameEntry { Id = GameIdentifier.ForSteam(40), Title = "Fourth", InstallState = InstallState.Installed, OwnershipType = OwnershipType.Owned },
         };
 
         var preferences = new SelectionPreferences
@@ -148,7 +148,7 @@ public sealed class SelectionEngineTests
             var firstBatch = new List<uint>();
             for (var i = 0; i < firstBatchSize; i++)
             {
-                firstBatch.Add(firstEngine.PickNext(games).AppId);
+                firstBatch.Add(firstEngine.PickNext(games).SteamAppId!.Value);
             }
 
             var resumedEngine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
@@ -156,7 +156,7 @@ public sealed class SelectionEngineTests
             var resumedBatch = new List<uint>();
             for (var i = 0; i < secondBatchSize; i++)
             {
-                resumedBatch.Add(resumedEngine.PickNext(games).AppId);
+                resumedBatch.Add(resumedEngine.PickNext(games).SteamAppId!.Value);
             }
 
             var expectedSequence = ComputeUniformSequence(preferences.Seed!.Value, games, firstBatchSize + secondBatchSize);
@@ -190,7 +190,7 @@ public sealed class SelectionEngineTests
             {
                 new GameEntry
                 {
-                    AppId = 1,
+                    Id = GameIdentifier.ForSteam(1),
                     Title = "Owned Installed",
                     InstallState = InstallState.Installed,
                     OwnershipType = OwnershipType.Owned,
@@ -198,7 +198,7 @@ public sealed class SelectionEngineTests
                 },
                 new GameEntry
                 {
-                    AppId = 2,
+                    Id = GameIdentifier.ForSteam(2),
                     Title = "Family Ownership",
                     InstallState = InstallState.Installed,
                     OwnershipType = OwnershipType.FamilyShared,
@@ -206,7 +206,7 @@ public sealed class SelectionEngineTests
                 },
                 new GameEntry
                 {
-                    AppId = 3,
+                    Id = GameIdentifier.ForSteam(3),
                     Title = "Shared InstallState",
                     InstallState = InstallState.Shared,
                     OwnershipType = OwnershipType.Owned,
@@ -214,7 +214,7 @@ public sealed class SelectionEngineTests
                 },
                 new GameEntry
                 {
-                    AppId = 4,
+                    Id = GameIdentifier.ForSteam(4),
                     Title = "Available Only",
                     InstallState = InstallState.Available,
                     OwnershipType = OwnershipType.Owned,
@@ -224,7 +224,12 @@ public sealed class SelectionEngineTests
 
             var filtered = engine.FilterGames(games);
 
-            filtered.Select(game => game.AppId).Should().BeEquivalentTo(new[] { 1u, 2u, 3u });
+            filtered.Select(game => game.Id).Should().BeEquivalentTo(new[]
+            {
+                GameIdentifier.ForSteam(1),
+                GameIdentifier.ForSteam(2),
+                GameIdentifier.ForSteam(3),
+            });
         }
         finally
         {
@@ -258,7 +263,7 @@ public sealed class SelectionEngineTests
             {
                 new GameEntry
                 {
-                    AppId = 1,
+                    Id = GameIdentifier.ForSteam(1),
                     Title = "Base Game",
                     InstallState = InstallState.Installed,
                     OwnershipType = OwnershipType.Owned,
@@ -266,7 +271,7 @@ public sealed class SelectionEngineTests
                 },
                 new GameEntry
                 {
-                    AppId = 2,
+                    Id = GameIdentifier.ForSteam(2),
                     Title = "OST",
                     InstallState = InstallState.Installed,
                     OwnershipType = OwnershipType.Owned,
@@ -274,7 +279,7 @@ public sealed class SelectionEngineTests
                 },
                 new GameEntry
                 {
-                    AppId = 3,
+                    Id = GameIdentifier.ForSteam(3),
                     Title = "Design Tool",
                     InstallState = InstallState.Installed,
                     OwnershipType = OwnershipType.Owned,
@@ -282,7 +287,7 @@ public sealed class SelectionEngineTests
                 },
                 new GameEntry
                 {
-                    AppId = 4,
+                    Id = GameIdentifier.ForSteam(4),
                     Title = "Expansion Pack",
                     InstallState = InstallState.Installed,
                     OwnershipType = OwnershipType.Owned,
@@ -290,7 +295,7 @@ public sealed class SelectionEngineTests
                 },
                 new GameEntry
                 {
-                    AppId = 5,
+                    Id = GameIdentifier.ForSteam(5),
                     Title = "Mystery Entry",
                     InstallState = InstallState.Installed,
                     OwnershipType = OwnershipType.Owned,
@@ -300,7 +305,13 @@ public sealed class SelectionEngineTests
 
             var filtered = engine.FilterGames(games);
 
-            filtered.Select(game => game.AppId).Should().BeEquivalentTo(new[] { 1u, 2u, 4u, 5u });
+            filtered.Select(game => game.Id).Should().BeEquivalentTo(new[]
+            {
+                GameIdentifier.ForSteam(1),
+                GameIdentifier.ForSteam(2),
+                GameIdentifier.ForSteam(4),
+                GameIdentifier.ForSteam(5),
+            });
         }
         finally
         {
@@ -328,7 +339,7 @@ public sealed class SelectionEngineTests
             {
                 new GameEntry
                 {
-                    AppId = 1,
+                    Id = GameIdentifier.ForSteam(1),
                     Title = "Deck Ready",
                     InstallState = InstallState.Installed,
                     OwnershipType = OwnershipType.Owned,
@@ -337,7 +348,7 @@ public sealed class SelectionEngineTests
                 },
                 new GameEntry
                 {
-                    AppId = 2,
+                    Id = GameIdentifier.ForSteam(2),
                     Title = "Only Multiplayer",
                     InstallState = InstallState.Installed,
                     OwnershipType = OwnershipType.Owned,
@@ -346,7 +357,7 @@ public sealed class SelectionEngineTests
                 },
                 new GameEntry
                 {
-                    AppId = 3,
+                    Id = GameIdentifier.ForSteam(3),
                     Title = "Deck Lowercase",
                     InstallState = InstallState.Installed,
                     OwnershipType = OwnershipType.Owned,
@@ -357,7 +368,11 @@ public sealed class SelectionEngineTests
 
             var filtered = engine.FilterGames(games);
 
-            filtered.Select(game => game.AppId).Should().BeEquivalentTo(new[] { 1u, 3u });
+            filtered.Select(game => game.Id).Should().BeEquivalentTo(new[]
+            {
+                GameIdentifier.ForSteam(1),
+                GameIdentifier.ForSteam(3),
+            });
         }
         finally
         {
@@ -385,7 +400,7 @@ public sealed class SelectionEngineTests
             {
                 new GameEntry
                 {
-                    AppId = 1,
+                    Id = GameIdentifier.ForSteam(1),
                     Title = "Verified",
                     InstallState = InstallState.Installed,
                     OwnershipType = OwnershipType.Owned,
@@ -394,7 +409,7 @@ public sealed class SelectionEngineTests
                 },
                 new GameEntry
                 {
-                    AppId = 2,
+                    Id = GameIdentifier.ForSteam(2),
                     Title = "Unsupported",
                     InstallState = InstallState.Installed,
                     OwnershipType = OwnershipType.Owned,
@@ -403,7 +418,7 @@ public sealed class SelectionEngineTests
                 },
                 new GameEntry
                 {
-                    AppId = 3,
+                    Id = GameIdentifier.ForSteam(3),
                     Title = "Playable",
                     InstallState = InstallState.Installed,
                     OwnershipType = OwnershipType.Owned,
@@ -414,7 +429,56 @@ public sealed class SelectionEngineTests
 
             var filtered = engine.FilterGames(games);
 
-            filtered.Select(game => game.AppId).Should().BeEquivalentTo(new[] { 1u, 3u });
+            filtered.Select(game => game.Id).Should().BeEquivalentTo(new[]
+            {
+                GameIdentifier.ForSteam(1),
+                GameIdentifier.ForSteam(3),
+            });
+        }
+        finally
+        {
+            Cleanup(settingsPath);
+        }
+    }
+
+    [Fact]
+    public void FilterGames_ShouldTreatStorefrontIdentifiersIndependently()
+    {
+        var settingsPath = CreateSettingsPath();
+        try
+        {
+            var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
+            engine.UpdatePreferences(new SelectionPreferences
+            {
+                HistoryLimit = 5,
+                RecentGameExclusionCount = 1,
+            });
+
+            var steamGame = new GameEntry
+            {
+                Id = GameIdentifier.ForSteam(42),
+                Title = "Steam Original",
+                InstallState = InstallState.Installed,
+                OwnershipType = OwnershipType.Owned,
+            };
+
+            var epicGame = new GameEntry
+            {
+                Id = new GameIdentifier
+                {
+                    Storefront = Storefront.EpicGamesStore,
+                    StoreSpecificId = "42",
+                },
+                Title = "Epic Mirror",
+                InstallState = InstallState.Installed,
+                OwnershipType = OwnershipType.Owned,
+            };
+
+            _ = engine.PickNext(new[] { steamGame });
+
+            var filtered = engine.FilterGames(new[] { steamGame, epicGame });
+
+            filtered.Should().ContainSingle(game => game.Id == epicGame.Id);
         }
         finally
         {
@@ -430,7 +494,7 @@ public sealed class SelectionEngineTests
         var results = new List<uint>();
         foreach (var _ in Enumerable.Range(0, picks))
         {
-            results.Add(engine.PickNext(games).AppId);
+            results.Add(engine.PickNext(games).SteamAppId!.Value);
         }
 
         return results;
@@ -450,7 +514,7 @@ public sealed class SelectionEngineTests
                 index = games.Count - 1;
             }
 
-            results.Add(games[index].AppId);
+            results.Add(games[index].SteamAppId!.Value);
         }
 
         return results;
