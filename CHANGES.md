@@ -1,5 +1,6 @@
 # Recent Changes
 
+- Added Epic key image parsing plus a composite art locator that surfaces Epic and Steam hero art selections in the UI.
 - Bundled the Microsoft.Data.Sqlite native provider so Epic catalog caches load SQLite fixtures in tests.
 - Fixed Epic catalog parsing to read camelCase fields and updated cache tests to validate namespaced identifiers.
 - Added Epic discovery unit tests with local fixtures, refreshed multi-store selection coverage, and documented Epic cache requirements and offline guarantees.

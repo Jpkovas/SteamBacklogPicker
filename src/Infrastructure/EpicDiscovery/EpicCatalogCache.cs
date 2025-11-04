@@ -45,6 +45,17 @@ public sealed class EpicCatalogCache : IDisposable
         }
     }
 
+    public EpicCatalogItem? GetCatalogEntry(GameIdentifier identifier)
+    {
+        ArgumentNullException.ThrowIfNull(identifier);
+
+        lock (syncRoot)
+        {
+            EnsureInitializedNoLock();
+            return entries.TryGetValue(identifier, out var item) ? item : null;
+        }
+    }
+
     public void Refresh()
     {
         lock (syncRoot)
@@ -266,6 +277,8 @@ public sealed class EpicCatalogCache : IDisposable
         CollectTagsFromReader(reader, tags, "Tags");
         CollectTagsFromReader(reader, tags, "Genres");
 
+        var keyImages = CollectKeyImagesFromReader(reader);
+
         var id = EpicIdentifierFactory.Create(catalogItemId, catalogNamespace, appName);
 
         return new EpicCatalogItem
@@ -278,6 +291,7 @@ public sealed class EpicCatalogCache : IDisposable
             Tags = tags.ToArray(),
             SizeOnDisk = size,
             LastModified = lastModified,
+            KeyImages = keyImages,
         };
     }
 
@@ -361,6 +375,46 @@ public sealed class EpicCatalogCache : IDisposable
         }
     }
 
+    private static IReadOnlyCollection<EpicKeyImage> CollectKeyImagesFromReader(SqliteDataReader reader)
+    {
+        var results = new List<EpicKeyImage>();
+
+        var json = GetReaderString(reader, ["KeyImages", "keyImages"]);
+        if (!string.IsNullOrWhiteSpace(json))
+        {
+            results.AddRange(ParseKeyImages(json!));
+        }
+
+        var columns = new (string Column, string Type, bool IsPath)[]
+        {
+            ("KeyImageUrl", "KeyImage", false),
+            ("KeyImageUri", "KeyImage", false),
+            ("KeyImagePath", "KeyImage", true),
+            ("HeroImageUrl", "HeroImage", false),
+            ("HeroImagePath", "HeroImage", true),
+            ("ImageUrl", "Image", false),
+            ("ImagePath", "Image", true),
+        };
+
+        foreach (var (column, type, isPath) in columns)
+        {
+            var value = GetReaderString(reader, [column]);
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                continue;
+            }
+
+            results.Add(new EpicKeyImage
+            {
+                Type = type,
+                Uri = isPath ? null : value,
+                Path = isPath ? value : null
+            });
+        }
+
+        return MergeKeyImages(results);
+    }
+
     private static int TryGetOrdinal(SqliteDataReader reader, string column)
     {
         for (var i = 0; i < reader.FieldCount; i++)
@@ -372,6 +426,177 @@ public sealed class EpicCatalogCache : IDisposable
         }
 
         return -1;
+    }
+
+    private static IReadOnlyCollection<EpicKeyImage> ParseKeyImages(JsonElement element)
+    {
+        if (!element.TryGetProperty("keyImages", out var collection))
+        {
+            return Array.Empty<EpicKeyImage>();
+        }
+
+        return ParseKeyImageCollection(collection);
+    }
+
+    private static IReadOnlyCollection<EpicKeyImage> ParseKeyImageCollection(JsonElement collection)
+    {
+        var results = new List<EpicKeyImage>();
+
+        switch (collection.ValueKind)
+        {
+            case JsonValueKind.Array:
+                foreach (var item in collection.EnumerateArray())
+                {
+                    if (item.ValueKind == JsonValueKind.Object)
+                    {
+                        var image = ParseKeyImageObject(item);
+                        if (image is not null)
+                        {
+                            results.Add(image);
+                        }
+                    }
+                    else if (item.ValueKind == JsonValueKind.String)
+                    {
+                        var text = item.GetString();
+                        if (!string.IsNullOrWhiteSpace(text))
+                        {
+                            results.Add(new EpicKeyImage { Uri = text });
+                        }
+                    }
+                }
+
+                break;
+
+            case JsonValueKind.Object:
+                if (collection.TryGetProperty("type", out _))
+                {
+                    var image = ParseKeyImageObject(collection);
+                    if (image is not null)
+                    {
+                        results.Add(image);
+                    }
+
+                    break;
+                }
+
+                foreach (var property in collection.EnumerateObject())
+                {
+                    if (property.Value.ValueKind == JsonValueKind.Object)
+                    {
+                        var image = ParseKeyImageObject(property.Value);
+                        if (image is not null)
+                        {
+                            results.Add(image with { Type = string.IsNullOrWhiteSpace(image.Type) ? property.Name : image.Type });
+                        }
+                    }
+                    else if (property.Value.ValueKind == JsonValueKind.String)
+                    {
+                        var text = property.Value.GetString();
+                        if (!string.IsNullOrWhiteSpace(text))
+                        {
+                            results.Add(new EpicKeyImage
+                            {
+                                Type = property.Name,
+                                Uri = text
+                            });
+                        }
+                    }
+                }
+
+                break;
+
+            case JsonValueKind.String:
+                var value = collection.GetString();
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    results.Add(new EpicKeyImage { Uri = value });
+                }
+
+                break;
+        }
+
+        return MergeKeyImages(results);
+    }
+
+    private static IReadOnlyCollection<EpicKeyImage> ParseKeyImages(string raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return Array.Empty<EpicKeyImage>();
+        }
+
+        raw = raw.Trim();
+        if (raw.StartsWith("{", StringComparison.OrdinalIgnoreCase) ||
+            raw.StartsWith("[", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                using var document = JsonDocument.Parse(raw);
+                return ParseKeyImageCollection(document.RootElement);
+            }
+            catch (JsonException)
+            {
+                // ignore malformed JSON and fall back to plain text handling
+            }
+        }
+
+        return MergeKeyImages(new[]
+        {
+            new EpicKeyImage { Uri = raw }
+        });
+    }
+
+    private static EpicKeyImage? ParseKeyImageObject(JsonElement element)
+    {
+        if (element.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        var type = TryGetString(element, "type");
+        var uri = TryGetString(element, "uri", "url");
+        var path = TryGetString(element, "path", "filePath", "imagePath");
+
+        if (string.IsNullOrWhiteSpace(type) && string.IsNullOrWhiteSpace(uri) && string.IsNullOrWhiteSpace(path))
+        {
+            return null;
+        }
+
+        return new EpicKeyImage
+        {
+            Type = type ?? string.Empty,
+            Uri = uri,
+            Path = path
+        };
+    }
+
+    private static IReadOnlyCollection<EpicKeyImage> MergeKeyImages(IEnumerable<EpicKeyImage> images)
+    {
+        var map = new Dictionary<string, EpicKeyImage>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var image in images)
+        {
+            if (image is null)
+            {
+                continue;
+            }
+
+            var type = string.IsNullOrWhiteSpace(image.Type) ? string.Empty : image.Type;
+            if (map.TryGetValue(type, out var existing))
+            {
+                map[type] = existing with
+                {
+                    Uri = existing.Uri ?? image.Uri,
+                    Path = existing.Path ?? image.Path
+                };
+
+                continue;
+            }
+
+            map[type] = image with { Type = type };
+        }
+
+        return map.Values.ToArray();
     }
 
     private EpicCatalogItem? ParseCatalogElement(JsonElement element)
@@ -396,6 +621,8 @@ public sealed class EpicCatalogCache : IDisposable
         var size = TryGetLong(element, "InstallSize", "installSize", "diskSize", "size");
         var lastModified = TryGetDate(element, "LastModified", "lastModified", "updated", "updatedAt");
 
+        var keyImages = ParseKeyImages(element);
+
         var id = EpicIdentifierFactory.Create(catalogItemId, catalogNamespace, appName);
 
         return new EpicCatalogItem
@@ -408,6 +635,7 @@ public sealed class EpicCatalogCache : IDisposable
             Tags = tags.ToArray(),
             SizeOnDisk = size,
             LastModified = lastModified,
+            KeyImages = keyImages,
         };
     }
 

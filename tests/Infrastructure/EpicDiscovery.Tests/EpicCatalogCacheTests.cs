@@ -35,11 +35,18 @@ public sealed class EpicCatalogCacheTests : IDisposable
         entries.Should().Contain(entry =>
             entry.Id.Storefront == Storefront.EpicGamesStore &&
             entry.Id.StoreSpecificId == "fn:fngame" &&
-            entry.Tags.Contains("action"));
+            entry.Tags.Contains("action") &&
+            entry.KeyImages.Any(image =>
+                image.Type == "DieselGameBox" &&
+                image.Uri == "https://cdn.epicgames.com/fn/fortnite_diesel.jpg" &&
+                image.Path == "C:/Games/Epic/Fortnite/Images/diesel.jpg"));
         entries.Should().Contain(entry =>
             entry.Id.StoreSpecificId == "rocket:rlgame" &&
             entry.Tags.Contains("sports") &&
-            entry.Tags.Contains("soccer"));
+            entry.Tags.Contains("soccer") &&
+            entry.KeyImages.Any(image =>
+                image.Type == "OfferImageWide" &&
+                image.Uri == "https://cdn.epicgames.com/rocket/rocketleague_wide.jpg"));
     }
 
     [Fact]
@@ -60,10 +67,16 @@ public sealed class EpicCatalogCacheTests : IDisposable
         entries.Should().Contain(entry =>
             entry.Id.StoreSpecificId == "fn:fngame" &&
             entry.Title == "Fortnite Deluxe" &&
-            entry.Tags.Contains("battle-royale"));
+            entry.Tags.Contains("battle-royale") &&
+            entry.KeyImages.Any(image =>
+                image.Type == "DieselGameBox" &&
+                image.Uri == "https://cdn.epicgames.com/fn/fortnite_diesel.jpg"));
         entries.Should().Contain(entry =>
             entry.Id.StoreSpecificId == "rocket:rlgame" &&
-            entry.Tags.Contains("sports"));
+            entry.Tags.Contains("sports") &&
+            entry.KeyImages.Any(image =>
+                image.Type == "OfferImageWide" &&
+                image.Uri == "https://cdn.epicgames.com/rocket/rocketleague_wide.jpg"));
     }
 
     public void Dispose()
