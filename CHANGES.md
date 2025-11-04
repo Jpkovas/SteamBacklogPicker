@@ -9,3 +9,4 @@
 - Ensured `GameIdentifier` overrides remain compatible with sealed records to fix the CI build regression introduced by the legacy compatibility shim.
 - Introduced Epic discovery infrastructure (locator, manifest/catalog caches, and DI wiring) to surface Epic Games Store entries alongside Steam data.
 - Restored Epic discovery logging dependencies and public catalog models so the build succeeds after locking disposal paths.
+- Expanded the Epic catalog SQLite parser to include offer tables, restoring Rocket League entries in cache lookups.
