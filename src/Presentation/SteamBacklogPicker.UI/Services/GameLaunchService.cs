@@ -19,7 +19,9 @@ public sealed class GameLaunchService : IGameLaunchService
     }
 
     public GameLaunchService(EpicCatalogCache? epicCatalogCache)
-        : this(epicCatalogCache?.GetCatalogEntry)
+        : this(epicCatalogCache is null
+            ? null
+            : new Func<GameIdentifier, EpicCatalogItem?>(epicCatalogCache.GetCatalogEntry))
     {
     }
 
