@@ -7,6 +7,17 @@
       "title": "Fortnite",
       "installSize": 123456789,
       "lastModified": "2024-01-02T10:00:00Z",
+      "keyImages": [
+        {
+          "type": "DieselGameBox",
+          "url": "https://cdn.epicgames.com/fn/fortnite_diesel.jpg",
+          "path": "C:/Games/Epic/Fortnite/Images/diesel.jpg"
+        },
+        {
+          "type": "DieselGameBoxTall",
+          "url": "https://cdn.epicgames.com/fn/fortnite_tall.jpg"
+        }
+      ],
       "categories": [
         { "path": "action" }
       ],
@@ -21,6 +32,12 @@
       "displayName": "Rocket League",
       "diskSize": 987654321,
       "updated": "2023-12-15T09:30:00Z",
+      "keyImages": [
+        {
+          "type": "OfferImageWide",
+          "url": "https://cdn.epicgames.com/rocket/rocketleague_wide.jpg"
+        }
+      ],
       "tags": ["sports"],
       "keywords": ["soccer"]
     }

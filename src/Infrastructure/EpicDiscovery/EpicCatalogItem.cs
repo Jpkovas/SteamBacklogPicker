@@ -17,6 +17,8 @@ public sealed record class EpicCatalogItem
 
     public IReadOnlyCollection<string> Tags { get; init; } = Array.Empty<string>();
 
+    public IReadOnlyCollection<EpicKeyImage> KeyImages { get; init; } = Array.Empty<EpicKeyImage>();
+
     public long? SizeOnDisk { get; init; }
 
     public DateTimeOffset? LastModified { get; init; }

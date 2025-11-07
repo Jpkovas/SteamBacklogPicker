@@ -124,7 +124,11 @@ public partial class App : Application
         services.AddSingleton<IGameLibraryProvider, SteamLibraryProvider>();
         services.AddSingleton<IGameLibraryProvider, EpicLibraryProvider>();
         services.AddSingleton<IGameLibraryService, CombinedGameLibraryService>();
-        services.AddSingleton<IGameArtLocator, SteamGameArtLocator>();
+        services.AddSingleton<SteamGameArtLocator>();
+        services.AddSingleton<EpicGameArtLocator>();
+        services.AddSingleton<IGameArtLocator>(sp => new CompositeGameArtLocator(
+            sp.GetRequiredService<SteamGameArtLocator>(),
+            sp.GetRequiredService<EpicGameArtLocator>()));
         services.AddSingleton<ILocalizationService, LocalizationService>();
         services.AddSingleton<IToastNotificationService, ToastNotificationService>();
         services.AddSingleton<IAppUpdateService, SquirrelUpdateService>();
