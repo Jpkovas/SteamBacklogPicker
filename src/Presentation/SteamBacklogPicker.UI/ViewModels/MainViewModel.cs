@@ -16,6 +16,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly IGameLibraryService _libraryService;
     private readonly IGameArtLocator _artLocator;
     private readonly IToastNotificationService _toastNotificationService;
+    private readonly IGameLaunchService _gameLaunchService;
     private readonly ILocalizationService _localizationService;
     private readonly List<GameEntry> _library = new();
     private readonly GameDetailsViewModel _emptyGame;
@@ -24,19 +25,25 @@ public sealed class MainViewModel : ObservableObject
     private bool _isDrawing;
     private Func<ILocalizationService, string>? _statusFactory;
     private string _statusMessage = string.Empty;
+    private readonly Func<ProcessStartInfo, Process?> _processStarter;
+    private GameEntry? _selectedGameEntry;
 
     public MainViewModel(
         ISelectionEngine selectionEngine,
         IGameLibraryService libraryService,
         IGameArtLocator artLocator,
         IToastNotificationService toastNotificationService,
-        ILocalizationService localizationService)
+        ILocalizationService localizationService,
+        IGameLaunchService gameLaunchService,
+        Func<ProcessStartInfo, Process?>? processStarter = null)
     {
         _selectionEngine = selectionEngine ?? throw new ArgumentNullException(nameof(selectionEngine));
         _libraryService = libraryService ?? throw new ArgumentNullException(nameof(libraryService));
         _artLocator = artLocator ?? throw new ArgumentNullException(nameof(artLocator));
         _toastNotificationService = toastNotificationService ?? throw new ArgumentNullException(nameof(toastNotificationService));
         _localizationService = localizationService ?? throw new ArgumentNullException(nameof(localizationService));
+        _gameLaunchService = gameLaunchService ?? throw new ArgumentNullException(nameof(gameLaunchService));
+        _processStarter = processStarter ?? Process.Start;
 
         _localizationService.LanguageChanged += OnLanguageChanged;
 
@@ -109,6 +116,7 @@ public sealed class MainViewModel : ObservableObject
     private async Task RefreshLibraryAsync()
     {
         SetStatus(loc => loc.GetString("Status_LoadingLibrary"));
+        ResetSelection();
         _library.Clear();
         try
         {
@@ -122,6 +130,7 @@ public sealed class MainViewModel : ObservableObject
             _eligibleGameCount = 0;
             SetStatusRaw(ex.Message);
             Preferences.UpdateCollections(Array.Empty<string>());
+            ResetSelection();
         }
         finally
         {
@@ -143,7 +152,7 @@ public sealed class MainViewModel : ObservableObject
         try
         {
             IsDrawing = true;
-            SelectedGame = _emptyGame;
+            ResetSelection();
             SetStatus(loc => loc.GetString("Status_Drawing"));
             await Task.Delay(850).ConfigureAwait(true);
 
@@ -163,41 +172,106 @@ public sealed class MainViewModel : ObservableObject
 
     private void ApplySelection(GameEntry game)
     {
+        var launchOptions = _gameLaunchService.GetLaunchOptions(game);
         var coverPath = _artLocator.FindHeroImage(game);
-        var details = GameDetailsViewModel.FromGame(game, coverPath, _localizationService);
+        var details = GameDetailsViewModel.FromGame(game, coverPath, _localizationService, launchOptions);
+        _selectedGameEntry = game;
         SelectedGame = details;
         _toastNotificationService.ShowGameSelected(game, coverPath);
     }
 
     private void LaunchGame()
     {
-        if (!SelectedGame.CanLaunch || SelectedGame.SteamAppId is not uint appId)
+        if (_selectedGameEntry is null)
         {
+            HandleActionFailure(_localizationService.GetString("Status_NoGamesFound"));
             return;
         }
 
-        OpenSteamUri($"steam://run/{appId}");
+        var launchOptions = _gameLaunchService.GetLaunchOptions(_selectedGameEntry);
+        SelectedGame.UpdateLaunchOptions(launchOptions);
+        LaunchCommand.RaiseCanExecuteChanged();
+        InstallCommand.RaiseCanExecuteChanged();
+
+        var launchAction = launchOptions.Launch;
+        if (!launchAction.IsSupported)
+        {
+            HandleActionFailure(launchAction.ErrorMessage);
+            return;
+        }
+
+        if (launchAction.ProcessStartInfo is null)
+        {
+            HandleActionFailure("Launch information for this game is not available.");
+            return;
+        }
+
+        TryStartProcess(launchAction.ProcessStartInfo);
     }
 
     private void InstallGame()
     {
-        if (!SelectedGame.CanInstall || SelectedGame.SteamAppId is not uint appId)
+        if (_selectedGameEntry is null)
         {
+            HandleActionFailure(_localizationService.GetString("Status_NoGamesFound"));
             return;
         }
 
-        OpenSteamUri($"steam://install/{appId}");
+        var launchOptions = _gameLaunchService.GetLaunchOptions(_selectedGameEntry);
+        SelectedGame.UpdateLaunchOptions(launchOptions);
+        LaunchCommand.RaiseCanExecuteChanged();
+        InstallCommand.RaiseCanExecuteChanged();
+
+        var installAction = launchOptions.Install;
+        if (!installAction.IsSupported)
+        {
+            HandleActionFailure(installAction.ErrorMessage);
+            return;
+        }
+
+        if (installAction.ProcessStartInfo is null)
+        {
+            HandleActionFailure("Installation information for this game is not available.");
+            return;
+        }
+
+        TryStartProcess(installAction.ProcessStartInfo);
     }
 
-    private void OpenSteamUri(string uri)
+    private void TryStartProcess(ProcessStartInfo startInfo)
     {
         try
         {
-            Process.Start(new ProcessStartInfo(uri) { UseShellExecute = true });
+            _processStarter(startInfo);
         }
         catch (Exception ex)
         {
             SetStatusRaw(ex.Message);
+        }
+    }
+
+    private void HandleActionFailure(string? message)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            message = "This action is not available for the selected game.";
+        }
+
+        SetStatusRaw(message);
+    }
+
+    private void ResetSelection()
+    {
+        _selectedGameEntry = null;
+        _emptyGame.UpdateLaunchOptions(GameLaunchOptions.Empty);
+        if (!ReferenceEquals(SelectedGame, _emptyGame))
+        {
+            SelectedGame = _emptyGame;
+        }
+        else
+        {
+            LaunchCommand.RaiseCanExecuteChanged();
+            InstallCommand.RaiseCanExecuteChanged();
         }
     }
 
@@ -235,7 +309,7 @@ public sealed class MainViewModel : ObservableObject
         if (!ReferenceEquals(SelectedGame, _emptyGame) &&
             !eligibleGames.Any(game => game.Id == SelectedGame.Id))
         {
-            SelectedGame = _emptyGame;
+            ResetSelection();
         }
 
         if (total == 0)
