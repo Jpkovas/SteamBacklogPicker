@@ -10,6 +10,7 @@ public sealed class GameDetailsViewModel : ObservableObject
 {
     private readonly ILocalizationService _localizationService;
     private readonly bool _isPlaceholder;
+    private GameLaunchOptions _launchOptions;
     private string _title;
 
     private GameDetailsViewModel(
@@ -20,6 +21,7 @@ public sealed class GameDetailsViewModel : ObservableObject
         InstallState installState,
         OwnershipType ownershipType,
         IReadOnlyList<string> tags,
+        GameLaunchOptions launchOptions,
         bool isPlaceholder)
     {
         _localizationService = localizationService ?? throw new ArgumentNullException(nameof(localizationService));
@@ -29,6 +31,7 @@ public sealed class GameDetailsViewModel : ObservableObject
         InstallState = installState;
         OwnershipType = ownershipType;
         Tags = tags;
+        _launchOptions = launchOptions ?? GameLaunchOptions.Empty;
         _isPlaceholder = isPlaceholder;
     }
 
@@ -43,6 +46,7 @@ public sealed class GameDetailsViewModel : ObservableObject
             InstallState.Unknown,
             OwnershipType.Unknown,
             Array.Empty<string>(),
+            GameLaunchOptions.Empty,
             true);
     }
 
@@ -82,9 +86,23 @@ public sealed class GameDetailsViewModel : ObservableObject
 
     public IReadOnlyList<string> Tags { get; }
 
-    public bool CanLaunch => InstallState == InstallState.Installed && SteamAppId.HasValue;
+    public bool CanLaunch => _launchOptions.Launch.IsSupported;
 
-    public bool CanInstall => SteamAppId.HasValue && InstallState is InstallState.Available or InstallState.Shared;
+    public bool CanInstall => _launchOptions.Install.IsSupported;
+
+    public string? LaunchUri => _launchOptions.Launch.ProtocolUri;
+
+    public string? InstallUri => _launchOptions.Install.ProtocolUri;
+
+    public string? LaunchErrorMessage => _launchOptions.Launch.ErrorMessage;
+
+    public string? InstallErrorMessage => _launchOptions.Install.ErrorMessage;
+
+    public string? EpicAppName => _launchOptions.EpicAppName;
+
+    public string? EpicCatalogItemId => _launchOptions.EpicCatalogItemId;
+
+    public string? EpicCatalogNamespace => _launchOptions.EpicCatalogNamespace;
 
     public string InstallationStatus => InstallState switch
     {
@@ -108,10 +126,31 @@ public sealed class GameDetailsViewModel : ObservableObject
         OnPropertyChanged(nameof(StorefrontDisplayName));
     }
 
-    public static GameDetailsViewModel FromGame(GameEntry game, string? coverPath, ILocalizationService localizationService)
+    internal GameLaunchOptions LaunchOptions => _launchOptions;
+
+    internal void UpdateLaunchOptions(GameLaunchOptions launchOptions)
+    {
+        _launchOptions = launchOptions ?? GameLaunchOptions.Empty;
+        OnPropertyChanged(nameof(CanLaunch));
+        OnPropertyChanged(nameof(CanInstall));
+        OnPropertyChanged(nameof(LaunchUri));
+        OnPropertyChanged(nameof(InstallUri));
+        OnPropertyChanged(nameof(LaunchErrorMessage));
+        OnPropertyChanged(nameof(InstallErrorMessage));
+        OnPropertyChanged(nameof(EpicAppName));
+        OnPropertyChanged(nameof(EpicCatalogItemId));
+        OnPropertyChanged(nameof(EpicCatalogNamespace));
+    }
+
+    public static GameDetailsViewModel FromGame(
+        GameEntry game,
+        string? coverPath,
+        ILocalizationService localizationService,
+        GameLaunchOptions launchOptions)
     {
         ArgumentNullException.ThrowIfNull(game);
         ArgumentNullException.ThrowIfNull(localizationService);
+        ArgumentNullException.ThrowIfNull(launchOptions);
         var tags = game.Tags?.Where(tag => !string.IsNullOrWhiteSpace(tag)).Distinct(StringComparer.OrdinalIgnoreCase).ToArray()
                    ?? Array.Empty<string>();
         return new GameDetailsViewModel(
@@ -122,6 +161,7 @@ public sealed class GameDetailsViewModel : ObservableObject
             game.InstallState,
             game.OwnershipType,
             tags,
+            launchOptions,
             false);
     }
 }
