@@ -1,5 +1,6 @@
 # Recent Changes
 
+- Replaced the Epic catalog SQLite fixture blob with a reusable builder that materializes the test database via Microsoft.Data.Sqlite.
 - Added an in-app launch service with Epic protocol support and updated viewmodels/tests to respect Epic install criteria.
 - Fixed the Epic launch service constructor to avoid nullable method group usage and restore the UI build.
 - Updated the Epic catalog SQLite fixture to store offer key image metadata so hero art parsing covers Rocket League.
