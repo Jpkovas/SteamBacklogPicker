@@ -195,16 +195,15 @@ public sealed class SqliteCatalogFixtureBuilder
         internal CatalogItemRow Build()
         {
             var tagArray = tags.Count == 0 ? null : JsonSerializer.Serialize(tags.OrderBy(tag => tag));
-            var keyImagesJson = keyImages.Count == 0 ? null : JsonSerializer.Serialize(new
-            {
-                keyImages = keyImages.Select(image => new
+            var keyImagesJson = keyImages.Count == 0
+                ? null
+                : JsonSerializer.Serialize(keyImages.Select(image => new
                 {
                     type = image.Type,
                     url = image.Uri,
                     uri = image.Uri,
                     path = image.Path
-                })
-            });
+                }));
 
             return new CatalogItemRow(
                 catalogItemId,
