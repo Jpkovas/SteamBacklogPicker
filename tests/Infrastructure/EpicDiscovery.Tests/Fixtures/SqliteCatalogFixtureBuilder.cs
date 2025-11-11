@@ -68,7 +68,7 @@ public sealed class SqliteCatalogFixtureBuilder
     private void CreateSchema(SqliteConnection connection)
     {
         using var command = connection.CreateCommand();
-        command.CommandText = $@"CREATE TABLE IF NOT EXISTS \"{tableName}\" (
+        command.CommandText = $@"CREATE TABLE IF NOT EXISTS ""{tableName}"" (
             CatalogItemId TEXT,
             CatalogNamespace TEXT,
             AppName TEXT,
@@ -86,7 +86,7 @@ public sealed class SqliteCatalogFixtureBuilder
         foreach (var row in rows)
         {
             using var command = connection.CreateCommand();
-            command.CommandText = $@"INSERT INTO \"{tableName}\" (
+            command.CommandText = $@"INSERT INTO ""{tableName}"" (
                 CatalogItemId,
                 CatalogNamespace,
                 AppName,
