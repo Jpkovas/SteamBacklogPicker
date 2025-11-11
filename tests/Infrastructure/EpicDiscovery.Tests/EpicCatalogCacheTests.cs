@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using Domain;
 using EpicDiscovery;
+using EpicDiscovery.Tests.Fixtures;
 using FluentAssertions;
 using Xunit;
 
@@ -54,8 +55,19 @@ public sealed class EpicCatalogCacheTests : IDisposable
     {
         var catalogDirectory = Path.Combine(workingDirectory, "sqlite");
         Directory.CreateDirectory(catalogDirectory);
-        var targetPath = Path.Combine(catalogDirectory, "catalog_cache.sqlite");
-        WriteSqliteFixture(targetPath);
+
+        new SqliteCatalogFixtureBuilder()
+            .AddCatalogItem(item => item
+                .WithIdentifiers("fn:fngame", "fn", "Fortnite")
+                .WithTitle("Fortnite Deluxe")
+                .AddTags("action", "battle-royale")
+                .AddKeyImage("DieselGameBox", uri: "https://cdn.epicgames.com/fn/fortnite_diesel.jpg", path: "C:/Games/Epic/Fortnite/Images/diesel.jpg"))
+            .AddCatalogItem(item => item
+                .WithIdentifiers("rocket:rlgame", "rocket", "RocketLeague")
+                .WithTitle("Rocket League")
+                .AddTags("sports", "soccer")
+                .AddKeyImage("OfferImageWide", uri: "https://cdn.epicgames.com/rocket/rocketleague_wide.jpg"))
+            .Build(catalogDirectory);
 
         using var cache = new EpicCatalogCache(
             new FakeEpicLauncherLocator(catalogDirectories: new[] { catalogDirectory }),
@@ -97,12 +109,5 @@ public sealed class EpicCatalogCacheTests : IDisposable
     private static string GetFixturePath(string relative)
     {
         return Path.Combine(AppContext.BaseDirectory, "Fixtures", relative.Replace('/', Path.DirectorySeparatorChar));
-    }
-
-    private static void WriteSqliteFixture(string targetPath)
-    {
-        var base64 = File.ReadAllText(GetFixturePath("Catalog/catalog_cache.sqlite.b64"));
-        var bytes = Convert.FromBase64String(base64);
-        File.WriteAllBytes(targetPath, bytes);
     }
 }
