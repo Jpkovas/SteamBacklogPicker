@@ -58,12 +58,12 @@ public sealed class EpicCatalogCacheTests : IDisposable
 
         new SqliteCatalogFixtureBuilder()
             .AddCatalogItem(item => item
-                .WithIdentifiers("fn:fngame", "fn", "Fortnite")
+                .WithIdentifiers("fngame", "fn", "Fortnite")
                 .WithTitle("Fortnite Deluxe")
                 .AddTags("action", "battle-royale")
                 .AddKeyImage("DieselGameBox", uri: "https://cdn.epicgames.com/fn/fortnite_diesel.jpg", path: "C:/Games/Epic/Fortnite/Images/diesel.jpg"))
             .AddCatalogItem(item => item
-                .WithIdentifiers("rocket:rlgame", "rocket", "RocketLeague")
+                .WithIdentifiers("rlgame", "rocket", "RocketLeague")
                 .WithTitle("Rocket League")
                 .AddTags("sports", "soccer")
                 .AddKeyImage("OfferImageWide", uri: "https://cdn.epicgames.com/rocket/rocketleague_wide.jpg"))

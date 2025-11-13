@@ -1,5 +1,6 @@
 # Quick Changes
 
+- Fixed the Epic catalog SQLite fixture IDs to avoid double namespacing so store identifiers match production behavior.
 - Replaced the Epic catalog SQLite fixture blob with a SQL builder so tests no longer ship binary data.
 - Updated the Epic catalog SQLite fixture to include offer key images so composite art tests pass.
 - Added a storefront-aware launch service plus Epic launch/install handling in the UI and tests covering Epic scenarios.
