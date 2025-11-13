@@ -14,6 +14,23 @@ public sealed class EpicCatalogCache : IDisposable
 {
     private static readonly string[] JsonExtensions = [".json", ".js", ".catalog"];
     private static readonly string[] SqliteExtensions = [".sqlite", ".db", ".cache"];
+    private static readonly string[] CatalogIdentifierProperties =
+    [
+        "CatalogItemId", "catalogItemId", "id", "offerId",
+        "CatalogNamespace", "catalogNamespace", "namespace", "namespaceId",
+        "AppName", "appName", "technicalName",
+        "DisplayName", "displayName", "title", "name", "appTitle"
+    ];
+
+    private static readonly string[] TagValueProperties =
+    [
+        "path", "value", "name", "tag", "label", "keyword"
+    ];
+
+    private static readonly string[] TagCollectionProperties =
+    [
+        "items", "values", "tags", "nodes", "entries"
+    ];
 
     private readonly IEpicLauncherLocator launcherLocator;
     private readonly IFileAccessor fileAccessor;
@@ -618,8 +635,25 @@ public sealed class EpicCatalogCache : IDisposable
         CollectTagsFromElement(element, tags, "tags");
         CollectTagsFromElement(element, tags, "keywords");
 
-        var size = TryGetLong(element, "InstallSize", "installSize", "diskSize", "size");
-        var lastModified = TryGetDate(element, "LastModified", "lastModified", "updated", "updatedAt");
+        var size = TryGetLong(
+            element,
+            "InstallSize",
+            "installSize",
+            "diskSize",
+            "size",
+            "downloadSize",
+            "download_size",
+            "downloadSizeBytes",
+            "downloadBytes");
+        var lastModified = TryGetDate(
+            element,
+            "LastModified",
+            "lastModified",
+            "updated",
+            "updatedAt",
+            "lastUpdated",
+            "modified",
+            "modifiedDate");
 
         var keyImages = ParseKeyImages(element);
 
@@ -641,37 +675,60 @@ public sealed class EpicCatalogCache : IDisposable
 
     private static IEnumerable<JsonElement> EnumerateCatalogElements(JsonElement root)
     {
-        if (root.ValueKind == JsonValueKind.Array)
+        var queue = new Queue<JsonElement>();
+        queue.Enqueue(root);
+
+        while (queue.Count > 0)
         {
-            foreach (var element in root.EnumerateArray())
+            var current = queue.Dequeue();
+
+            if (LooksLikeCatalogEntry(current))
             {
-                if (element.ValueKind == JsonValueKind.Object)
-                {
-                    yield return element;
-                }
+                yield return current;
             }
 
-            yield break;
-        }
-
-        if (root.ValueKind == JsonValueKind.Object)
-        {
-            foreach (var property in new[] { "elements", "items", "data", "CatalogItems", "catalogItems" })
+            if (current.ValueKind == JsonValueKind.Array)
             {
-                if (root.TryGetProperty(property, out var collection) && collection.ValueKind == JsonValueKind.Array)
+                foreach (var child in current.EnumerateArray())
                 {
-                    foreach (var element in collection.EnumerateArray())
+                    queue.Enqueue(child);
+                }
+
+                continue;
+            }
+
+            if (current.ValueKind == JsonValueKind.Object)
+            {
+                foreach (var property in current.EnumerateObject())
+                {
+                    var value = property.Value;
+                    if (value.ValueKind == JsonValueKind.Object || value.ValueKind == JsonValueKind.Array)
                     {
-                        if (element.ValueKind == JsonValueKind.Object)
-                        {
-                            yield return element;
-                        }
+                        queue.Enqueue(value);
                     }
                 }
             }
-
-            yield return root;
         }
+    }
+
+    private static bool LooksLikeCatalogEntry(JsonElement element)
+    {
+        if (element.ValueKind != JsonValueKind.Object)
+        {
+            return false;
+        }
+
+        foreach (var property in element.EnumerateObject())
+        {
+            if (MatchesProperty(property.Name, CatalogIdentifierProperties) &&
+                property.Value.ValueKind != JsonValueKind.Null &&
+                property.Value.ValueKind != JsonValueKind.Undefined)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static void CollectTagsFromElement(JsonElement element, HashSet<string> tags, string propertyName)
@@ -681,35 +738,65 @@ public sealed class EpicCatalogCache : IDisposable
             return;
         }
 
-        if (value.ValueKind == JsonValueKind.Array)
+        CollectTagsFromValue(value, tags);
+    }
+
+    private static void CollectTagsFromValue(JsonElement value, HashSet<string> tags)
+    {
+        switch (value.ValueKind)
         {
-            foreach (var item in value.EnumerateArray())
-            {
-                if (item.ValueKind == JsonValueKind.String)
+            case JsonValueKind.Array:
+                foreach (var item in value.EnumerateArray())
                 {
-                    var text = item.GetString();
-                    if (!string.IsNullOrWhiteSpace(text))
+                    CollectTagsFromValue(item, tags);
+                }
+
+                break;
+
+            case JsonValueKind.Object:
+                foreach (var property in value.EnumerateObject())
+                {
+                    if (MatchesProperty(property.Name, TagValueProperties) &&
+                        property.Value.ValueKind == JsonValueKind.String)
                     {
-                        tags.Add(text!);
+                        AddTagFromString(tags, property.Value.GetString());
+                        continue;
+                    }
+
+                    if (MatchesProperty(property.Name, TagCollectionProperties) &&
+                        (property.Value.ValueKind == JsonValueKind.Object || property.Value.ValueKind == JsonValueKind.Array))
+                    {
+                        CollectTagsFromValue(property.Value, tags);
                     }
                 }
-                else if (item.ValueKind == JsonValueKind.Object && item.TryGetProperty("path", out var path))
-                {
-                    var text = path.GetString();
-                    if (!string.IsNullOrWhiteSpace(text))
-                    {
-                        tags.Add(text!);
-                    }
-                }
-            }
+
+                break;
+
+            case JsonValueKind.String:
+                AddTagFromString(tags, value.GetString());
+                break;
         }
-        else if (value.ValueKind == JsonValueKind.String)
+    }
+
+    private static void AddTagFromString(HashSet<string> tags, string? value)
+    {
+        foreach (var tag in ParseTags(value))
         {
-            foreach (var tag in ParseTags(value.GetString()))
+            tags.Add(tag);
+        }
+    }
+
+    private static bool MatchesProperty(string name, string[] candidates)
+    {
+        foreach (var candidate in candidates)
+        {
+            if (string.Equals(candidate, name, StringComparison.OrdinalIgnoreCase))
             {
-                tags.Add(tag);
+                return true;
             }
         }
+
+        return false;
     }
 
     private static string? TryGetString(JsonElement element, params string[] names)

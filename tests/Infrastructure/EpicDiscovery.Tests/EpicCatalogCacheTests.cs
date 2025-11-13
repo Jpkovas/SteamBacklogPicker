@@ -91,6 +91,54 @@ public sealed class EpicCatalogCacheTests : IDisposable
                 image.Uri == "https://cdn.epicgames.com/rocket/rocketleague_wide.jpg"));
     }
 
+    [Fact]
+    public void GetCatalogEntries_ShouldParseNestedCatalogContainers()
+    {
+        var catalogDirectory = PrepareCatalogDirectory("Catalog/catalog_nested.json");
+
+        using var cache = new EpicCatalogCache(
+            new FakeEpicLauncherLocator(catalogDirectories: new[] { catalogDirectory }),
+            new TestFileAccessor());
+
+        var entries = cache.GetCatalogEntries();
+
+        entries.Should().HaveCount(2);
+
+        var deepGame = entries.Should().ContainSingle(entry => entry.Id.StoreSpecificId == "nested:deepgame").Subject;
+        deepGame.SizeOnDisk.Should().Be(54321);
+        deepGame.LastModified.Should().Be(DateTimeOffset.Parse("2024-05-01T12:00:00Z"));
+        deepGame.Tags.Should().BeEquivalentTo(new[] { "adventure", "story", "narrative", "co-op" });
+
+        var builderGame = entries.Should().ContainSingle(entry => entry.Id.StoreSpecificId == "nested:buildergame").Subject;
+        builderGame.SizeOnDisk.Should().Be(7654321);
+        builderGame.LastModified.Should().Be(DateTimeOffset.Parse("2024-04-10T09:45:00Z"));
+        builderGame.Tags.Should().BeEquivalentTo(new[] { "simulation", "builder", "creative" });
+    }
+
+    [Fact]
+    public void GetCatalogEntries_ShouldParseWrappedCatalogItems()
+    {
+        var catalogDirectory = PrepareCatalogDirectory("Catalog/catalog_wrapped.json");
+
+        using var cache = new EpicCatalogCache(
+            new FakeEpicLauncherLocator(catalogDirectories: new[] { catalogDirectory }),
+            new TestFileAccessor());
+
+        var entries = cache.GetCatalogEntries();
+
+        entries.Should().HaveCount(2);
+
+        var wrappedGame = entries.Should().ContainSingle(entry => entry.Id.StoreSpecificId == "wrapped:wrappedgame").Subject;
+        wrappedGame.SizeOnDisk.Should().Be(24680);
+        wrappedGame.LastModified.Should().Be(DateTimeOffset.Parse("2024-02-01T08:00:00Z"));
+        wrappedGame.Tags.Should().BeEquivalentTo(new[] { "arcade", "retro" });
+
+        var timeTravelers = entries.Should().ContainSingle(entry => entry.Id.StoreSpecificId == "wrapped:timetravelers").Subject;
+        timeTravelers.SizeOnDisk.Should().Be(13579);
+        timeTravelers.LastModified.Should().Be(DateTimeOffset.Parse("2024-03-15T11:20:00Z"));
+        timeTravelers.Tags.Should().BeEquivalentTo(new[] { "rpg", "sci-fi", "time-travel" });
+    }
+
     public void Dispose()
     {
         try
@@ -109,5 +157,13 @@ public sealed class EpicCatalogCacheTests : IDisposable
     private static string GetFixturePath(string relative)
     {
         return Path.Combine(AppContext.BaseDirectory, "Fixtures", relative.Replace('/', Path.DirectorySeparatorChar));
+    }
+
+    private string PrepareCatalogDirectory(string fixtureRelativePath)
+    {
+        var catalogDirectory = Path.Combine(workingDirectory, Path.GetFileNameWithoutExtension(fixtureRelativePath) ?? "catalog");
+        Directory.CreateDirectory(catalogDirectory);
+        File.Copy(GetFixturePath(fixtureRelativePath), Path.Combine(catalogDirectory, Path.GetFileName(fixtureRelativePath)!));
+        return catalogDirectory;
     }
 }
