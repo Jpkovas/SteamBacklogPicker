@@ -8,3 +8,4 @@
 - Fixed Epic catalog parsing to accept camelCase fields and adjusted Epic cache tests for namespaced IDs.
 - Added the full Microsoft.Data.Sqlite bundle so Epic catalog cache tests can read SQLite fixtures.
 - Corrected the Epic catalog SQLite builder to double-quote table names and serialize key images as a parseable array.
+- Made the Epic catalog SQLite builder rows internal so the builder's Build method compiles in CI again.

@@ -119,7 +119,7 @@ public sealed class SqliteCatalogFixtureBuilder
         }
     }
 
-    private sealed record CatalogItemRow(
+    internal sealed record CatalogItemRow(
         string? CatalogItemId,
         string? CatalogNamespace,
         string? AppName,
