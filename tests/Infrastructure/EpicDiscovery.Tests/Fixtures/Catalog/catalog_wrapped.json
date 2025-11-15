@@ -1,0 +1,36 @@
+[
+  {
+    "data": {
+      "catalogItems": [
+        {
+          "namespaceId": "wrapped",
+          "offerId": "wrappedgame",
+          "appTitle": "Wrapped Game",
+          "downloadSize": 24680,
+          "updatedAt": "2024-02-01T08:00:00Z",
+          "tags": {
+            "values": [
+              { "value": "arcade" },
+              "retro"
+            ]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "data": {
+      "items": [
+        {
+          "catalogNamespace": "wrapped",
+          "catalogItemId": "timetravelers",
+          "title": "Time Travelers",
+          "downloadBytes": "13579",
+          "modified": "2024-03-15T11:20:00Z",
+          "genres": ["rpg"],
+          "tags": "sci-fi;time-travel"
+        }
+      ]
+    }
+  }
+]
