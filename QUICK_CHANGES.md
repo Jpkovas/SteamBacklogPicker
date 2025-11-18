@@ -1,6 +1,8 @@
 # Quick Changes
 
 - Added nested Epic catalog fixtures plus parser/test updates so wrapped JSON formats yield correct IDs, sizes, dates, and tags.
+- Ignored Epic catalog elements missing both catalog item IDs and app names so namespace wrappers stop producing placeholder games.
+- Prevented Epic catalog parsing from emitting placeholder entries when nested containers lack identifiers.
 - Fixed the Epic catalog SQLite fixture IDs to avoid double namespacing so store identifiers match production behavior.
 - Replaced the Epic catalog SQLite fixture blob with a SQL builder so tests no longer ship binary data.
 - Updated the Epic catalog SQLite fixture to include offer key images so composite art tests pass.
