@@ -621,12 +621,12 @@ public sealed class EpicCatalogCache : IDisposable
         var catalogItemId = TryGetString(element, "CatalogItemId", "catalogItemId", "id", "offerId");
         var catalogNamespace = TryGetString(element, "CatalogNamespace", "catalogNamespace", "namespace", "namespaceId");
         var appName = TryGetString(element, "AppName", "appName", "technicalName");
-        var title = TryGetString(element, "DisplayName", "displayName", "title", "name", "appTitle") ??
-                    appName ?? catalogItemId;
+        var displayTitle = TryGetString(element, "DisplayName", "displayName", "title", "name", "appTitle");
+        var title = displayTitle ?? appName ?? catalogItemId;
 
         if (string.IsNullOrWhiteSpace(catalogItemId) &&
-            string.IsNullOrWhiteSpace(catalogNamespace) &&
-            string.IsNullOrWhiteSpace(appName))
+            string.IsNullOrWhiteSpace(appName) &&
+            string.IsNullOrWhiteSpace(displayTitle))
         {
             return null;
         }
