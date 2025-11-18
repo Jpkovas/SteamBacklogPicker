@@ -1,11 +1,13 @@
 # Recent Changes
 
+- Consolidated the change history into this single file and removed the redundant QUICK_CHANGES.md summary.
 - Expanded the Epic catalog parser with nested/wrapped JSON fixtures so cache loading handles alternative tag/date/size formats.
 - Stopped emitting Epic catalog entries when elements lack both a catalog item ID and app name, preventing namespace wrappers from appearing as placeholder games.
 - Tightened Epic catalog entry validation so nested containers no longer emit placeholder entries without identifiers.
 - Corrected the Epic catalog SQLite test fixture to stop double-prefixing store-specific IDs so cache tests align with production parsing.
 - Fixed the Epic catalog SQLite builder by making its row record internal so `CatalogItemBuilder.Build` can emit rows without accessibility errors.
 - Replaced the Epic catalog SQLite fixture blob with a reusable builder that materializes the test database via Microsoft.Data.Sqlite.
+- Corrected the Epic catalog SQLite builder to double-quote table names and serialize key images as a parseable array.
 - Added an in-app launch service with Epic protocol support and updated viewmodels/tests to respect Epic install criteria.
 - Fixed the Epic launch service constructor to avoid nullable method group usage and restore the UI build.
 - Updated the Epic catalog SQLite fixture to store offer key image metadata so hero art parsing covers Rocket League.
