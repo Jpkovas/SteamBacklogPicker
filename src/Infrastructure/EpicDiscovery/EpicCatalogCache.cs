@@ -624,7 +624,9 @@ public sealed class EpicCatalogCache : IDisposable
         var title = TryGetString(element, "DisplayName", "displayName", "title", "name", "appTitle") ??
                     appName ?? catalogItemId;
 
-        if (string.IsNullOrWhiteSpace(title) && string.IsNullOrWhiteSpace(catalogItemId))
+        if (string.IsNullOrWhiteSpace(catalogItemId) &&
+            string.IsNullOrWhiteSpace(catalogNamespace) &&
+            string.IsNullOrWhiteSpace(appName))
         {
             return null;
         }
