@@ -625,8 +625,7 @@ public sealed class EpicCatalogCache : IDisposable
         var title = displayTitle ?? appName ?? catalogItemId;
 
         if (string.IsNullOrWhiteSpace(catalogItemId) &&
-            string.IsNullOrWhiteSpace(appName) &&
-            string.IsNullOrWhiteSpace(displayTitle))
+            string.IsNullOrWhiteSpace(appName))
         {
             return null;
         }
