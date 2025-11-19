@@ -1,5 +1,6 @@
 # Recent Changes
 
+- Added an Epic hero art cache that downloads catalog key images into AppData, plumbs it through metadata fetchers/locators, and adds offline tests to prove cached artwork resolves without network access.
 - Buffered the Epic discovery stub HTTP handler so GraphQL tests can inspect payloads without hitting disposed content exceptions.
 - Added offline Epic discovery regression tests covering the GraphQL client, metadata fetcher, and authentication token cache using stubbed HTTP handlers and local token fixtures.
 - Expanded the Epic catalog table whitelist with a regex that covers OfflineOffers/pluralized names, plus SQLite fixtures/tests documenting the naming convention.

@@ -19,4 +19,14 @@ internal sealed class TestFileAccessor : IFileAccessor
     {
         return File.OpenRead(path);
     }
+
+    public void CreateDirectory(string path)
+    {
+        Directory.CreateDirectory(path);
+    }
+
+    public void WriteAllBytes(string path, byte[] contents)
+    {
+        File.WriteAllBytes(path, contents);
+    }
 }

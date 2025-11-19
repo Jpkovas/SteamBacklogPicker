@@ -179,5 +179,9 @@ public sealed class SteamVdfFallbackTests : IDisposable
         public Stream OpenRead(string path) => File.OpenRead(path);
 
         public string ReadAllText(string path) => File.ReadAllText(path);
+
+        public void CreateDirectory(string path) => Directory.CreateDirectory(path);
+
+        public void WriteAllBytes(string path, byte[] contents) => File.WriteAllBytes(path, contents);
     }
 }

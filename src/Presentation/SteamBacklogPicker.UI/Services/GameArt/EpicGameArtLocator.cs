@@ -23,11 +23,13 @@ public sealed class EpicGameArtLocator : IGameArtLocator
     ];
 
     private readonly EpicMetadataCache metadataCache;
+    private readonly EpicHeroArtCache heroArtCache;
     private readonly IFileAccessor fileAccessor;
 
-    public EpicGameArtLocator(EpicMetadataCache metadataCache, IFileAccessor fileAccessor)
+    public EpicGameArtLocator(EpicMetadataCache metadataCache, EpicHeroArtCache heroArtCache, IFileAccessor fileAccessor)
     {
         this.metadataCache = metadataCache ?? throw new ArgumentNullException(nameof(metadataCache));
+        this.heroArtCache = heroArtCache ?? throw new ArgumentNullException(nameof(heroArtCache));
         this.fileAccessor = fileAccessor ?? throw new ArgumentNullException(nameof(fileAccessor));
     }
 
@@ -93,6 +95,12 @@ public sealed class EpicGameArtLocator : IGameArtLocator
 
         if (!string.IsNullOrWhiteSpace(image.Uri))
         {
+            var cached = heroArtCache.TryGetCachedPath(image.Uri);
+            if (!string.IsNullOrWhiteSpace(cached) && fileAccessor.FileExists(cached))
+            {
+                return cached;
+            }
+
             return image.Uri;
         }
 

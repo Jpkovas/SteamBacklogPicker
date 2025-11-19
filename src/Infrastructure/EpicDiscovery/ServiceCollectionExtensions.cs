@@ -1,6 +1,8 @@
 using System;
 using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using SteamClientAdapter;
 
 namespace EpicDiscovery;
 
@@ -26,6 +28,10 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<EpicCatalogCache>();
         services.AddSingleton<EpicAuthenticationClient>();
         services.AddSingleton<EpicGraphQlClient>();
+        services.AddSingleton<EpicHeroArtCache>(sp => new EpicHeroArtCache(
+            sp.GetRequiredService<HttpClient>(),
+            sp.GetRequiredService<IFileAccessor>(),
+            sp.GetService<ILogger<EpicHeroArtCache>>()));
         services.AddSingleton<EpicMetadataFetcher>();
         services.AddSingleton<EpicMetadataCache>();
         services.AddSingleton<EpicEntitlementCache>();

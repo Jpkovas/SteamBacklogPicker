@@ -1,9 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading;
+using System.Threading.Tasks;
 using Domain;
 using EpicDiscovery;
 using FluentAssertions;
@@ -84,16 +87,44 @@ public sealed class GameArtLocatorTests
         result.Should().Be(context.RemoteImageUri);
     }
 
+    [Fact]
+    public async Task EpicGameArtLocator_ShouldReturnCachedPath_WhenRemoteImageCached()
+    {
+        var handler = new StaticImageHttpHandler("https://example.com/hero.jpg");
+        using var context = EpicCatalogContext.Create(
+            includeLocalImage: false,
+            includeRemoteImage: true,
+            httpHandler: handler);
+        await context.PrimeHeroArtCacheAsync();
+        handler.DisableNetwork();
+
+        var locator = context.CreateEpicLocator();
+        var game = context.CreateEpicGame();
+
+        var result = locator.FindHeroImage(game);
+
+        var cachedPath = context.GetCachedRemoteImagePath();
+        cachedPath.Should().NotBeNull();
+        result.Should().Be(cachedPath);
+        File.Exists(result!).Should().BeTrue();
+    }
+
     private sealed class EpicCatalogContext : IDisposable
     {
         private readonly string workingDirectory;
         private readonly IFileAccessor fileAccessor;
         private readonly EpicCatalogCache catalogCache;
         private readonly EpicMetadataCache metadataCache;
+        private readonly EpicHeroArtCache heroArtCache;
         private readonly string catalogItemId;
         private readonly string catalogNamespace;
 
-        private EpicCatalogContext(bool includeImages, bool includeLocalImage, bool includeRemoteImage)
+        private EpicCatalogContext(
+            bool includeImages,
+            bool includeLocalImage,
+            bool includeRemoteImage,
+            HttpMessageHandler? httpHandler = null,
+            string? heroArtDirectory = null)
         {
             workingDirectory = Path.Combine(Path.GetTempPath(), "EpicGameArtLocatorTests", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(workingDirectory);
@@ -154,9 +185,15 @@ public sealed class GameArtLocatorTests
             File.WriteAllText(Path.Combine(workingDirectory, "catalog.json"), json);
 
             fileAccessor = new DefaultFileAccessor();
+            var httpClient = httpHandler is null ? new HttpClient() : new HttpClient(httpHandler);
+            var cacheDirectory = heroArtDirectory ?? Path.Combine(workingDirectory, "hero-art");
+            heroArtCache = new EpicHeroArtCache(httpClient, fileAccessor, cacheDirectory: cacheDirectory);
             var launcherLocator = new StaticEpicLauncherLocator(workingDirectory);
             catalogCache = new EpicCatalogCache(launcherLocator, fileAccessor);
-            metadataCache = new EpicMetadataCache(catalogCache, new EpicMetadataFetcher(new HttpClient()));
+            metadataCache = new EpicMetadataCache(
+                catalogCache,
+                new EpicMetadataFetcher(httpClient, heroArtCache),
+                heroArtCache);
             GameIdentifier = new GameIdentifier
             {
                 Storefront = Storefront.EpicGamesStore,
@@ -170,14 +207,19 @@ public sealed class GameArtLocatorTests
 
         public GameIdentifier GameIdentifier { get; }
 
-        public static EpicCatalogContext Create(bool includeLocalImage, bool includeRemoteImage, bool includeImages = true)
+        public static EpicCatalogContext Create(
+            bool includeLocalImage,
+            bool includeRemoteImage,
+            bool includeImages = true,
+            HttpMessageHandler? httpHandler = null,
+            string? heroArtDirectory = null)
         {
-            return new EpicCatalogContext(includeImages, includeLocalImage, includeRemoteImage);
+            return new EpicCatalogContext(includeImages, includeLocalImage, includeRemoteImage, httpHandler, heroArtDirectory);
         }
 
         public EpicGameArtLocator CreateEpicLocator()
         {
-            return new EpicGameArtLocator(metadataCache, fileAccessor);
+            return new EpicGameArtLocator(metadataCache, heroArtCache, fileAccessor);
         }
 
         public GameEntry CreateEpicGame()
@@ -187,6 +229,22 @@ public sealed class GameArtLocatorTests
                 Id = GameIdentifier,
                 Title = "Test App"
             };
+        }
+
+        public async Task PrimeHeroArtCacheAsync()
+        {
+            if (RemoteImageUri is null)
+            {
+                return;
+            }
+
+            var image = new EpicKeyImage { Type = "DieselGameBox", Uri = RemoteImageUri };
+            await heroArtCache.PopulateAsync(new[] { image }).ConfigureAwait(false);
+        }
+
+        public string? GetCachedRemoteImagePath()
+        {
+            return heroArtCache.TryGetCachedPath(RemoteImageUri);
         }
 
         public void Dispose()
@@ -221,6 +279,42 @@ public sealed class GameArtLocatorTests
         public IReadOnlyCollection<string> GetCatalogDirectories() => catalogDirectories;
 
         public string? GetLauncherInstalledDatPath() => null;
+    }
+
+    private sealed class StaticImageHttpHandler : HttpMessageHandler
+    {
+        private readonly string target;
+        private bool networkEnabled = true;
+
+        public StaticImageHttpHandler(string target)
+        {
+            this.target = target;
+        }
+
+        public void DisableNetwork()
+        {
+            networkEnabled = false;
+        }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            if (!networkEnabled)
+            {
+                throw new InvalidOperationException("Network access disabled for test");
+            }
+
+            if (request.RequestUri is not null &&
+                string.Equals(request.RequestUri.ToString(), target, StringComparison.OrdinalIgnoreCase))
+            {
+                var response = new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new ByteArrayContent(new byte[] { 1, 2, 3 })
+                };
+                return Task.FromResult(response);
+            }
+
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
+        }
     }
 
     private sealed class FakeSteamLibraryLocator : ISteamLibraryLocator

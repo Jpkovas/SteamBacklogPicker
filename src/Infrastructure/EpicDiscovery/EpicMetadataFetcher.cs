@@ -1,6 +1,9 @@
+using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
 namespace EpicDiscovery;
@@ -11,11 +14,13 @@ public sealed class EpicMetadataFetcher
     private static readonly Uri GraphqlEndpoint = new("https://graphql.epicgames.com/graphql");
 
     private readonly HttpClient httpClient;
+    private readonly EpicHeroArtCache heroArtCache;
     private readonly ILogger<EpicMetadataFetcher>? logger;
 
-    public EpicMetadataFetcher(HttpClient httpClient, ILogger<EpicMetadataFetcher>? logger = null)
+    public EpicMetadataFetcher(HttpClient httpClient, EpicHeroArtCache heroArtCache, ILogger<EpicMetadataFetcher>? logger = null)
     {
         this.httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+        this.heroArtCache = heroArtCache ?? throw new ArgumentNullException(nameof(heroArtCache));
         this.logger = logger;
     }
 
@@ -32,7 +37,7 @@ public sealed class EpicMetadataFetcher
                 var offer = await QueryCatalogOfferAsync(entitlement, cancellationToken).ConfigureAwait(false);
                 if (offer is not null)
                 {
-                    return offer;
+                    return await PopulateHeroArtAsync(offer, cancellationToken).ConfigureAwait(false);
                 }
 
                 if (!string.IsNullOrWhiteSpace(entitlement.AppName))
@@ -40,7 +45,7 @@ public sealed class EpicMetadataFetcher
                     var fromContent = await FetchFromContentServiceAsync(entitlement.AppName!, entitlement, cancellationToken).ConfigureAwait(false);
                     if (fromContent is not null)
                     {
-                        return fromContent;
+                        return await PopulateHeroArtAsync(fromContent, cancellationToken).ConfigureAwait(false);
                     }
                 }
             }
@@ -221,5 +226,18 @@ public sealed class EpicMetadataFetcher
             Type = type ?? string.Empty,
             Uri = url,
         };
+    }
+
+    private async Task<EpicCatalogItem> PopulateHeroArtAsync(EpicCatalogItem item, CancellationToken cancellationToken)
+    {
+        if (item.KeyImages is null || item.KeyImages.Count == 0)
+        {
+            return item;
+        }
+
+        var cached = await heroArtCache.PopulateAsync(item.KeyImages, cancellationToken).ConfigureAwait(false);
+        return ReferenceEquals(cached, item.KeyImages)
+            ? item
+            : item with { KeyImages = cached };
     }
 }
