@@ -36,6 +36,8 @@ public sealed class SteamClientAdapter : ISteamClientAdapter, IDisposable
 
     public bool Initialize(string libraryPath)
     {
+        ThrowIfDisposed();
+
         if (_initialized)
         {
             return true;
@@ -81,6 +83,8 @@ public sealed class SteamClientAdapter : ISteamClientAdapter, IDisposable
 
     public IReadOnlyCollection<uint> GetInstalledAppIds()
     {
+        ThrowIfDisposed();
+
         if (_initialized && _isAppInstalled is not null)
         {
             var installed = new List<uint>();
@@ -103,6 +107,8 @@ public sealed class SteamClientAdapter : ISteamClientAdapter, IDisposable
 
     public bool IsSubscribedFromFamilySharing(uint appId)
     {
+        ThrowIfDisposed();
+
         if (_initialized && _isSubscribedFromFamilySharing is not null)
         {
             return _isSubscribedFromFamilySharing(_steamAppsPointer, appId);
@@ -131,10 +137,7 @@ public sealed class SteamClientAdapter : ISteamClientAdapter, IDisposable
 
     private void Reset()
     {
-        if (_initialized)
-        {
-            _initialized = false;
-        }
+        _initialized = false;
 
         if (_libraryHandle != IntPtr.Zero)
         {
@@ -148,6 +151,14 @@ public sealed class SteamClientAdapter : ISteamClientAdapter, IDisposable
         _steamAppsAccessor = null;
         _isAppInstalled = null;
         _isSubscribedFromFamilySharing = null;
+    }
+
+    private void ThrowIfDisposed()
+    {
+        if (_disposed)
+        {
+            throw new ObjectDisposedException(nameof(SteamClientAdapter));
+        }
     }
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
