@@ -1,6 +1,6 @@
 using SteamClientAdapter;
 
-namespace SteamBacklogPicker.UI.Services.Environment;
+namespace SteamBacklogPicker.UI.Services.Runtime;
 
 public interface ISteamEnvironment
 {

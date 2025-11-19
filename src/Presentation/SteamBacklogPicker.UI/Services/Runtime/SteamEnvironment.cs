@@ -4,8 +4,11 @@ using System.IO;
 using SteamClientAdapter;
 using SteamDiscovery;
 
-namespace SteamBacklogPicker.UI.Services.Environment;
+namespace SteamBacklogPicker.UI.Services.Runtime;
 
+/// <summary>
+/// Provides runtime facilities for resolving the Steam installation directory and initializing the native client adapter.
+/// </summary>
 public sealed class SteamEnvironment : ISteamEnvironment
 {
     private readonly ISteamRegistryReader _registryReader;
@@ -61,13 +64,13 @@ public sealed class SteamEnvironment : ISteamEnvironment
             return registryPath;
         }
 
-        var environmentPath = System.Environment.GetEnvironmentVariable("STEAM_PATH");
+        var environmentPath = Environment.GetEnvironmentVariable("STEAM_PATH");
         if (!string.IsNullOrWhiteSpace(environmentPath) && Directory.Exists(environmentPath))
         {
             return environmentPath;
         }
 
-        var programFilesX86 = System.Environment.GetFolderPath(System.Environment.SpecialFolder.ProgramFilesX86);
+        var programFilesX86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
         if (!string.IsNullOrWhiteSpace(programFilesX86))
         {
             var candidate = Path.Combine(programFilesX86, "Steam");
@@ -77,7 +80,7 @@ public sealed class SteamEnvironment : ISteamEnvironment
             }
         }
 
-        var localAppData = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
+        var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         if (!string.IsNullOrWhiteSpace(localAppData))
         {
             var candidate = Path.Combine(localAppData, "Steam");
