@@ -3,7 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Xml.Linq;
 using FluentAssertions;
-using SteamBacklogPicker.UI.Services;
+using SteamBacklogPicker.UI.Services.Localization;
 using Xunit;
 
 namespace SteamBacklogPicker.UI.Tests;

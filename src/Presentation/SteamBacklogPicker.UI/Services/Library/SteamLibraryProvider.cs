@@ -7,7 +7,7 @@ using Domain;
 using SteamClientAdapter;
 using SteamDiscovery;
 
-namespace SteamBacklogPicker.UI.Services;
+namespace SteamBacklogPicker.UI.Services.Library;
 
 public sealed class SteamLibraryProvider : IGameLibraryProvider
 {

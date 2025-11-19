@@ -4,7 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using Domain;
 using Domain.Selection;
-using SteamBacklogPicker.UI.Services;
+using SteamBacklogPicker.UI.Services.Localization;
 
 namespace SteamBacklogPicker.UI.ViewModels;
 

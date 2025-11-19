@@ -1,7 +1,7 @@
 using Domain;
 using EpicDiscovery;
 using FluentAssertions;
-using SteamBacklogPicker.UI.Services;
+using SteamBacklogPicker.UI.Services.Launch;
 using Xunit;
 
 namespace SteamBacklogPicker.UI.Tests;

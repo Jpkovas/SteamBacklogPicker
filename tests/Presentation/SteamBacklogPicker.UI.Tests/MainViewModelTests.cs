@@ -8,7 +8,11 @@ using System.Threading.Tasks;
 using Domain;
 using Domain.Selection;
 using FluentAssertions;
-using SteamBacklogPicker.UI.Services;
+using SteamBacklogPicker.UI.Services.GameArt;
+using SteamBacklogPicker.UI.Services.Launch;
+using SteamBacklogPicker.UI.Services.Library;
+using SteamBacklogPicker.UI.Services.Localization;
+using SteamBacklogPicker.UI.Services.Notifications;
 using SteamBacklogPicker.UI.ViewModels;
 using Xunit;
 

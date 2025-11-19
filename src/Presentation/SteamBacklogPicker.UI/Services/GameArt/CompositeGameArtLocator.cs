@@ -1,7 +1,7 @@
 using System;
 using Domain;
 
-namespace SteamBacklogPicker.UI.Services;
+namespace SteamBacklogPicker.UI.Services.GameArt;
 
 public sealed class CompositeGameArtLocator : IGameArtLocator
 {

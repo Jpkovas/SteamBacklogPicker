@@ -3,7 +3,7 @@ using System.IO;
 using CommunityToolkit.WinUI.Notifications;
 using Domain;
 
-namespace SteamBacklogPicker.UI.Services;
+namespace SteamBacklogPicker.UI.Services.Notifications;
 
 public sealed class ToastNotificationService : IToastNotificationService
 {

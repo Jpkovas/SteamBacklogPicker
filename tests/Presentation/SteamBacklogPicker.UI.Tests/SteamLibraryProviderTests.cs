@@ -6,7 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Domain;
 using FluentAssertions;
-using SteamBacklogPicker.UI.Services;
+using SteamBacklogPicker.UI.Services.Library;
 using SteamClientAdapter;
 using SteamDiscovery;
 using ValveFormatParser;

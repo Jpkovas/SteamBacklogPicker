@@ -1,4 +1,4 @@
-namespace SteamBacklogPicker.UI.Services;
+namespace SteamBacklogPicker.UI.Services.Launch;
 
 /// <summary>
 /// Aggregates launch and installation metadata for a specific game selection.

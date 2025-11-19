@@ -25,3 +25,4 @@
 - Expanded the Epic catalog SQLite parser to include offer tables, restoring Rocket League entries in cache lookups.
 - Fixed Epic entitlement cache deserialization and aligned Epic art locator tests with the metadata cache API to restore the build.
 - Removed stray Steam art debug transcripts (`debug_steam_art.txt`, `output.txt`) and ignored them to keep the repository free of local log noise.
+- Reorganized the UI service layer into feature-focused namespaces (GameArt, Library, Launch, etc.) and updated DI/tests to make the service surface easier to navigate.

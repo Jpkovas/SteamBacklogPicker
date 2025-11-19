@@ -2,7 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Domain;
-using SteamBacklogPicker.UI.Services;
+using SteamBacklogPicker.UI.Services.Launch;
+using SteamBacklogPicker.UI.Services.Localization;
 
 namespace SteamBacklogPicker.UI.ViewModels;
 

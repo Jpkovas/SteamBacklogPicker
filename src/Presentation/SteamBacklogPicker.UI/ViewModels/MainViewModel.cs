@@ -6,7 +6,11 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using Domain;
 using Domain.Selection;
-using SteamBacklogPicker.UI.Services;
+using SteamBacklogPicker.UI.Services.GameArt;
+using SteamBacklogPicker.UI.Services.Launch;
+using SteamBacklogPicker.UI.Services.Library;
+using SteamBacklogPicker.UI.Services.Localization;
+using SteamBacklogPicker.UI.Services.Notifications;
 
 namespace SteamBacklogPicker.UI.ViewModels;
 

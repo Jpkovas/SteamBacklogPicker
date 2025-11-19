@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Domain;
 using EpicDiscovery;
 
-namespace SteamBacklogPicker.UI.Services;
+namespace SteamBacklogPicker.UI.Services.Library;
 
 public sealed class EpicLibraryProvider : IGameLibraryProvider
 {
