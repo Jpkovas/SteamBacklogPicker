@@ -85,7 +85,7 @@ public sealed class SteamApiMocks
 
         public IntPtr Handle { get; } = new(42);
 
-        public IReadOnlyList<uint> InstalledAppIds { get; set; }
+        public IReadOnlyList<uint> InstalledAppIds { get; set; } = Array.Empty<uint>();
 
         public bool Init() => InitResult;
 

@@ -1,5 +1,6 @@
 # Recent Changes
 
+- Initialized the Steam API test double with an empty InstalledAppIds collection to quiet nullable CI warnings.
 - Queried installed app IDs directly from the Steamworks app list API, falling back to VDF parsing only when the native handle is unavailable.
 - Added disposal guards to the Steam client adapter to prevent reuse after cleanup and ensure initialization state resets correctly.
 - Updated the README to highlight the unified Steam/Epic flow, offline hero art cache, and the current telemetry/privacy story.
