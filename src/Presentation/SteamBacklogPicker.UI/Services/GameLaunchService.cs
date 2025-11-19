@@ -18,10 +18,10 @@ public sealed class GameLaunchService : IGameLaunchService
     {
     }
 
-    public GameLaunchService(EpicCatalogCache? epicCatalogCache)
-        : this(epicCatalogCache is null
+    public GameLaunchService(EpicMetadataCache? metadataCache)
+        : this(metadataCache is null
             ? null
-            : new Func<GameIdentifier, EpicCatalogItem?>(epicCatalogCache.GetCatalogEntry))
+            : new Func<GameIdentifier, EpicCatalogItem?>(metadataCache.GetCatalogEntry))
     {
     }
 
@@ -72,10 +72,10 @@ public sealed class GameLaunchService : IGameLaunchService
     private GameLaunchOptions BuildEpicOptions(GameEntry game)
     {
         var catalogEntry = epicCatalogLookup?.Invoke(game.Id);
-        var (appName, catalogItemId, catalogNamespace) = ResolveEpicMetadata(game, catalogEntry);
+        var (appName, catalogItemId, catalogNamespace, productSlug) = ResolveEpicMetadata(game, catalogEntry);
 
         var launchAction = BuildEpicLaunchAction(game.InstallState, appName);
-        var installAction = BuildEpicInstallAction(game.InstallState, catalogItemId, catalogNamespace);
+        var installAction = BuildEpicInstallAction(game.InstallState, catalogItemId, catalogNamespace, productSlug);
 
         return new GameLaunchOptions(launchAction, installAction, appName, catalogItemId, catalogNamespace);
     }
@@ -103,7 +103,7 @@ public sealed class GameLaunchService : IGameLaunchService
         return GameLaunchAction.Supported(protocol);
     }
 
-    private static GameLaunchAction BuildEpicInstallAction(InstallState installState, string? catalogItemId, string? catalogNamespace)
+    private static GameLaunchAction BuildEpicInstallAction(InstallState installState, string? catalogItemId, string? catalogNamespace, string? productSlug)
     {
         var canInstall = installState is InstallState.Available or InstallState.Shared or InstallState.Unknown;
         if (!canInstall)
@@ -116,13 +116,18 @@ public sealed class GameLaunchService : IGameLaunchService
             return GameLaunchAction.Unsupported("Epic metadata is missing the catalog item identifier required to install this title.");
         }
 
-        var slug = BuildEpicProductSlug(catalogItemId, catalogNamespace);
+        var slug = BuildEpicProductSlug(catalogItemId, catalogNamespace, productSlug);
         var protocol = $"com.epicgames.launcher://store/product/{slug}?action=install";
         return GameLaunchAction.Supported(protocol);
     }
 
-    private static string BuildEpicProductSlug(string catalogItemId, string? catalogNamespace)
+    private static string BuildEpicProductSlug(string catalogItemId, string? catalogNamespace, string? productSlug)
     {
+        if (!string.IsNullOrWhiteSpace(productSlug))
+        {
+            return Uri.EscapeUriString(productSlug);
+        }
+
         var encodedItemId = Uri.EscapeDataString(catalogItemId);
         if (string.IsNullOrWhiteSpace(catalogNamespace))
         {
@@ -133,11 +138,12 @@ public sealed class GameLaunchService : IGameLaunchService
         return $"{encodedNamespace}/{encodedItemId}";
     }
 
-    private static (string? AppName, string? CatalogItemId, string? CatalogNamespace) ResolveEpicMetadata(GameEntry game, EpicCatalogItem? catalogEntry)
+    private static (string? AppName, string? CatalogItemId, string? CatalogNamespace, string? ProductSlug) ResolveEpicMetadata(GameEntry game, EpicCatalogItem? catalogEntry)
     {
         var appName = Normalize(catalogEntry?.AppName);
         var catalogItemId = Normalize(catalogEntry?.CatalogItemId);
         var catalogNamespace = Normalize(catalogEntry?.CatalogNamespace);
+        var productSlug = Normalize(catalogEntry?.ProductSlug);
 
         if (string.IsNullOrWhiteSpace(appName))
         {
@@ -151,7 +157,7 @@ public sealed class GameLaunchService : IGameLaunchService
             catalogNamespace ??= inferredNamespace;
         }
 
-        return (appName, catalogItemId, catalogNamespace);
+        return (appName, catalogItemId, catalogNamespace, productSlug);
     }
 
     private static string? Normalize(string? value)

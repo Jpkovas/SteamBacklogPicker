@@ -9,16 +9,27 @@ namespace EpicDiscovery;
 public sealed class EpicGameLibrary : IEpicGameLibrary
 {
     private readonly EpicManifestCache manifestCache;
-    private readonly EpicCatalogCache catalogCache;
+    private readonly EpicMetadataCache metadataCache;
+    private readonly EpicEntitlementCache entitlementCache;
 
-    public EpicGameLibrary(EpicManifestCache manifestCache, EpicCatalogCache catalogCache)
+    public EpicGameLibrary(
+        EpicManifestCache manifestCache,
+        EpicMetadataCache metadataCache,
+        EpicEntitlementCache entitlementCache)
     {
         this.manifestCache = manifestCache ?? throw new ArgumentNullException(nameof(manifestCache));
-        this.catalogCache = catalogCache ?? throw new ArgumentNullException(nameof(catalogCache));
+        this.metadataCache = metadataCache ?? throw new ArgumentNullException(nameof(metadataCache));
+        this.entitlementCache = entitlementCache ?? throw new ArgumentNullException(nameof(entitlementCache));
     }
 
-    public Task<IReadOnlyCollection<GameEntry>> GetLibraryAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyCollection<GameEntry>> GetLibraryAsync(CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        manifestCache.Refresh();
+        metadataCache.RefreshLocalCaches();
+        var entitlements = await entitlementCache.RefreshAsync(cancellationToken).ConfigureAwait(false);
+
         var installed = manifestCache.GetInstalledGames();
         var results = new Dictionary<GameIdentifier, GameEntry>(installed.Count);
 
@@ -28,7 +39,21 @@ public sealed class EpicGameLibrary : IEpicGameLibrary
             results[entry.Id] = entry;
         }
 
-        var catalogEntries = catalogCache.GetCatalogEntries();
+        foreach (var entitlement in entitlements)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var metadata = await metadataCache.EnsureMetadataAsync(entitlement, cancellationToken).ConfigureAwait(false);
+            if (results.TryGetValue(entitlement.Id, out var existing))
+            {
+                results[entitlement.Id] = MergeInstalledWithEntitlement(existing, entitlement, metadata);
+            }
+            else
+            {
+                results[entitlement.Id] = CreateOwnedEntry(entitlement, metadata);
+            }
+        }
+
+        var catalogEntries = metadataCache.GetAllCatalogEntries();
         foreach (var catalogEntry in catalogEntries)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -56,7 +81,45 @@ public sealed class EpicGameLibrary : IEpicGameLibrary
             .ThenBy(entry => entry.Id.StoreSpecificId, StringComparer.OrdinalIgnoreCase)
             .ToArray();
 
-        return Task.FromResult<IReadOnlyCollection<GameEntry>>(ordered);
+        return ordered;
+    }
+
+    private static GameEntry MergeInstalledWithEntitlement(GameEntry installed, EpicEntitlement entitlement, EpicCatalogItem? metadata)
+    {
+        var title = !string.IsNullOrWhiteSpace(installed.Title)
+            ? installed.Title
+            : metadata?.Title ?? entitlement.Title;
+        var size = installed.SizeOnDisk ?? metadata?.SizeOnDisk;
+        var lastPlayed = installed.LastPlayed ?? metadata?.LastModified;
+        var tags = installed.Tags
+            .Concat(metadata?.Tags ?? Array.Empty<string>())
+            .Where(tag => !string.IsNullOrWhiteSpace(tag))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        return installed with
+        {
+            Title = title,
+            SizeOnDisk = size,
+            LastPlayed = lastPlayed,
+            OwnershipType = OwnershipType.Owned,
+            InstallState = installed.InstallState == InstallState.Unknown ? InstallState.Available : installed.InstallState,
+            Tags = tags,
+        };
+    }
+
+    private static GameEntry CreateOwnedEntry(EpicEntitlement entitlement, EpicCatalogItem? metadata)
+    {
+        return new GameEntry
+        {
+            Id = entitlement.Id,
+            Title = metadata?.Title ?? entitlement.Title,
+            OwnershipType = OwnershipType.Owned,
+            InstallState = InstallState.Available,
+            SizeOnDisk = metadata?.SizeOnDisk,
+            LastPlayed = metadata?.LastModified,
+            Tags = metadata?.Tags ?? Array.Empty<string>(),
+        };
     }
 
     private static GameEntry MergeEntries(GameEntry installed, EpicCatalogItem catalog)

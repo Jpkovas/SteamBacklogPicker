@@ -131,7 +131,7 @@ public partial class App : Application
             sp.GetRequiredService<EpicGameArtLocator>()));
         services.AddSingleton<ILocalizationService, LocalizationService>();
         services.AddSingleton<IToastNotificationService, ToastNotificationService>();
-        services.AddSingleton<IGameLaunchService>(sp => new GameLaunchService(sp.GetService<EpicCatalogCache>()));
+        services.AddSingleton<IGameLaunchService>(sp => new GameLaunchService(sp.GetService<EpicMetadataCache>()));
         services.AddSingleton<IAppUpdateService, SquirrelUpdateService>();
         services.AddSingleton<MainViewModel>();
         services.AddTransient<MainWindow>();

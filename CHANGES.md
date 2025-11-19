@@ -1,6 +1,7 @@
 # Recent Changes
 
 - Consolidated the change history into this single file and removed the redundant QUICK_CHANGES.md summary.
+- Added Epic entitlement-backed discovery with GraphQL metadata hydration so Epic libraries and artwork stay complete even when launcher caches are empty.
 - Expanded the Epic catalog parser with nested/wrapped JSON fixtures so cache loading handles alternative tag/date/size formats.
 - Stopped emitting Epic catalog entries when elements lack both a catalog item ID and app name, preventing namespace wrappers from appearing as placeholder games.
 - Tightened Epic catalog entry validation so nested containers no longer emit placeholder entries without identifiers.
