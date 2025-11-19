@@ -65,3 +65,7 @@ Desktop.ini
 *.bak
 *.orig
 *.rej
+
+# Local debug dumps accidentally produced while tracing Steam art detection
+debug_steam_art.txt
+output.txt
