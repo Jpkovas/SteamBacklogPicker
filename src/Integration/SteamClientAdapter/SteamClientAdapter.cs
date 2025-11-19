@@ -21,12 +21,16 @@ public sealed class SteamClientAdapter : ISteamClientAdapter, IDisposable
     private bool _initialized;
     private bool _disposed;
     private IntPtr _steamAppsPointer;
+    private IntPtr _steamAppListPointer;
 
     private SteamAPI_InitDelegate? _steamApiInit;
     private SteamAPI_ShutdownDelegate? _steamApiShutdown;
     private SteamAPI_SteamAppsDelegate? _steamAppsAccessor;
     private SteamAPI_ISteamApps_BIsAppInstalledDelegate? _isAppInstalled;
     private SteamAPI_ISteamApps_BIsSubscribedFromFamilySharingDelegate? _isSubscribedFromFamilySharing;
+    private SteamAPI_SteamAppListDelegate? _steamAppListAccessor;
+    private SteamAPI_ISteamAppList_GetNumInstalledAppsDelegate? _getNumInstalledApps;
+    private SteamAPI_ISteamAppList_GetInstalledAppsDelegate? _getInstalledApps;
 
     public SteamClientAdapter(INativeLibraryLoader loader, ISteamVdfFallback fallback)
     {
@@ -51,6 +55,9 @@ public sealed class SteamClientAdapter : ISteamClientAdapter, IDisposable
             _steamAppsAccessor = _loader.GetDelegate<SteamAPI_SteamAppsDelegate>(_libraryHandle, "SteamAPI_SteamApps");
             _isAppInstalled = _loader.GetDelegate<SteamAPI_ISteamApps_BIsAppInstalledDelegate>(_libraryHandle, "SteamAPI_ISteamApps_BIsAppInstalled");
             _isSubscribedFromFamilySharing = _loader.GetDelegate<SteamAPI_ISteamApps_BIsSubscribedFromFamilySharingDelegate>(_libraryHandle, "SteamAPI_ISteamApps_BIsSubscribedFromFamilySharing");
+            _steamAppListAccessor = _loader.GetDelegate<SteamAPI_SteamAppListDelegate>(_libraryHandle, "SteamAPI_SteamAppList");
+            _getNumInstalledApps = _loader.GetDelegate<SteamAPI_ISteamAppList_GetNumInstalledAppsDelegate>(_libraryHandle, "SteamAPI_ISteamAppList_GetNumInstalledApps");
+            _getInstalledApps = _loader.GetDelegate<SteamAPI_ISteamAppList_GetInstalledAppsDelegate>(_libraryHandle, "SteamAPI_ISteamAppList_GetInstalledApps");
 
             if (_steamApiInit is null || !_steamApiInit())
             {
@@ -71,6 +78,11 @@ public sealed class SteamClientAdapter : ISteamClientAdapter, IDisposable
                 return false;
             }
 
+            if (_steamAppListAccessor is not null)
+            {
+                _steamAppListPointer = _steamAppListAccessor();
+            }
+
             _initialized = true;
             return true;
         }
@@ -84,6 +96,12 @@ public sealed class SteamClientAdapter : ISteamClientAdapter, IDisposable
     public IReadOnlyCollection<uint> GetInstalledAppIds()
     {
         ThrowIfDisposed();
+
+        var installedAppIds = GetInstalledAppIdsFromSteamApi();
+        if (installedAppIds.Count > 0)
+        {
+            return installedAppIds;
+        }
 
         if (_initialized && _isAppInstalled is not null)
         {
@@ -103,6 +121,35 @@ public sealed class SteamClientAdapter : ISteamClientAdapter, IDisposable
         }
 
         return _fallback.GetInstalledAppIds();
+    }
+
+    private IReadOnlyCollection<uint> GetInstalledAppIdsFromSteamApi()
+    {
+        if (!_initialized || _steamAppListPointer == IntPtr.Zero || _getNumInstalledApps is null || _getInstalledApps is null)
+        {
+            return Array.Empty<uint>();
+        }
+
+        var appCount = _getNumInstalledApps(_steamAppListPointer);
+        if (appCount <= 0)
+        {
+            return Array.Empty<uint>();
+        }
+
+        var appIds = new uint[appCount];
+        var populatedCount = _getInstalledApps(_steamAppListPointer, appIds, appIds.Length);
+        if (populatedCount <= 0)
+        {
+            return Array.Empty<uint>();
+        }
+
+        var installedApps = new List<uint>(populatedCount);
+        for (var index = 0; index < populatedCount && index < appIds.Length; index++)
+        {
+            installedApps.Add(appIds[index]);
+        }
+
+        return installedApps;
     }
 
     public bool IsSubscribedFromFamilySharing(uint appId)
@@ -151,6 +198,10 @@ public sealed class SteamClientAdapter : ISteamClientAdapter, IDisposable
         _steamAppsAccessor = null;
         _isAppInstalled = null;
         _isSubscribedFromFamilySharing = null;
+        _steamAppListPointer = IntPtr.Zero;
+        _steamAppListAccessor = null;
+        _getNumInstalledApps = null;
+        _getInstalledApps = null;
     }
 
     private void ThrowIfDisposed()
@@ -175,4 +226,13 @@ public sealed class SteamClientAdapter : ISteamClientAdapter, IDisposable
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     internal delegate bool SteamAPI_ISteamApps_BIsSubscribedFromFamilySharingDelegate(IntPtr self, uint appId);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    internal delegate IntPtr SteamAPI_SteamAppListDelegate();
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    internal delegate int SteamAPI_ISteamAppList_GetNumInstalledAppsDelegate(IntPtr self);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    internal delegate int SteamAPI_ISteamAppList_GetInstalledAppsDelegate(IntPtr self, [In, Out] uint[] appIds, int maxAppIds);
 }
