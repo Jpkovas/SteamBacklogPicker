@@ -1,18 +1,17 @@
 # SteamBacklogPicker
 
-SteamBacklogPicker is a Windows desktop app that helps you pick the next game from your Steam and Epic libraries without relying on any cloud services. The application reads data directly from the Steam client and Epic Games Launcher caches installed on your PC, so everything stays on your machine and works even when you are offline.
+SteamBacklogPicker is a WPF desktop app that helps you pick the next game from your Steam and Epic libraries without relying on any cloud services. The application reads data directly from the Steam client and Epic Games Launcher caches stored on your PC, so everything stays on your machine and works even when you are offline.
 
-## Why players use SteamBacklogPicker
+## Key capabilities
 
-- **Runs entirely locally** – library discovery, filtering, and randomisation all happen on your computer; no account credentials or game data ever leave your device.
-- **Compatible with Steam Family libraries** – browse and draw from your own library or any family-shared collection that is accessible through your Steam client.
-- **Filter using your Steam collections** – target exactly the games you care about by selecting custom collections, tags, or installed status before the picker spins.
-- Cache manifest metadata for instant start-up and smooth offline sessions.
-- Highlight install status alongside the selected game so you know whether you can jump in immediately.
-- Showcase rich cover art, tags, and ownership context for the drawn game, falling back to Steam's CDN when the local cache is missing.
-- Enjoy a refreshed dark theme with responsive cards, clearer calls to action, and an animated "Sorteando" overlay while the picker spins.
+- **Unified Steam + Epic library** – discover, filter, and draw from both storefronts at once, including shared Steam Family libraries.
+- **Offline-first metadata** – Steam manifests, Epic catalog/entitlement caches, and the built-in hero art downloader are mirrored locally so cover art and install status remain available without a network connection.
+- **Collection-aware filtering** – constrain the picker with Steam collections, tags, installed status, storefront, or any mix of the above before spinning.
+- **Actionable selection cards** – each draw highlights install state, storefront context, and launchability so you know whether you can jump in immediately.
+- **Epic Games integration without authentication** – manifests, catalog JSON, SQLite caches, and GraphQL metadata are parsed locally; no Epic credentials ever leave your machine.
+- **Structured diagnostics** – opt-in telemetry emits anonymised usage events, while detailed logs are written under `%LOCALAPPDATA%\SteamBacklogPicker\logs` for troubleshooting.
+- **Modern UI polish** – responsive dark theme, cover art overlays, and an animated “Sorteando” state keep the picker fun to use.
 - Weighted randomisation and long-form descriptions remain on the roadmap and will arrive in a future update.
-- Emit structured logs and (optional) telemetry to help with troubleshooting.
 
 ## System requirements
 
@@ -42,12 +41,13 @@ SteamBacklogPicker is a Windows desktop app that helps you pick the next game fr
    dotnet run --project src/Presentation/SteamBacklogPicker.UI/SteamBacklogPicker.UI.csproj
    ```
 
-## Epic Games Store integration
+## Steam and Epic discovery details
 
-- Epic entries are surfaced by scanning the same directories the Epic Games Launcher uses for manifests and catalog caches, with overrides available through configuration.
-- The app never authenticates against Epic services; it parses the local `.item`, `.json`, and `.sqlite` caches so Epic titles remain available offline alongside your Steam library.
+- SteamBacklogPicker reads the same manifest directories (`steamapps`, Epic `.item` manifest files, and catalog SQLite caches) that the official launchers maintain. Paths can be overridden through configuration when you keep your library on another drive.
+- Epic entries continue to resolve hero art offline thanks to the bundled catalog key image cache and composite art locator. When a hero image is missing locally the app falls back to Steam's CDN or Epic's catalog metadata depending on the storefront.
+- The Epic discovery client hydrates metadata through local caches first and only hits GraphQL endpoints when no cached entitlement exists, keeping the app functional even when the Epic launcher is closed.
 - When the launcher relocates its cache folders you can point SteamBacklogPicker at the new location via the `EpicDiscovery` options in `appsettings.json`.
 
 ## Telemetry and privacy
 
-Telemetry is disabled by default. When a user enables telemetry, only anonymised usage events (such as application start, selection success, and unhandled exceptions) are captured. Logs are written locally under `%LOCALAPPDATA%\SteamBacklogPicker\logs` and can be purged by the user at any time.
+Telemetry is disabled by default. When a user enables telemetry, only anonymised usage events (such as application start, selection success, and unhandled exceptions) are captured. Logs are written locally under `%LOCALAPPDATA%\SteamBacklogPicker\logs` and can be purged by the user at any time. No Steam or Epic credentials are collected, and Epic discovery uses cached manifests/catalog entries instead of authenticated APIs.
