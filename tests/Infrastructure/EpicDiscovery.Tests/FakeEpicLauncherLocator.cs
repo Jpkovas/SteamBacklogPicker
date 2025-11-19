@@ -25,4 +25,9 @@ internal sealed class FakeEpicLauncherLocator : IEpicLauncherLocator
     {
         return catalogDirectories;
     }
+
+    public string? GetLauncherInstalledDatPath()
+    {
+        return null;
+    }
 }

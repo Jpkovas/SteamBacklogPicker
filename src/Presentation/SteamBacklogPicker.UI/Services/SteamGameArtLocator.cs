@@ -34,10 +34,17 @@ public sealed class SteamGameArtLocator : IGameArtLocator
 
         var candidateFiles = new[]
         {
+            // Old flat structure
             $"{appId}_header.jpg",
             $"{appId}_capsule_616x353.jpg",
             $"{appId}_library_hero.jpg",
-            $"{appId}_library_600x900.jpg"
+            $"{appId}_library_600x900.jpg",
+
+            // New subdirectory structure
+            Path.Combine(appId.ToString(), "header.jpg"),
+            Path.Combine(appId.ToString(), "library_hero.jpg"),
+            Path.Combine(appId.ToString(), "library_600x900.jpg"),
+            Path.Combine(appId.ToString(), "capsule_616x353.jpg")
         };
 
         foreach (var library in _libraryLocator.GetLibraryFolders())
