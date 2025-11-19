@@ -30,16 +30,24 @@ public sealed class EpicGraphQlClient
         }
 
         using var request = BuildLibraryRequest(token!);
-        using var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            logger?.LogWarning("Epic GraphQL request failed with status {StatusCode}", response.StatusCode);
+            using var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                logger?.LogWarning("Epic GraphQL request failed with status {StatusCode}", response.StatusCode);
+                return Array.Empty<EpicEntitlement>();
+            }
+
+            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+            using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken).ConfigureAwait(false);
+            return ParseEntitlements(document.RootElement).ToArray();
+        }
+        catch (HttpRequestException ex)
+        {
+            logger?.LogWarning(ex, "Epic GraphQL request failed; returning cached entitlements only");
             return Array.Empty<EpicEntitlement>();
         }
-
-        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-        using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken).ConfigureAwait(false);
-        return ParseEntitlements(document.RootElement).ToArray();
     }
 
     private static HttpRequestMessage BuildLibraryRequest(string token)

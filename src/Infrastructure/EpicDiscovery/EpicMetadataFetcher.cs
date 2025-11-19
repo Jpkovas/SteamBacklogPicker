@@ -44,11 +44,19 @@ public sealed class EpicMetadataFetcher
                     }
                 }
             }
-            catch (Exception ex) when (attempts < 2)
+            catch (HttpRequestException ex)
             {
-                var delay = TimeSpan.FromSeconds(Math.Pow(2, attempts));
-                logger?.LogWarning(ex, "Epic metadata fetch failed (attempt {Attempt}); retrying in {Delay}s", attempts + 1, delay.TotalSeconds);
-                await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+                if (attempts < 2)
+                {
+                    var delay = TimeSpan.FromSeconds(Math.Pow(2, attempts));
+                    logger?.LogWarning(ex, "Epic metadata fetch failed (attempt {Attempt}); retrying in {Delay}s", attempts + 1, delay.TotalSeconds);
+                    await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    logger?.LogWarning(ex, "Epic metadata fetch failed after {Attempt} attempts; skipping remote metadata", attempts + 1);
+                    return null;
+                }
             }
 
             attempts++;
