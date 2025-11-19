@@ -1,5 +1,6 @@
 # Recent Changes
 
+- Renamed the UI environment service namespace to `Services.Runtime` and cleaned up `Environment` usage so runtime helpers no longer collide with `System.Environment`.
 - Localized the GameLaunchService error messages via the shared localization service, threading DI updates plus bilingual unit tests to keep GameDetails launch/install errors accurate.
 - Removed completed TODO entries for the Epic catalog SQLite builder and nested JSON regression fixtures so the backlog only tracks outstanding Epic discovery work.
 - Consolidated the change history into this single file and removed the redundant QUICK_CHANGES.md summary.

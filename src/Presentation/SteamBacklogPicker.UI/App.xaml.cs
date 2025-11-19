@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog.Events;
 using Infrastructure.Telemetry;
-using SteamBacklogPicker.UI.Services.Environment;
+using SteamBacklogPicker.UI.Services.Runtime;
 using SteamBacklogPicker.UI.Services.GameArt;
 using SteamBacklogPicker.UI.Services.Launch;
 using SteamBacklogPicker.UI.Services.Library;
