@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using CommunityToolkit.WinUI.Notifications;
 using Domain;
+using SteamBacklogPicker.UI.Services.Localization;
 
 namespace SteamBacklogPicker.UI.Services.Notifications;
 

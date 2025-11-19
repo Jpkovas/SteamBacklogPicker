@@ -28,7 +28,7 @@ public sealed class SquirrelUpdateService : IAppUpdateService
 
         try
         {
-            var accessToken = Environment.GetEnvironmentVariable("SBP_GITHUB_TOKEN");
+            var accessToken = System.Environment.GetEnvironmentVariable("SBP_GITHUB_TOKEN");
             using var updateManager = new UpdateManager(new GithubSource(RepositoryUrl, accessToken, prerelease: false));
             cancellationToken.ThrowIfCancellationRequested();
 
