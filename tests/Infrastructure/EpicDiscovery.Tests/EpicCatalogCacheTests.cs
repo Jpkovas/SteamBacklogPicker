@@ -92,6 +92,33 @@ public sealed class EpicCatalogCacheTests : IDisposable
     }
 
     [Fact]
+    public void GetCatalogEntries_ShouldParseOfflineOfferTables()
+    {
+        var catalogDirectory = Path.Combine(workingDirectory, "offline_sqlite");
+        Directory.CreateDirectory(catalogDirectory);
+
+        new SqliteCatalogFixtureBuilder()
+            .WithTableName("OfflineOffers")
+            .WithFileName("offline_offers.sqlite")
+            .AddCatalogItem(item => item
+                .WithIdentifiers("rlgame", "rocket", "RocketLeague")
+                .WithTitle("Rocket League Offline Offer")
+                .AddTags("sports")
+                .AddKeyImage("OfferImageWide", uri: "https://cdn.epicgames.com/rocket/rocketleague_wide.jpg"))
+            .Build(catalogDirectory);
+
+        using var cache = new EpicCatalogCache(
+            new FakeEpicLauncherLocator(catalogDirectories: new[] { catalogDirectory }),
+            new TestFileAccessor());
+
+        var entries = cache.GetCatalogEntries();
+
+        var rocketLeague = entries.Should().ContainSingle(entry => entry.Id.StoreSpecificId == "rocket:rlgame").Subject;
+        rocketLeague.Title.Should().Be("Rocket League Offline Offer");
+        rocketLeague.Tags.Should().Contain("sports");
+    }
+
+    [Fact]
     public void GetCatalogEntries_ShouldParseNestedCatalogContainers()
     {
         var catalogDirectory = PrepareCatalogDirectory("Catalog/catalog_nested.json");
