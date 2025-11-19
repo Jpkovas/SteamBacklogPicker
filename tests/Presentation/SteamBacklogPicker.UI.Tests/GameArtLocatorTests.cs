@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Domain;
@@ -88,6 +89,7 @@ public sealed class GameArtLocatorTests
         private readonly string workingDirectory;
         private readonly IFileAccessor fileAccessor;
         private readonly EpicCatalogCache catalogCache;
+        private readonly EpicMetadataCache metadataCache;
         private readonly string catalogItemId;
         private readonly string catalogNamespace;
 
@@ -154,6 +156,7 @@ public sealed class GameArtLocatorTests
             fileAccessor = new DefaultFileAccessor();
             var launcherLocator = new StaticEpicLauncherLocator(workingDirectory);
             catalogCache = new EpicCatalogCache(launcherLocator, fileAccessor);
+            metadataCache = new EpicMetadataCache(catalogCache, new EpicMetadataFetcher(new HttpClient()));
             GameIdentifier = new GameIdentifier
             {
                 Storefront = Storefront.EpicGamesStore,
@@ -174,7 +177,7 @@ public sealed class GameArtLocatorTests
 
         public EpicGameArtLocator CreateEpicLocator()
         {
-            return new EpicGameArtLocator(catalogCache, fileAccessor);
+            return new EpicGameArtLocator(metadataCache, fileAccessor);
         }
 
         public GameEntry CreateEpicGame()

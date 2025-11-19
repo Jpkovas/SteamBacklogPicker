@@ -218,7 +218,7 @@ public sealed class EpicMetadataFetcher
 
         return new EpicKeyImage
         {
-            Type = type,
+            Type = type ?? string.Empty,
             Uri = url,
         };
     }

@@ -84,7 +84,7 @@ public sealed class EpicEntitlementCache
                 var entitlement = ParseEntitlement(element);
                 if (entitlement is not null)
                 {
-                    entitlements[entitlement.Value.Id] = entitlement.Value;
+                    entitlements[entitlement.Id] = entitlement;
                 }
             }
         }
@@ -136,7 +136,7 @@ public sealed class EpicEntitlementCache
         var catalogItemId = TryGetString(element, "CatalogItemId");
         var catalogNamespace = TryGetString(element, "CatalogNamespace");
         var appName = TryGetString(element, "AppName");
-        var title = TryGetString(element, "Title") ?? appName ?? catalogItemId ?? identifier.Value.StoreSpecificId;
+        var title = TryGetString(element, "Title") ?? appName ?? catalogItemId ?? identifier.StoreSpecificId;
 
         return new EpicEntitlement
         {

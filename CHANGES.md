@@ -23,3 +23,4 @@
 - Introduced Epic discovery infrastructure (locator, manifest/catalog caches, and DI wiring) to surface Epic Games Store entries alongside Steam data.
 - Restored Epic discovery logging dependencies and public catalog models so the build succeeds after locking disposal paths.
 - Expanded the Epic catalog SQLite parser to include offer tables, restoring Rocket League entries in cache lookups.
+- Fixed Epic entitlement cache deserialization and aligned Epic art locator tests with the metadata cache API to restore the build.
