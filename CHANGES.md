@@ -1,5 +1,6 @@
 # Recent Changes
 
+- Removed completed TODO entries for the Epic catalog SQLite builder and nested JSON regression fixtures so the backlog only tracks outstanding Epic discovery work.
 - Consolidated the change history into this single file and removed the redundant QUICK_CHANGES.md summary.
 - Added Epic entitlement-backed discovery with GraphQL metadata hydration so Epic libraries and artwork stay complete even when launcher caches are empty.
 - Expanded the Epic catalog parser with nested/wrapped JSON fixtures so cache loading handles alternative tag/date/size formats.
