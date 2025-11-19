@@ -1,5 +1,6 @@
 # Recent Changes
 
+- Queried installed app IDs directly from the Steamworks app list API, falling back to VDF parsing only when the native handle is unavailable.
 - Added disposal guards to the Steam client adapter to prevent reuse after cleanup and ensure initialization state resets correctly.
 - Updated the README to highlight the unified Steam/Epic flow, offline hero art cache, and the current telemetry/privacy story.
 - Added an Epic hero art cache that downloads catalog key images into AppData, plumbs it through metadata fetchers/locators, and adds offline tests to prove cached artwork resolves without network access.
