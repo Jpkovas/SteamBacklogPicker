@@ -61,13 +61,13 @@ public sealed class SteamEnvironment : ISteamEnvironment
             return registryPath;
         }
 
-        var environmentPath = Environment.GetEnvironmentVariable("STEAM_PATH");
+        var environmentPath = System.Environment.GetEnvironmentVariable("STEAM_PATH");
         if (!string.IsNullOrWhiteSpace(environmentPath) && Directory.Exists(environmentPath))
         {
             return environmentPath;
         }
 
-        var programFilesX86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
+        var programFilesX86 = System.Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
         if (!string.IsNullOrWhiteSpace(programFilesX86))
         {
             var candidate = Path.Combine(programFilesX86, "Steam");
@@ -77,7 +77,7 @@ public sealed class SteamEnvironment : ISteamEnvironment
             }
         }
 
-        var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        var localAppData = System.Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         if (!string.IsNullOrWhiteSpace(localAppData))
         {
             var candidate = Path.Combine(localAppData, "Steam");
