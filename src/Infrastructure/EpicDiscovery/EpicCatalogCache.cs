@@ -3,6 +3,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Domain;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
@@ -14,6 +15,9 @@ public sealed class EpicCatalogCache : IDisposable
 {
     private static readonly string[] JsonExtensions = [".json", ".js", ".catalog"];
     private static readonly string[] SqliteExtensions = [".sqlite", ".db", ".cache"];
+    private static readonly Regex CatalogTableNamePattern = new(
+        pattern: "(?i)(offlineoffers?|catalog(?:items?|offers?|entries?)?|items?|offers?)",
+        options: RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private static readonly string[] CatalogIdentifierProperties =
     [
         "CatalogItemId", "catalogItemId", "id", "offerId",
@@ -261,6 +265,12 @@ public sealed class EpicCatalogCache : IDisposable
         return results;
     }
 
+    /// <summary>
+    /// Determines if a SQLite table name follows the Epic catalog naming convention.
+    /// Epic currently emits tables such as <c>CatalogItems</c>, <c>CatalogOffers</c>,
+    /// <c>Offers</c>, and <c>OfflineOffers</c>; the regex keeps the parser resilient when
+    /// pluralizations or offline-specific variants are introduced.
+    /// </summary>
     private static bool IsCatalogTable(string tableName)
     {
         if (string.IsNullOrWhiteSpace(tableName))
@@ -268,9 +278,7 @@ public sealed class EpicCatalogCache : IDisposable
             return false;
         }
 
-        return tableName.Contains("catalog", StringComparison.OrdinalIgnoreCase) ||
-               tableName.Contains("item", StringComparison.OrdinalIgnoreCase) ||
-               tableName.Contains("offer", StringComparison.OrdinalIgnoreCase);
+        return CatalogTableNamePattern.IsMatch(tableName);
     }
 
     private EpicCatalogItem? ParseCatalogRow(SqliteDataReader reader)

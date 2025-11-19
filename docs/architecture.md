@@ -39,7 +39,7 @@ flowchart TB
 ```
 
 - **SteamClientAdapter**: abstrai chamadas à Steamworks.NET e converte respostas da Steam API para modelos internos.
-- **EpicDiscovery**: reúne `EpicManifestCache` e `EpicCatalogCache`, lendo os manifestos `.item` e os caches `.json/.sqlite` do Epic Games Launcher para unificar as bibliotecas sem depender de chamadas online.
+- **EpicDiscovery**: reúne `EpicManifestCache` e `EpicCatalogCache`, lendo os manifestos `.item` e os caches `.json/.sqlite` do Epic Games Launcher para unificar as bibliotecas sem depender de chamadas online. O cache cataloga tabelas nomeadas como `CatalogItems`, `Offers` ou `OfflineOffers`, garantindo que variações pluralizadas e ofertas offline sejam interpretadas automaticamente.
 - **LibraryRepository**: provê operações de leitura e caching de dados da biblioteca, protegendo o restante do sistema de mudanças no esquema de dados bruto.
 - **SelectionEngine**: aplica regras configuráveis (filtros, exclusões, prioridades) para escolher jogos candidatos e expõe resultados à camada de UI.
 - **UI (WPF)**: apresenta a biblioteca filtrada, permite escolher critérios e exibe o jogo sorteado.
