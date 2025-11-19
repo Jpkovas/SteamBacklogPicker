@@ -41,6 +41,30 @@ public sealed class GameDetailsViewModelTests
         viewModel.EpicCatalogItemId.Should().Be("catalog");
     }
 
+    [Theory]
+    [InlineData("en-US", "Install the game before launching it.")]
+    [InlineData("pt-BR", "Instale o jogo antes de executá-lo.")]
+    public void LaunchErrorMessage_IsLocalized(string languageCode, string expectedMessage)
+    {
+        var localization = new LocalizationService();
+        localization.SetLanguage(languageCode);
+
+        var entry = new GameEntry
+        {
+            Id = GameIdentifier.ForSteam(570),
+            Title = "Dota 2",
+            InstallState = InstallState.Available,
+        };
+
+        var launchService = new GameLaunchService(localization);
+        var launchOptions = launchService.GetLaunchOptions(entry);
+
+        var viewModel = GameDetailsViewModel.FromGame(entry, null, localization, launchOptions);
+
+        viewModel.LaunchErrorMessage.Should().Be(expectedMessage);
+        viewModel.CanLaunch.Should().BeFalse();
+    }
+
     private sealed class FakeLocalizationService : ILocalizationService
     {
         public event EventHandler? LanguageChanged

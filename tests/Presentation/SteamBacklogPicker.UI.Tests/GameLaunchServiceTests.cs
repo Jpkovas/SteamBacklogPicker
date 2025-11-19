@@ -2,6 +2,7 @@ using Domain;
 using EpicDiscovery;
 using FluentAssertions;
 using SteamBacklogPicker.UI.Services.Launch;
+using SteamBacklogPicker.UI.Services.Localization;
 using Xunit;
 
 namespace SteamBacklogPicker.UI.Tests;
@@ -32,7 +33,7 @@ public sealed class GameLaunchServiceTests
             CatalogNamespace = "epicnamespace",
         };
 
-        var service = new GameLaunchService(id => id.Equals(identifier) ? catalogItem : null);
+        var service = new GameLaunchService(CreateLocalization(), id => id.Equals(identifier) ? catalogItem : null);
 
         var options = service.GetLaunchOptions(entry);
 
@@ -67,7 +68,7 @@ public sealed class GameLaunchServiceTests
             CatalogNamespace = "epicnamespace",
         };
 
-        var service = new GameLaunchService(_ => catalogItem);
+        var service = new GameLaunchService(CreateLocalization(), _ => catalogItem);
 
         var options = service.GetLaunchOptions(entry);
 
@@ -75,5 +76,36 @@ public sealed class GameLaunchServiceTests
         options.Install.ProtocolUri.Should().Be("com.epicgames.launcher://store/product/epicnamespace/fortnite?action=install");
         options.Launch.IsSupported.Should().BeFalse();
         options.EpicCatalogNamespace.Should().Be("epicnamespace");
+    }
+
+    [Theory]
+    [InlineData("en-US", "Install the game before launching it.")]
+    [InlineData("pt-BR", "Instale o jogo antes de executá-lo.")]
+    public void GetLaunchOptions_LocalizesLaunchErrors(string languageCode, string expectedMessage)
+    {
+        var localization = CreateLocalization(languageCode);
+        var service = new GameLaunchService(localization);
+
+        var entry = new GameEntry
+        {
+            Id = GameIdentifier.ForSteam(440),
+            Title = "Team Fortress 2",
+            InstallState = InstallState.Available,
+        };
+
+        var options = service.GetLaunchOptions(entry);
+
+        options.Launch.IsSupported.Should().BeFalse();
+        options.Launch.ErrorMessage.Should().Be(expectedMessage);
+    }
+
+    private static LocalizationService CreateLocalization(string? language = null)
+    {
+        var localization = new LocalizationService();
+        if (!string.IsNullOrWhiteSpace(language))
+        {
+            localization.SetLanguage(language);
+        }
+        return localization;
     }
 }
