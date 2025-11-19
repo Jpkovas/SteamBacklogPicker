@@ -1,5 +1,6 @@
 # Recent Changes
 
+- Added offline Epic discovery regression tests covering the GraphQL client, metadata fetcher, and authentication token cache using stubbed HTTP handlers and local token fixtures.
 - Expanded the Epic catalog table whitelist with a regex that covers OfflineOffers/pluralized names, plus SQLite fixtures/tests documenting the naming convention.
 - Removed the deprecated `Services.Environment` namespace so runtime helpers no longer collide with `System.Environment` and the UI build succeeds again.
 - Localized the GameLaunchService error messages via the shared localization service, threading DI updates plus bilingual unit tests to keep GameDetails launch/install errors accurate.
