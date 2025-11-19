@@ -198,7 +198,7 @@ public sealed class EpicAuthenticationClient
         }
 
         var span = text.AsSpan(index);
-        var end = span.IndexOfAny('"', '\'', '\n', '\r', ' ');
+        var end = span.IndexOfAny("\"'\n\r ".AsSpan());
         if (end > 0)
         {
             span = span[..end];
