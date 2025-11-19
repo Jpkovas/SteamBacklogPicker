@@ -1,4 +1,5 @@
 using System;
+using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace EpicDiscovery;
@@ -19,9 +20,15 @@ public static class ServiceCollectionExtensions
             services.Configure(configure);
         }
 
+        services.AddSingleton<HttpClient>();
         services.AddSingleton<IEpicLauncherLocator, EpicLauncherLocator>();
         services.AddSingleton<EpicManifestCache>();
         services.AddSingleton<EpicCatalogCache>();
+        services.AddSingleton<EpicAuthenticationClient>();
+        services.AddSingleton<EpicGraphQlClient>();
+        services.AddSingleton<EpicMetadataFetcher>();
+        services.AddSingleton<EpicMetadataCache>();
+        services.AddSingleton<EpicEntitlementCache>();
         services.AddSingleton<IEpicGameLibrary, EpicGameLibrary>();
 
         return services;

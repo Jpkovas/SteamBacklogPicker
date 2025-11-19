@@ -15,6 +15,8 @@ public sealed record class EpicCatalogItem
 
     public string Title { get; init; } = string.Empty;
 
+    public string? ProductSlug { get; init; }
+
     public IReadOnlyCollection<string> Tags { get; init; } = Array.Empty<string>();
 
     public IReadOnlyCollection<EpicKeyImage> KeyImages { get; init; } = Array.Empty<EpicKeyImage>();

@@ -22,12 +22,12 @@ public sealed class EpicGameArtLocator : IGameArtLocator
         "Image"
     ];
 
-    private readonly EpicCatalogCache catalogCache;
+    private readonly EpicMetadataCache metadataCache;
     private readonly IFileAccessor fileAccessor;
 
-    public EpicGameArtLocator(EpicCatalogCache catalogCache, IFileAccessor fileAccessor)
+    public EpicGameArtLocator(EpicMetadataCache metadataCache, IFileAccessor fileAccessor)
     {
-        this.catalogCache = catalogCache ?? throw new ArgumentNullException(nameof(catalogCache));
+        this.metadataCache = metadataCache ?? throw new ArgumentNullException(nameof(metadataCache));
         this.fileAccessor = fileAccessor ?? throw new ArgumentNullException(nameof(fileAccessor));
     }
 
@@ -40,7 +40,7 @@ public sealed class EpicGameArtLocator : IGameArtLocator
             return null;
         }
 
-        var item = catalogCache.GetCatalogEntry(game.Id);
+        var item = metadataCache.GetCatalogEntry(game.Id);
         if (item is null)
         {
             return null;
