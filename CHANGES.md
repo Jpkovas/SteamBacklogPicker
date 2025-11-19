@@ -27,3 +27,4 @@
 - Removed stray Steam art debug transcripts (`debug_steam_art.txt`, `output.txt`) and ignored them to keep the repository free of local log noise.
 - Reorganized the UI service layer into feature-focused namespaces (GameArt, Library, Launch, etc.) and updated DI/tests to make the service surface easier to navigate.
 - Restored the toast notification service's localization dependency so UI builds pick up localized strings without compile errors.
+- Fully qualified runtime environment calls and modernized Epic slug escaping so the UI layer builds cleanly on Windows agents again.

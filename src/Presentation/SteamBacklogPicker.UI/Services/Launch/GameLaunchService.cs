@@ -125,7 +125,7 @@ public sealed class GameLaunchService : IGameLaunchService
     {
         if (!string.IsNullOrWhiteSpace(productSlug))
         {
-            return Uri.EscapeUriString(productSlug);
+            return Uri.EscapeDataString(productSlug);
         }
 
         var encodedItemId = Uri.EscapeDataString(catalogItemId);
