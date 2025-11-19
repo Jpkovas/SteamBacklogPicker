@@ -65,6 +65,13 @@ public sealed class LocalizationService : ILocalizationService
         ["Language_English"] = "Inglês",
         ["Common_GameCount_Singular"] = "{0} jogo",
         ["Common_GameCount_Plural"] = "{0} jogos",
+        ["GameLaunch_UnsupportedStorefront"] = "Esta loja ainda não oferece suporte ao lançamento pelo SteamBacklog Picker.",
+        ["GameLaunch_LaunchNotInstalled"] = "Instale o jogo antes de executá-lo.",
+        ["GameLaunch_SteamMissingAppId"] = "O identificador do aplicativo Steam está ausente para este jogo.",
+        ["GameLaunch_SteamAlreadyInstalled"] = "O jogo já está instalado via Steam.",
+        ["GameLaunch_EpicMissingAppName"] = "Os metadados da Epic não informam o nome do aplicativo necessário para iniciar este título.",
+        ["GameLaunch_EpicAlreadyInstalled"] = "O jogo já está instalado no Epic Games Launcher.",
+        ["GameLaunch_EpicMissingCatalogItem"] = "Os metadados da Epic não informam o identificador do item de catálogo necessário para instalar este título.",
     };
 
     private static readonly IReadOnlyDictionary<string, string> English = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -124,6 +131,13 @@ public sealed class LocalizationService : ILocalizationService
         ["Language_English"] = "English",
         ["Common_GameCount_Singular"] = "{0} game",
         ["Common_GameCount_Plural"] = "{0} games",
+        ["GameLaunch_UnsupportedStorefront"] = "This storefront does not support launching from SteamBacklog Picker yet.",
+        ["GameLaunch_LaunchNotInstalled"] = "Install the game before launching it.",
+        ["GameLaunch_SteamMissingAppId"] = "The Steam app identifier is missing for this game.",
+        ["GameLaunch_SteamAlreadyInstalled"] = "The game is already installed via Steam.",
+        ["GameLaunch_EpicMissingAppName"] = "Epic metadata is missing the application name required to launch this title.",
+        ["GameLaunch_EpicAlreadyInstalled"] = "The game is already installed via the Epic Games Launcher.",
+        ["GameLaunch_EpicMissingCatalogItem"] = "Epic metadata is missing the catalog item identifier required to install this title.",
     };
 
     private readonly IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>> _translations;

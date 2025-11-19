@@ -1,6 +1,7 @@
 using System;
 using Domain;
 using EpicDiscovery;
+using SteamBacklogPicker.UI.Services.Localization;
 
 namespace SteamBacklogPicker.UI.Services.Launch;
 
@@ -9,24 +10,34 @@ namespace SteamBacklogPicker.UI.Services.Launch;
 /// </summary>
 public sealed class GameLaunchService : IGameLaunchService
 {
-    private static readonly string GenericUnsupportedStorefrontMessage = "This storefront does not support launching from Steam Backlog Picker yet.";
-    private static readonly string LaunchNotInstalledMessage = "Install the game before launching it.";
+    private const string UnsupportedStorefrontKey = "GameLaunch_UnsupportedStorefront";
+    private const string LaunchNotInstalledKey = "GameLaunch_LaunchNotInstalled";
+    private const string SteamMissingAppIdKey = "GameLaunch_SteamMissingAppId";
+    private const string SteamAlreadyInstalledKey = "GameLaunch_SteamAlreadyInstalled";
+    private const string EpicMissingAppNameKey = "GameLaunch_EpicMissingAppName";
+    private const string EpicAlreadyInstalledKey = "GameLaunch_EpicAlreadyInstalled";
+    private const string EpicMissingCatalogItemKey = "GameLaunch_EpicMissingCatalogItem";
+
+    private readonly ILocalizationService _localizationService;
     private readonly Func<GameIdentifier, EpicCatalogItem?>? epicCatalogLookup;
 
-    public GameLaunchService()
-        : this((Func<GameIdentifier, EpicCatalogItem?>?)null)
+    public GameLaunchService(ILocalizationService localizationService)
+        : this(localizationService, (Func<GameIdentifier, EpicCatalogItem?>?)null)
     {
     }
 
-    public GameLaunchService(EpicMetadataCache? metadataCache)
-        : this(metadataCache is null
+    public GameLaunchService(ILocalizationService localizationService, EpicMetadataCache? metadataCache)
+        : this(localizationService, metadataCache is null
             ? null
             : new Func<GameIdentifier, EpicCatalogItem?>(metadataCache.GetCatalogEntry))
     {
     }
 
-    public GameLaunchService(Func<GameIdentifier, EpicCatalogItem?>? epicCatalogLookup)
+    public GameLaunchService(
+        ILocalizationService localizationService,
+        Func<GameIdentifier, EpicCatalogItem?>? epicCatalogLookup)
     {
+        _localizationService = localizationService ?? throw new ArgumentNullException(nameof(localizationService));
         this.epicCatalogLookup = epicCatalogLookup;
     }
 
@@ -43,12 +54,12 @@ public sealed class GameLaunchService : IGameLaunchService
         };
     }
 
-    private static GameLaunchOptions BuildSteamOptions(GameEntry game)
+    private GameLaunchOptions BuildSteamOptions(GameEntry game)
     {
         var appId = game.SteamAppId;
         if (!appId.HasValue)
         {
-            const string missingAppIdMessage = "The Steam app identifier is missing for this game.";
+            var missingAppIdMessage = _localizationService.GetString(SteamMissingAppIdKey);
             return new GameLaunchOptions(
                 GameLaunchAction.Unsupported(missingAppIdMessage),
                 GameLaunchAction.Unsupported(missingAppIdMessage),
@@ -59,12 +70,12 @@ public sealed class GameLaunchService : IGameLaunchService
 
         var launchAction = game.InstallState == InstallState.Installed
             ? GameLaunchAction.Supported($"steam://run/{appId.Value}")
-            : GameLaunchAction.Unsupported(LaunchNotInstalledMessage);
+            : GameLaunchAction.Unsupported(_localizationService.GetString(LaunchNotInstalledKey));
 
         var canInstall = game.InstallState is InstallState.Available or InstallState.Shared or InstallState.Unknown;
         var installAction = canInstall
             ? GameLaunchAction.Supported($"steam://install/{appId.Value}")
-            : GameLaunchAction.Unsupported("The game is already installed via Steam.");
+            : GameLaunchAction.Unsupported(_localizationService.GetString(SteamAlreadyInstalledKey));
 
         return new GameLaunchOptions(launchAction, installAction, null, null, null);
     }
@@ -80,22 +91,22 @@ public sealed class GameLaunchService : IGameLaunchService
         return new GameLaunchOptions(launchAction, installAction, appName, catalogItemId, catalogNamespace);
     }
 
-    private static GameLaunchOptions BuildUnknownOptions()
+    private GameLaunchOptions BuildUnknownOptions()
     {
-        var unsupported = GameLaunchAction.Unsupported(GenericUnsupportedStorefrontMessage);
+        var unsupported = GameLaunchAction.Unsupported(_localizationService.GetString(UnsupportedStorefrontKey));
         return new GameLaunchOptions(unsupported, unsupported, null, null, null);
     }
 
-    private static GameLaunchAction BuildEpicLaunchAction(InstallState installState, string? appName)
+    private GameLaunchAction BuildEpicLaunchAction(InstallState installState, string? appName)
     {
         if (installState != InstallState.Installed)
         {
-            return GameLaunchAction.Unsupported(LaunchNotInstalledMessage);
+            return GameLaunchAction.Unsupported(_localizationService.GetString(LaunchNotInstalledKey));
         }
 
         if (string.IsNullOrWhiteSpace(appName))
         {
-            return GameLaunchAction.Unsupported("Epic metadata is missing the application name required to launch this title.");
+            return GameLaunchAction.Unsupported(_localizationService.GetString(EpicMissingAppNameKey));
         }
 
         var escapedAppName = Uri.EscapeDataString(appName);
@@ -103,17 +114,17 @@ public sealed class GameLaunchService : IGameLaunchService
         return GameLaunchAction.Supported(protocol);
     }
 
-    private static GameLaunchAction BuildEpicInstallAction(InstallState installState, string? catalogItemId, string? catalogNamespace, string? productSlug)
+    private GameLaunchAction BuildEpicInstallAction(InstallState installState, string? catalogItemId, string? catalogNamespace, string? productSlug)
     {
         var canInstall = installState is InstallState.Available or InstallState.Shared or InstallState.Unknown;
         if (!canInstall)
         {
-            return GameLaunchAction.Unsupported("The game is already installed via the Epic Games Launcher.");
+            return GameLaunchAction.Unsupported(_localizationService.GetString(EpicAlreadyInstalledKey));
         }
 
         if (string.IsNullOrWhiteSpace(catalogItemId))
         {
-            return GameLaunchAction.Unsupported("Epic metadata is missing the catalog item identifier required to install this title.");
+            return GameLaunchAction.Unsupported(_localizationService.GetString(EpicMissingCatalogItemKey));
         }
 
         var slug = BuildEpicProductSlug(catalogItemId, catalogNamespace, productSlug);
