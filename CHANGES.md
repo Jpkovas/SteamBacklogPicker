@@ -38,3 +38,4 @@
 - Reorganized the UI service layer into feature-focused namespaces (GameArt, Library, Launch, etc.) and updated DI/tests to make the service surface easier to navigate.
 - Restored the toast notification service's localization dependency so UI builds pick up localized strings without compile errors.
 - Fully qualified runtime environment calls and modernized Epic slug escaping so the UI layer builds cleanly on Windows agents again.
+- Updated Steamworks test doubles to expose the app list API so Steam client adapter tests run against the native-installed app path.

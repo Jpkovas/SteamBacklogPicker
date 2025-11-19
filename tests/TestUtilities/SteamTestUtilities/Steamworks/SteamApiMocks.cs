@@ -9,7 +9,15 @@ public sealed class SteamApiMocks
 {
     public SteamApiMocks(IReadOnlyCollection<uint> fallbackAppIds)
     {
-        SteamApi = new FakeSteamApi();
+        if (fallbackAppIds is null)
+        {
+            throw new ArgumentNullException(nameof(fallbackAppIds));
+        }
+
+        SteamApi = new FakeSteamApi
+        {
+            InstalledAppIds = fallbackAppIds.ToArray(),
+        };
         Fallback = new FakeFallback(fallbackAppIds);
         Loader = new FakeNativeLibraryLoader(SteamApi);
     }
@@ -61,6 +69,9 @@ public sealed class SteamApiMocks
                 "SteamAPI_SteamApps" => (T)(Delegate)new SteamClientAdapter.SteamClientAdapter.SteamAPI_SteamAppsDelegate(_api.GetSteamApps),
                 "SteamAPI_ISteamApps_BIsAppInstalled" => (T)(Delegate)new SteamClientAdapter.SteamClientAdapter.SteamAPI_ISteamApps_BIsAppInstalledDelegate(_api.IsAppInstalled),
                 "SteamAPI_ISteamApps_BIsSubscribedFromFamilySharing" => (T)(Delegate)new SteamClientAdapter.SteamClientAdapter.SteamAPI_ISteamApps_BIsSubscribedFromFamilySharingDelegate(_api.IsFamilyShared),
+                "SteamAPI_SteamAppList" => (T)(Delegate)new SteamClientAdapter.SteamClientAdapter.SteamAPI_SteamAppListDelegate(_api.GetSteamAppList),
+                "SteamAPI_ISteamAppList_GetNumInstalledApps" => (T)(Delegate)new SteamClientAdapter.SteamClientAdapter.SteamAPI_ISteamAppList_GetNumInstalledAppsDelegate(_api.GetNumInstalledApps),
+                "SteamAPI_ISteamAppList_GetInstalledApps" => (T)(Delegate)new SteamClientAdapter.SteamClientAdapter.SteamAPI_ISteamAppList_GetInstalledAppsDelegate(_api.GetInstalledApps),
                 _ => throw new InvalidOperationException($"Unsupported Steamworks export '{export}'."),
             };
         }
@@ -74,11 +85,15 @@ public sealed class SteamApiMocks
 
         public IntPtr Handle { get; } = new(42);
 
+        public IReadOnlyList<uint> InstalledAppIds { get; set; }
+
         public bool Init() => InitResult;
 
         public void Shutdown() => ShutdownCalled = true;
 
         public IntPtr GetSteamApps() => Handle;
+
+        public IntPtr GetSteamAppList() => Handle;
 
         public Func<IntPtr, uint, bool>? AppInstallationPredicate { get; set; }
 
@@ -103,6 +118,50 @@ public sealed class SteamApiMocks
 
             return FamilySharingPredicate?.Invoke(self, appId) ?? false;
         }
+
+        public int GetNumInstalledApps(IntPtr self)
+        {
+            if (self != Handle)
+            {
+                return 0;
+            }
+
+            return FilterInstalledAppIds(self).Count;
+        }
+
+        public int GetInstalledApps(IntPtr self, uint[] appIds, int maxAppIds)
+        {
+            if (self != Handle || maxAppIds <= 0 || appIds.Length == 0)
+            {
+                return 0;
+            }
+
+            var installedAppIds = FilterInstalledAppIds(self);
+            var count = Math.Min(maxAppIds, installedAppIds.Count);
+
+            for (var index = 0; index < count; index++)
+            {
+                appIds[index] = installedAppIds[index];
+            }
+
+            return count;
+        }
+
+        private List<uint> FilterInstalledAppIds(IntPtr self)
+        {
+            var installedAppIds = InstalledAppIds ?? Array.Empty<uint>();
+            var result = new List<uint>(installedAppIds.Count);
+
+            foreach (var appId in installedAppIds)
+            {
+                if (IsAppInstalled(self, appId))
+                {
+                    result.Add(appId);
+                }
+            }
+
+            return result;
+        }
     }
 
     public sealed class FakeFallback : ISteamVdfFallback
@@ -120,9 +179,22 @@ public sealed class SteamApiMocks
             _apps = appIds.ToDictionary(
                 id => id,
                 id => new SteamAppDefinition(id, $"App {id}", IsInstalled: true, Type: "game", Collections: Array.Empty<string>()));
+
+            InstalledAppIds = appIds.ToArray();
         }
 
         public string? CurrentSteamId { get; set; } = "76561198000000000";
+
+        public IReadOnlyList<uint> InstalledAppIds
+        {
+            get => _installedAppIds;
+            set
+            {
+                _installedAppIds = value?.ToArray() ?? throw new ArgumentNullException(nameof(value));
+            }
+        }
+
+        private IReadOnlyList<uint> _installedAppIds = Array.Empty<uint>();
 
         public IReadOnlyCollection<uint> GetInstalledAppIds() => _apps.Values.Where(app => app.IsInstalled).Select(app => app.AppId).ToArray();
 
