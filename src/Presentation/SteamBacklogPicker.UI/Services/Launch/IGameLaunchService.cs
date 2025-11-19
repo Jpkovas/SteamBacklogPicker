@@ -1,6 +1,6 @@
 using Domain;
 
-namespace SteamBacklogPicker.UI.Services;
+namespace SteamBacklogPicker.UI.Services.Launch;
 
 /// <summary>
 /// Resolves storefront-specific launch and installation metadata for games.

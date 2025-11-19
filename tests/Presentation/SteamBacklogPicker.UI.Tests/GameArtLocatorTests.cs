@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 using Domain;
 using EpicDiscovery;
 using FluentAssertions;
-using SteamBacklogPicker.UI.Services;
+using SteamBacklogPicker.UI.Services.GameArt;
 using SteamClientAdapter;
 using SteamDiscovery;
 using Xunit;

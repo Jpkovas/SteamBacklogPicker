@@ -7,7 +7,7 @@ using Infrastructure.Telemetry;
 using Squirrel;
 using Squirrel.Sources;
 
-namespace SteamBacklogPicker.UI.Services;
+namespace SteamBacklogPicker.UI.Services.Updates;
 
 public sealed class SquirrelUpdateService : IAppUpdateService
 {

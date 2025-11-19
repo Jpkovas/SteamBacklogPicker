@@ -2,7 +2,7 @@ using System;
 using Domain;
 using EpicDiscovery;
 
-namespace SteamBacklogPicker.UI.Services;
+namespace SteamBacklogPicker.UI.Services.Launch;
 
 /// <summary>
 /// Provides storefront-specific launch and installation metadata for games.

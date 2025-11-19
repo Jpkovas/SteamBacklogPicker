@@ -4,7 +4,7 @@ using System.IO;
 using SteamClientAdapter;
 using SteamDiscovery;
 
-namespace SteamBacklogPicker.UI.Services;
+namespace SteamBacklogPicker.UI.Services.Environment;
 
 public sealed class SteamEnvironment : ISteamEnvironment
 {

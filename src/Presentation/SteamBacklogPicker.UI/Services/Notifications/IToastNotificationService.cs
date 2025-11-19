@@ -1,6 +1,6 @@
 using Domain;
 
-namespace SteamBacklogPicker.UI.Services;
+namespace SteamBacklogPicker.UI.Services.Notifications;
 
 public interface IToastNotificationService
 {

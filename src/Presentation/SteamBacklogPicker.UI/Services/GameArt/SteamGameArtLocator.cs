@@ -3,7 +3,7 @@ using System.IO;
 using Domain;
 using SteamDiscovery;
 
-namespace SteamBacklogPicker.UI.Services;
+namespace SteamBacklogPicker.UI.Services.GameArt;
 
 public sealed class SteamGameArtLocator : IGameArtLocator
 {

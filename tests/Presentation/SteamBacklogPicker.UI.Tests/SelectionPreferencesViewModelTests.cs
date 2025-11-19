@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Domain;
 using Domain.Selection;
 using FluentAssertions;
-using SteamBacklogPicker.UI.Services;
+using SteamBacklogPicker.UI.Services.Localization;
 using SteamBacklogPicker.UI.ViewModels;
 using Xunit;
 

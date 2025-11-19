@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Domain;
 
-namespace SteamBacklogPicker.UI.Services;
+namespace SteamBacklogPicker.UI.Services.Library;
 
 public sealed class CombinedGameLibraryService : IGameLibraryService
 {

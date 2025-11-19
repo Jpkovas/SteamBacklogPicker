@@ -1,6 +1,6 @@
 using Domain;
 
-namespace SteamBacklogPicker.UI.Services;
+namespace SteamBacklogPicker.UI.Services.GameArt;
 
 public interface IGameArtLocator
 {

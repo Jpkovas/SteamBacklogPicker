@@ -4,7 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Windows;
 
-namespace SteamBacklogPicker.UI.Services;
+namespace SteamBacklogPicker.UI.Services.Localization;
 
 public sealed class LocalizationService : ILocalizationService
 {

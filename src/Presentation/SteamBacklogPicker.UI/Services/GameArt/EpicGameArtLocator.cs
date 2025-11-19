@@ -5,7 +5,7 @@ using Domain;
 using EpicDiscovery;
 using SteamClientAdapter;
 
-namespace SteamBacklogPicker.UI.Services;
+namespace SteamBacklogPicker.UI.Services.GameArt;
 
 public sealed class EpicGameArtLocator : IGameArtLocator
 {

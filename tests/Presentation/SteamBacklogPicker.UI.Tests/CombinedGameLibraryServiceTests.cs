@@ -4,7 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Domain;
 using FluentAssertions;
-using SteamBacklogPicker.UI.Services;
+using SteamBacklogPicker.UI.Services.Library;
 using Xunit;
 
 namespace SteamBacklogPicker.UI.Tests;

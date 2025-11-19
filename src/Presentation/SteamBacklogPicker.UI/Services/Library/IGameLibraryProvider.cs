@@ -3,7 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Domain;
 
-namespace SteamBacklogPicker.UI.Services;
+namespace SteamBacklogPicker.UI.Services.Library;
 
 public interface IGameLibraryProvider
 {

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace SteamBacklogPicker.UI.Services;
+namespace SteamBacklogPicker.UI.Services.Localization;
 
 public interface ILocalizationService
 {

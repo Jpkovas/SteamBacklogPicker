@@ -1,7 +1,7 @@
 using System;
 using System.Diagnostics;
 
-namespace SteamBacklogPicker.UI.Services;
+namespace SteamBacklogPicker.UI.Services.Launch;
 
 /// <summary>
 /// Represents the launch or installation capability for a game, including the
