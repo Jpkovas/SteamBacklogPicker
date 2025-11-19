@@ -1,4 +1,9 @@
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using Domain;
 using Microsoft.Extensions.Logging;
 
@@ -8,15 +13,21 @@ public sealed class EpicMetadataCache
 {
     private readonly EpicCatalogCache catalogCache;
     private readonly EpicMetadataFetcher fetcher;
+    private readonly EpicHeroArtCache heroArtCache;
     private readonly ILogger<EpicMetadataCache>? logger;
     private readonly string cachePath;
     private readonly Dictionary<GameIdentifier, EpicCatalogItem> fetchedEntries = new();
     private bool initialized;
 
-    public EpicMetadataCache(EpicCatalogCache catalogCache, EpicMetadataFetcher fetcher, ILogger<EpicMetadataCache>? logger = null)
+    public EpicMetadataCache(
+        EpicCatalogCache catalogCache,
+        EpicMetadataFetcher fetcher,
+        EpicHeroArtCache heroArtCache,
+        ILogger<EpicMetadataCache>? logger = null)
     {
         this.catalogCache = catalogCache ?? throw new ArgumentNullException(nameof(catalogCache));
         this.fetcher = fetcher ?? throw new ArgumentNullException(nameof(fetcher));
+        this.heroArtCache = heroArtCache ?? throw new ArgumentNullException(nameof(heroArtCache));
         this.logger = logger;
         cachePath = BuildCachePath();
     }
@@ -25,7 +36,8 @@ public sealed class EpicMetadataCache
     {
         ArgumentNullException.ThrowIfNull(identifier);
         EnsureInitialized();
-        return catalogCache.GetCatalogEntry(identifier) ?? (fetchedEntries.TryGetValue(identifier, out var item) ? item : null);
+        var item = catalogCache.GetCatalogEntry(identifier) ?? (fetchedEntries.TryGetValue(identifier, out var entry) ? entry : null);
+        return AttachCachedImages(item);
     }
 
     public IReadOnlyCollection<EpicCatalogItem> GetAllCatalogEntries()
@@ -35,7 +47,9 @@ public sealed class EpicMetadataCache
         return cached
             .Concat(fetchedEntries.Values)
             .GroupBy(entry => entry.Id)
-            .Select(group => group.First())
+            .Select(group => AttachCachedImages(group.First()))
+            .Where(item => item is not null)
+            .Select(item => item!)
             .ToArray();
     }
 
@@ -60,7 +74,8 @@ public sealed class EpicMetadataCache
             return null;
         }
 
-        fetchedEntries[fetched.Id] = fetched;
+        var hydrated = await PopulateHeroArtAsync(fetched, cancellationToken).ConfigureAwait(false);
+        fetchedEntries[hydrated.Id] = hydrated;
         try
         {
             Persist();
@@ -101,9 +116,10 @@ public sealed class EpicMetadataCache
                 try
                 {
                     var item = JsonSerializer.Deserialize<EpicCatalogItem>(element.GetRawText());
-                    if (item is not null)
+                    var hydrated = AttachCachedImages(item);
+                    if (hydrated is not null)
                     {
-                        fetchedEntries[item.Id] = item;
+                        fetchedEntries[hydrated.Id] = hydrated;
                     }
                 }
                 catch (Exception ex)
@@ -142,5 +158,26 @@ public sealed class EpicMetadataCache
     {
         var folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "SteamBacklogPicker", "Epic");
         return Path.Combine(folder, "remote-metadata.json");
+    }
+
+    private EpicCatalogItem? AttachCachedImages(EpicCatalogItem? item)
+    {
+        if (item is null)
+        {
+            return null;
+        }
+
+        var updated = heroArtCache.AttachCachedPaths(item.KeyImages);
+        return ReferenceEquals(updated, item.KeyImages)
+            ? item
+            : item with { KeyImages = updated };
+    }
+
+    private async Task<EpicCatalogItem> PopulateHeroArtAsync(EpicCatalogItem item, CancellationToken cancellationToken)
+    {
+        var updated = await heroArtCache.PopulateAsync(item.KeyImages, cancellationToken).ConfigureAwait(false);
+        return ReferenceEquals(updated, item.KeyImages)
+            ? item
+            : item with { KeyImages = updated };
     }
 }
