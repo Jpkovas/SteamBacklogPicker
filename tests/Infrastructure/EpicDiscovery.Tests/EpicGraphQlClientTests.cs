@@ -60,7 +60,7 @@ public sealed class EpicGraphQlClientTests
 
         var payload = await request.Content!.ReadAsStringAsync();
         payload.Should().Contain("LauncherQuery_GetLibraryItems");
-        payload.Should().Contain("\"includeDlc\": true");
+        payload.Should().Contain("includeDlc: true");
         payload.Should().Contain("\"operationName\":\"LauncherQuery_GetLibraryItems\"");
 
         entitlements.Should().HaveCount(2);
