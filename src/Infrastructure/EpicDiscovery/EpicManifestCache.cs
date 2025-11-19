@@ -18,6 +18,7 @@ public sealed class EpicManifestCache : IDisposable
     private readonly Dictionary<string, GameIdentifier> idByPath = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<GameIdentifier, string> pathById = new();
     private readonly Dictionary<string, FileSystemWatcher> watchers = new(StringComparer.OrdinalIgnoreCase);
+    private HashSet<GameIdentifier> launcherInstalledEntries = new();
     private HashSet<string> knownDirectories = new(StringComparer.OrdinalIgnoreCase);
     private GameEntry[] cachedEntries = Array.Empty<GameEntry>();
     private bool disposed;
@@ -123,6 +124,8 @@ public sealed class EpicManifestCache : IDisposable
             return;
         }
 
+        var seenLauncherInstalledIds = new HashSet<GameIdentifier>();
+
         try
         {
             using var stream = fileAccessor.OpenRead(datPath);
@@ -134,9 +137,10 @@ public sealed class EpicManifestCache : IDisposable
                     if (TryLoadFromLauncherInstalledItem(item, out var entry))
                     {
                         // Only add if not already present (manifests take precedence)
-                        if (!entries.ContainsKey(entry.Id))
+                        if (!pathById.ContainsKey(entry.Id))
                         {
                             entries[entry.Id] = entry;
+                            seenLauncherInstalledIds.Add(entry.Id);
                         }
                     }
                 }
@@ -146,6 +150,16 @@ public sealed class EpicManifestCache : IDisposable
         {
             logger?.LogWarning(ex, "Failed to parse LauncherInstalled.dat at {Path}", datPath);
         }
+
+        foreach (var staleId in launcherInstalledEntries.Where(id => !seenLauncherInstalledIds.Contains(id)).ToList())
+        {
+            if (!pathById.ContainsKey(staleId))
+            {
+                entries.Remove(staleId);
+            }
+        }
+
+        launcherInstalledEntries = seenLauncherInstalledIds;
     }
 
     private bool TryLoadFromLauncherInstalledItem(JsonElement item, out GameEntry entry)

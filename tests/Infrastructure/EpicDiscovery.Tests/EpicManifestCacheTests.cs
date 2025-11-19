@@ -58,6 +58,39 @@ public sealed class EpicManifestCacheTests : IDisposable
         cache.GetInstalledGames().Should().BeEmpty();
     }
 
+    [Fact]
+    public void Refresh_ShouldDropLauncherInstalledEntriesMissingFromDat()
+    {
+        var datPath = Path.Combine(workingDirectory, "LauncherInstalled.dat");
+        File.WriteAllText(datPath, """
+        {
+            "InstallationList": [
+                {
+                    "InstallLocation": "C:/Games/Demo",
+                    "AppName": "DemoGame",
+                    "AppVersion": "1.0.0"
+                }
+            ]
+        }
+        """);
+
+        using var cache = new EpicManifestCache(
+            new FakeEpicLauncherLocator(launcherInstalledDatPath: datPath),
+            new TestFileAccessor());
+
+        cache.GetInstalledGames().Should().HaveCount(1);
+
+        File.WriteAllText(datPath, """
+        {
+            "InstallationList": []
+        }
+        """);
+
+        cache.Refresh();
+
+        cache.GetInstalledGames().Should().BeEmpty();
+    }
+
     public void Dispose()
     {
         try
