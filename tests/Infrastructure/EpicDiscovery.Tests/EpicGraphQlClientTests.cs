@@ -53,12 +53,13 @@ public sealed class EpicGraphQlClientTests
         var entitlements = await client.GetEntitlementsAsync();
 
         var request = handler.Requests.Should().ContainSingle().Subject;
-        request.Method.Should().Be(HttpMethod.Post);
-        request.RequestUri.Should().Be(new Uri("https://graphql.epicgames.com/graphql"));
-        request.Headers.Authorization.Should().NotBeNull();
-        request.Headers.Authorization!.Parameter.Should().Be("eg1~access-token");
+        request.Message.Method.Should().Be(HttpMethod.Post);
+        request.Message.RequestUri.Should().Be(new Uri("https://graphql.epicgames.com/graphql"));
+        request.Message.Headers.Authorization.Should().NotBeNull();
+        request.Message.Headers.Authorization!.Parameter.Should().Be("eg1~access-token");
 
-        var payload = await request.Content!.ReadAsStringAsync();
+        request.Body.Should().NotBeNull();
+        var payload = request.Body!;
         payload.Should().Contain("LauncherQuery_GetLibraryItems");
         payload.Should().Contain("includeDlc: true");
         payload.Should().Contain("\"operationName\":\"LauncherQuery_GetLibraryItems\"");
