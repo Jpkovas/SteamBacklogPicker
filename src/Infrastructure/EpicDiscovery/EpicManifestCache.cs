@@ -18,6 +18,7 @@ public sealed class EpicManifestCache : IDisposable
     private readonly Dictionary<string, GameIdentifier> idByPath = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<GameIdentifier, string> pathById = new();
     private readonly Dictionary<string, FileSystemWatcher> watchers = new(StringComparer.OrdinalIgnoreCase);
+    private HashSet<GameIdentifier> launcherInstalledEntries = new();
     private HashSet<string> knownDirectories = new(StringComparer.OrdinalIgnoreCase);
     private GameEntry[] cachedEntries = Array.Empty<GameEntry>();
     private bool disposed;
@@ -102,6 +103,8 @@ public sealed class EpicManifestCache : IDisposable
             }
         }
 
+        RefreshFromLauncherInstalledDatNoLock();
+
         foreach (var existingPath in idByPath.Keys.ToList())
         {
             if (!seenPaths.Contains(existingPath) || !File.Exists(existingPath))
@@ -111,6 +114,82 @@ public sealed class EpicManifestCache : IDisposable
         }
 
         UpdateCachedEntriesNoLock();
+    }
+
+    private void RefreshFromLauncherInstalledDatNoLock()
+    {
+        var datPath = launcherLocator.GetLauncherInstalledDatPath();
+        if (string.IsNullOrWhiteSpace(datPath) || !File.Exists(datPath))
+        {
+            return;
+        }
+
+        var seenLauncherInstalledIds = new HashSet<GameIdentifier>();
+
+        try
+        {
+            using var stream = fileAccessor.OpenRead(datPath);
+            using var document = JsonDocument.Parse(stream);
+            if (document.RootElement.TryGetProperty("InstallationList", out var list) && list.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var item in list.EnumerateArray())
+                {
+                    if (TryLoadFromLauncherInstalledItem(item, out var entry))
+                    {
+                        // Only add if not already present (manifests take precedence)
+                        if (!pathById.ContainsKey(entry.Id))
+                        {
+                            entries[entry.Id] = entry;
+                            seenLauncherInstalledIds.Add(entry.Id);
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            logger?.LogWarning(ex, "Failed to parse LauncherInstalled.dat at {Path}", datPath);
+        }
+
+        foreach (var staleId in launcherInstalledEntries.Where(id => !seenLauncherInstalledIds.Contains(id)).ToList())
+        {
+            if (!pathById.ContainsKey(staleId))
+            {
+                entries.Remove(staleId);
+            }
+        }
+
+        launcherInstalledEntries = seenLauncherInstalledIds;
+    }
+
+    private bool TryLoadFromLauncherInstalledItem(JsonElement item, out GameEntry entry)
+    {
+        entry = default!;
+        var installLocation = TryGetString(item, "InstallLocation");
+        if (string.IsNullOrWhiteSpace(installLocation))
+        {
+            return false;
+        }
+
+        var appName = TryGetString(item, "AppName") ?? Path.GetFileName(installLocation);
+        var title = appName; // LauncherInstalled.dat doesn't always have a nice display name, fallback to AppName
+        var version = TryGetString(item, "AppVersion");
+
+        // Try to find a better name from .egstore if possible, or just use what we have
+        // For now, we'll use AppName as the ID base
+
+        entry = new GameEntry
+        {
+            Id = EpicIdentifierFactory.Create(null, null, appName),
+            Title = title,
+            OwnershipType = OwnershipType.Owned,
+            InstallState = InstallState.Installed,
+            SizeOnDisk = 0, // Not available in this file usually
+            LastPlayed = null, // Not available
+            Tags = Array.Empty<string>(),
+        };
+
+        return true;
     }
 
     private void UpdateEntryFromManifestNoLock(string manifestPath)

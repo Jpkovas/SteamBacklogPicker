@@ -216,6 +216,8 @@ public sealed class GameArtLocatorTests
         public IReadOnlyCollection<string> GetManifestDirectories() => Array.Empty<string>();
 
         public IReadOnlyCollection<string> GetCatalogDirectories() => catalogDirectories;
+
+        public string? GetLauncherInstalledDatPath() => null;
     }
 
     private sealed class FakeSteamLibraryLocator : ISteamLibraryLocator
