@@ -9,7 +9,7 @@ public sealed class SteamApiMocks
 {
     public SteamApiMocks(IReadOnlyCollection<uint> fallbackAppIds)
     {
-        SteamApi = new FakeSteamApi();
+        SteamApi = new FakeSteamApi(fallbackAppIds);
         Fallback = new FakeFallback(fallbackAppIds);
         Loader = new FakeNativeLibraryLoader(SteamApi);
     }
@@ -59,6 +59,7 @@ public sealed class SteamApiMocks
                 "SteamAPI_Init" => (T)(Delegate)new SteamClientAdapter.SteamClientAdapter.SteamAPI_InitDelegate(_api.Init),
                 "SteamAPI_Shutdown" => (T)(Delegate)new SteamClientAdapter.SteamClientAdapter.SteamAPI_ShutdownDelegate(_api.Shutdown),
                 "SteamAPI_SteamApps" => (T)(Delegate)new SteamClientAdapter.SteamClientAdapter.SteamAPI_SteamAppsDelegate(_api.GetSteamApps),
+                "SteamAPI_ISteamApps_GetInstalledApps" => (T)(Delegate)new SteamClientAdapter.SteamClientAdapter.SteamAPI_ISteamApps_GetInstalledAppsDelegate(_api.GetInstalledApps),
                 "SteamAPI_ISteamApps_BIsAppInstalled" => (T)(Delegate)new SteamClientAdapter.SteamClientAdapter.SteamAPI_ISteamApps_BIsAppInstalledDelegate(_api.IsAppInstalled),
                 "SteamAPI_ISteamApps_BIsSubscribedFromFamilySharing" => (T)(Delegate)new SteamClientAdapter.SteamClientAdapter.SteamAPI_ISteamApps_BIsSubscribedFromFamilySharingDelegate(_api.IsFamilyShared),
                 _ => throw new InvalidOperationException($"Unsupported Steamworks export '{export}'."),
@@ -68,11 +69,20 @@ public sealed class SteamApiMocks
 
     public sealed class FakeSteamApi
     {
+        private readonly List<uint> _installedAppIds;
+
+        public FakeSteamApi(IReadOnlyCollection<uint> installedAppIds)
+        {
+            _installedAppIds = installedAppIds?.ToList() ?? throw new ArgumentNullException(nameof(installedAppIds));
+        }
+
         public bool InitResult { get; set; } = true;
 
         public bool ShutdownCalled { get; private set; }
 
         public IntPtr Handle { get; } = new(42);
+
+        public IReadOnlyCollection<uint> InstalledAppIds => _installedAppIds;
 
         public bool Init() => InitResult;
 
@@ -83,6 +93,35 @@ public sealed class SteamApiMocks
         public Func<IntPtr, uint, bool>? AppInstallationPredicate { get; set; }
 
         public Func<IntPtr, uint, bool>? FamilySharingPredicate { get; set; }
+
+        public uint GetInstalledApps(IntPtr self, uint[] appIds, uint maxAppIds)
+        {
+            if (self != Handle)
+            {
+                return 0;
+            }
+
+            var totalInstalled = (uint)_installedAppIds.Count;
+            var countToCopy = (int)Math.Min(maxAppIds, totalInstalled);
+
+            for (var index = 0; index < countToCopy; index++)
+            {
+                appIds[index] = _installedAppIds[index];
+            }
+
+            return totalInstalled;
+        }
+
+        public void SetInstalledApps(IEnumerable<uint> appIds)
+        {
+            if (appIds is null)
+            {
+                throw new ArgumentNullException(nameof(appIds));
+            }
+
+            _installedAppIds.Clear();
+            _installedAppIds.AddRange(appIds);
+        }
 
         public bool IsAppInstalled(IntPtr self, uint appId)
         {

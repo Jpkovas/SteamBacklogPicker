@@ -1,5 +1,6 @@
 # Recent Changes
 
+- Updated the Steam client adapter to prioritize Steamworks-installed app discovery over VDF parsing, keeping the manifest path as a backup only when native access is unavailable.
 - Updated the README to highlight the unified Steam/Epic flow, offline hero art cache, and the current telemetry/privacy story.
 - Added an Epic hero art cache that downloads catalog key images into AppData, plumbs it through metadata fetchers/locators, and adds offline tests to prove cached artwork resolves without network access.
 - Buffered the Epic discovery stub HTTP handler so GraphQL tests can inspect payloads without hitting disposed content exceptions.

@@ -19,7 +19,7 @@ public sealed class SteamClientAdapterTests
         var mocks = new SteamApiMocks(new uint[] { 10, 20, 30 });
         var adapter = CreateAdapter(mocks);
 
-        mocks.SteamApi.AppInstallationPredicate = (_, appId) => appId is 10 or 20;
+        mocks.SteamApi.SetInstalledApps(new uint[] { 10, 20 });
         mocks.SteamApi.FamilySharingPredicate = (_, appId) => appId == 20;
 
         Assert.True(adapter.Initialize("steam_api64.dll"));
@@ -29,6 +29,21 @@ public sealed class SteamClientAdapterTests
         Assert.Equal(new uint[] { 10, 20 }, appIds);
         Assert.True(adapter.IsSubscribedFromFamilySharing(20));
         Assert.False(adapter.IsSubscribedFromFamilySharing(10));
+    }
+
+    [Fact]
+    public void GetInstalledAppIds_UsesSteamApiWhenFallbackIsEmpty()
+    {
+        var mocks = new SteamApiMocks(Array.Empty<uint>());
+        var adapter = CreateAdapter(mocks);
+
+        mocks.SteamApi.SetInstalledApps(new uint[] { 99, 100 });
+
+        Assert.True(adapter.Initialize("steam_api64.dll"));
+
+        var appIds = adapter.GetInstalledAppIds();
+
+        Assert.Equal(new uint[] { 99, 100 }, appIds);
     }
 
     [Fact]
