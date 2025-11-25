@@ -1,8 +1,11 @@
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using System.Windows;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog.Events;
 using Infrastructure.Telemetry;
@@ -91,6 +94,14 @@ public partial class App : Application
     {
         var services = new ServiceCollection();
 
+        // Build configuration from appsettings.json
+        var configuration = new ConfigurationBuilder()
+            .SetBasePath(AppContext.BaseDirectory)
+            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+            .Build();
+
+        services.AddSingleton<IConfiguration>(configuration);
+
         services.AddTelemetryInfrastructure(options =>
         {
             options.ApplicationName = "SteamBacklogPicker";
@@ -104,7 +115,12 @@ public partial class App : Application
         services.AddSingleton<ISteamLibraryFoldersParser, SteamLibraryFoldersParser>();
         services.AddSingleton<ISteamLibraryLocator, SteamLibraryLocator>();
         services.AddSingleton<IFileAccessor, DefaultFileAccessor>();
-        services.AddEpicDiscovery();
+
+        // Configure Epic Discovery with appsettings.json
+        services.AddEpicDiscovery(options =>
+        {
+            configuration.GetSection("EpicDiscovery").Bind(options);
+        });
         services.AddSingleton<INativeLibraryLoader, DefaultNativeLibraryLoader>();
         services.AddSingleton<ISteamEnvironment, SteamEnvironment>();
         services.AddSingleton<ISteamVdfFallback>(sp =>

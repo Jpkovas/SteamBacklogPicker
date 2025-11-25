@@ -22,7 +22,10 @@ public static class ServiceCollectionExtensions
             services.Configure(configure);
         }
 
-        services.AddSingleton<HttpClient>();
+        services.AddSingleton<HttpClient>(_ => new HttpClient
+        {
+            Timeout = TimeSpan.FromSeconds(30)
+        });
         services.AddSingleton<IEpicLauncherLocator, EpicLauncherLocator>();
         services.AddSingleton<EpicManifestCache>();
         services.AddSingleton<EpicCatalogCache>();
