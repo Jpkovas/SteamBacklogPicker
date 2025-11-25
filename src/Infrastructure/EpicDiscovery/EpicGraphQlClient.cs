@@ -33,6 +33,13 @@ public sealed class EpicGraphQlClient
         try
         {
             using var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+
+            if (response is null)
+            {
+                logger?.LogWarning("Epic GraphQL request returned null response");
+                return Array.Empty<EpicEntitlement>();
+            }
+
             if (!response.IsSuccessStatusCode)
             {
                 logger?.LogWarning("Epic GraphQL request failed with status {StatusCode}", response.StatusCode);
@@ -43,9 +50,19 @@ public sealed class EpicGraphQlClient
             using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken).ConfigureAwait(false);
             return ParseEntitlements(document.RootElement).ToArray();
         }
+        catch (OperationCanceledException)
+        {
+            logger?.LogInformation("Epic GraphQL request was cancelled");
+            return Array.Empty<EpicEntitlement>();
+        }
         catch (HttpRequestException ex)
         {
-            logger?.LogWarning(ex, "Epic GraphQL request failed; returning cached entitlements only");
+            logger?.LogWarning(ex, "Epic GraphQL HTTP request failed; returning empty entitlements");
+            return Array.Empty<EpicEntitlement>();
+        }
+        catch (Exception ex)
+        {
+            logger?.LogError(ex, "Unexpected error during Epic GraphQL request");
             return Array.Empty<EpicEntitlement>();
         }
     }
