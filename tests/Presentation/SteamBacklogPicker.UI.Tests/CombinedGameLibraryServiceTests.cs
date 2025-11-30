@@ -21,18 +21,11 @@ public sealed class CombinedGameLibraryServiceTests
             InstallState = InstallState.Installed,
             OwnershipType = OwnershipType.Owned,
         };
-        var epicGame = new GameEntry
-        {
-            Id = new GameIdentifier { Storefront = Storefront.EpicGamesStore, StoreSpecificId = "epic-1" },
-            Title = "Epic Game",
-            InstallState = InstallState.Available,
-            OwnershipType = OwnershipType.Owned,
-        };
 
         var gogGame = new GameEntry
         {
-            Id = new GameIdentifier { Storefront = Storefront.Gog, StoreSpecificId = "epic-1" },
-            Title = "GOG Port",
+            Id = new GameIdentifier { Storefront = Storefront.Gog, StoreSpecificId = "gog-1" },
+            Title = "GOG Game",
             InstallState = InstallState.Installed,
             OwnershipType = OwnershipType.Owned,
         };
@@ -40,15 +33,13 @@ public sealed class CombinedGameLibraryServiceTests
         var service = new CombinedGameLibraryService(new[]
         {
             new FakeLibraryProvider(Storefront.Steam, steamGame),
-            new FakeLibraryProvider(Storefront.EpicGamesStore, epicGame),
             new FakeLibraryProvider(Storefront.Gog, gogGame),
         });
 
         var results = await service.GetLibraryAsync();
 
-        results.Should().Contain(new[] { steamGame, epicGame, gogGame });
-        results.Should().Contain(entry => entry.Id.Storefront == Storefront.EpicGamesStore && entry.Id.StoreSpecificId == "epic-1");
-        results.Should().Contain(entry => entry.Id.Storefront == Storefront.Gog && entry.Id.StoreSpecificId == "epic-1");
+        results.Should().Contain(new[] { steamGame, gogGame });
+        results.Should().Contain(entry => entry.Id.Storefront == Storefront.Gog && entry.Id.StoreSpecificId == "gog-1");
     }
 
     [Fact]

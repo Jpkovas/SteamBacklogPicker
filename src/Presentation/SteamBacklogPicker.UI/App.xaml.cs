@@ -21,7 +21,6 @@ using SteamClientAdapter;
 using SteamDiscovery;
 using ValveFormatParser;
 using Domain.Selection;
-using EpicDiscovery;
 
 namespace SteamBacklogPicker.UI;
 
@@ -71,16 +70,6 @@ public partial class App : Application
             cache.Dispose();
         }
 
-        if (_serviceProvider.GetService<EpicManifestCache>() is { } epicManifest)
-        {
-            epicManifest.Dispose();
-        }
-
-        if (_serviceProvider.GetService<EpicCatalogCache>() is { } epicCatalog)
-        {
-            epicCatalog.Dispose();
-        }
-
         if (_serviceProvider.GetService<ISteamClientAdapter>() is IDisposable adapter)
         {
             adapter.Dispose();
@@ -116,11 +105,6 @@ public partial class App : Application
         services.AddSingleton<ISteamLibraryLocator, SteamLibraryLocator>();
         services.AddSingleton<IFileAccessor, DefaultFileAccessor>();
 
-        // Configure Epic Discovery with appsettings.json
-        services.AddEpicDiscovery(options =>
-        {
-            configuration.GetSection("EpicDiscovery").Bind(options);
-        });
         services.AddSingleton<INativeLibraryLoader, DefaultNativeLibraryLoader>();
         services.AddSingleton<ISteamEnvironment, SteamEnvironment>();
         services.AddSingleton<ISteamVdfFallback>(sp =>
@@ -144,18 +128,13 @@ public partial class App : Application
         services.AddSingleton<SteamAppManifestCache>();
         services.AddSingleton<ISelectionEngine>(_ => new SelectionEngine());
         services.AddSingleton<IGameLibraryProvider, SteamLibraryProvider>();
-        services.AddSingleton<IGameLibraryProvider, EpicLibraryProvider>();
         services.AddSingleton<IGameLibraryService, CombinedGameLibraryService>();
         services.AddSingleton<SteamGameArtLocator>();
-        services.AddSingleton<EpicGameArtLocator>();
-        services.AddSingleton<IGameArtLocator>(sp => new CompositeGameArtLocator(
-            sp.GetRequiredService<SteamGameArtLocator>(),
-            sp.GetRequiredService<EpicGameArtLocator>()));
+        services.AddSingleton<IGameArtLocator, SteamGameArtLocator>();
         services.AddSingleton<ILocalizationService, LocalizationService>();
         services.AddSingleton<IToastNotificationService, ToastNotificationService>();
         services.AddSingleton<IGameLaunchService>(sp => new GameLaunchService(
-            sp.GetRequiredService<ILocalizationService>(),
-            sp.GetService<EpicMetadataCache>()));
+            sp.GetRequiredService<ILocalizationService>()));
         services.AddSingleton<IAppUpdateService, SquirrelUpdateService>();
         services.AddSingleton<MainViewModel>();
         services.AddTransient<MainWindow>();

@@ -19,7 +19,7 @@ This document provides comprehensive guidance for AI assistants working with the
 
 ## Project Overview
 
-**SteamBacklogPicker** is a .NET 8 WPF desktop application that helps users pick games from their Steam and Epic Games libraries without relying on cloud services. The application operates entirely offline by reading local manifest files and launcher caches.
+**SteamBacklogPicker** is a .NET 8 WPF desktop application that helps users pick games from their Steam library without relying on cloud services. The application operates entirely offline by reading local manifest files.
 
 ### Technology Stack
 
@@ -32,8 +32,8 @@ This document provides comprehensive guidance for AI assistants working with the
 
 ### Key Capabilities
 
-- Unified Steam + Epic library discovery (offline-first)
-- Collection-aware filtering (Steam collections, tags, install status, storefront)
+- Steam library discovery (offline-first)
+- Collection-aware filtering (Steam collections, tags, install status)
 - Direct manifest/cache parsing (no authentication required)
 - Structured telemetry and diagnostics (opt-in)
 - Auto-updates via Squirrel

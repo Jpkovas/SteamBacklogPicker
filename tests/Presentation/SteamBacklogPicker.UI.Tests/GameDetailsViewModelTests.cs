@@ -10,35 +10,28 @@ namespace SteamBacklogPicker.UI.Tests;
 public sealed class GameDetailsViewModelTests
 {
     [Fact]
-    public void FromGame_UsesLaunchOptionsForEpicGame()
+    public void FromGame_UsesLaunchOptionsForSteamGame()
     {
         var localization = new FakeLocalizationService();
-        var identifier = new GameIdentifier
-        {
-            Storefront = Storefront.EpicGamesStore,
-            StoreSpecificId = "namespace:catalog",
-        };
         var entry = new GameEntry
         {
-            Id = identifier,
-            Title = "Test Epic Game",
+            Id = GameIdentifier.ForSteam(440),
+            Title = "Team Fortress 2",
             InstallState = InstallState.Installed,
         };
 
         var launchOptions = new GameLaunchOptions(
-            GameLaunchAction.Supported("com.epicgames.launcher://apps/TestApp?action=launch&silent=true"),
-            GameLaunchAction.Unsupported("Install via Epic."),
-            "TestApp",
-            "catalog",
-            "namespace");
+            GameLaunchAction.Supported("steam://run/440"),
+            GameLaunchAction.Unsupported("Already installed."),
+            null,
+            null,
+            null);
 
         var viewModel = GameDetailsViewModel.FromGame(entry, null, localization, launchOptions);
 
         viewModel.CanLaunch.Should().BeTrue();
         viewModel.CanInstall.Should().BeFalse();
-        viewModel.LaunchUri.Should().Be("com.epicgames.launcher://apps/TestApp?action=launch&silent=true");
-        viewModel.EpicAppName.Should().Be("TestApp");
-        viewModel.EpicCatalogItemId.Should().Be("catalog");
+        viewModel.LaunchUri.Should().Be("steam://run/440");
     }
 
     [Theory]
