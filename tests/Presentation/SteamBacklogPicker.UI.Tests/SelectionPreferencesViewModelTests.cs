@@ -94,16 +94,10 @@ public sealed class SelectionPreferencesViewModelTests
         var localization = new FakeLocalizationService();
         var viewModel = new SelectionPreferencesViewModel(engine, localization);
 
-        viewModel.IncludeEpic.Should().BeFalse();
         viewModel.IncludeSteam.Should().BeTrue();
 
-        viewModel.IncludeEpic = true;
-
-        engine.LastUpdatedPreferences.Filters.IncludedStorefronts.Should().Contain(Storefront.EpicGamesStore);
-        engine.LastUpdatedPreferences.Filters.IncludedStorefronts.Should().Contain(Storefront.Steam);
-
         viewModel.IncludeSteam = false;
-        engine.LastUpdatedPreferences.Filters.IncludedStorefronts.Should().ContainSingle(store => store == Storefront.EpicGamesStore);
+        engine.LastUpdatedPreferences.Filters.IncludedStorefronts.Should().BeEmpty();
     }
 
     private sealed class FakeSelectionEngine : ISelectionEngine

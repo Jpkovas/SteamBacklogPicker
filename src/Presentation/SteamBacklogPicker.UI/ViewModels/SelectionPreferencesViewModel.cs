@@ -21,7 +21,6 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
     private bool _includeVideos;
     private bool _includeOther;
     private bool _includeSteam = true;
-    private bool _includeEpic = true;
     private bool _isHydrating;
     private readonly ObservableCollection<string> _collectionOptions = new();
     private string _noCollectionOption = string.Empty;
@@ -170,18 +169,6 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
         }
     }
 
-    public bool IncludeEpic
-    {
-        get => _includeEpic;
-        set
-        {
-            if (SetProperty(ref _includeEpic, value) && !_isHydrating)
-            {
-                UpdateStorefrontPreferences();
-            }
-        }
-    }
-
     public void Apply(SelectionPreferences preferences)
     {
         ArgumentNullException.ThrowIfNull(preferences);
@@ -204,12 +191,10 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
             if (storefronts.Count == 0)
             {
                 IncludeSteam = true;
-                IncludeEpic = true;
             }
             else
             {
                 IncludeSteam = storefronts.Contains(Storefront.Steam);
-                IncludeEpic = storefronts.Contains(Storefront.EpicGamesStore);
             }
 
             var requiredCollection = preferences.Filters.RequiredCollection;
@@ -343,11 +328,6 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
         if (IncludeSteam)
         {
             storefronts.Add(Storefront.Steam);
-        }
-
-        if (IncludeEpic)
-        {
-            storefronts.Add(Storefront.EpicGamesStore);
         }
 
         return storefronts;

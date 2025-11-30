@@ -24,7 +24,7 @@ public sealed class MainViewModelTests
     public void LaunchGame_WhenLaunchUnsupported_SetsStatusMessage()
     {
         var launchOptions = new GameLaunchOptions(
-            GameLaunchAction.Unsupported("Epic metadata is missing."),
+            GameLaunchAction.Unsupported("Game is not installed."),
             GameLaunchAction.Unsupported(),
             null,
             null,
@@ -39,25 +39,25 @@ public sealed class MainViewModelTests
         };
 
         var viewModel = CreateMainViewModel(launchService, localization, starter);
-        var game = CreateEpicGame(InstallState.Installed);
+        var game = CreateSteamGame(InstallState.Available);
         InvokeApplySelection(viewModel, game);
 
         viewModel.LaunchCommand.Execute(null);
 
-        viewModel.StatusMessage.Should().Be("Epic metadata is missing.");
+        viewModel.StatusMessage.Should().Be("Game is not installed.");
         startedInfo.Should().BeNull();
     }
 
     [Fact]
     public void InstallGame_WhenSupported_InvokesProcessStarter()
     {
-        var installAction = GameLaunchAction.Supported("com.epicgames.launcher://store/product/namespace/catalog?action=install");
+        var installAction = GameLaunchAction.Supported("steam://install/440");
         var launchOptions = new GameLaunchOptions(
             GameLaunchAction.Unsupported(),
             installAction,
-            "TestApp",
-            "catalog",
-            "namespace");
+            null,
+            null,
+            null);
         var launchService = new FakeGameLaunchService(_ => launchOptions);
         var localization = new FakeLocalizationService();
         ProcessStartInfo? startedInfo = null;
@@ -68,13 +68,13 @@ public sealed class MainViewModelTests
         };
 
         var viewModel = CreateMainViewModel(launchService, localization, starter);
-        var game = CreateEpicGame(InstallState.Available);
+        var game = CreateSteamGame(InstallState.Available);
         InvokeApplySelection(viewModel, game);
 
         viewModel.InstallCommand.Execute(null);
 
         startedInfo.Should().NotBeNull();
-        startedInfo!.FileName.Should().Be("com.epicgames.launcher://store/product/namespace/catalog?action=install");
+        startedInfo!.FileName.Should().Be("steam://install/440");
         viewModel.StatusMessage.Should().Be("Status_LoadingLibrary");
     }
 
@@ -99,15 +99,11 @@ public sealed class MainViewModelTests
         method!.Invoke(viewModel, new object[] { game });
     }
 
-    private static GameEntry CreateEpicGame(InstallState state)
+    private static GameEntry CreateSteamGame(InstallState state)
     {
         return new GameEntry
         {
-            Id = new GameIdentifier
-            {
-                Storefront = Storefront.EpicGamesStore,
-                StoreSpecificId = "namespace:catalog",
-            },
+            Id = GameIdentifier.ForSteam(440),
             Title = "Test Game",
             InstallState = state,
         };

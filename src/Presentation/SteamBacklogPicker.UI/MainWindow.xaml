@@ -446,10 +446,6 @@
                               Style="{StaticResource FilterCheckBoxStyle}"
                               IsChecked="{Binding Preferences.IncludeSteam, Mode=TwoWay}"
                               AutomationProperties.Name="{DynamicResource Filters_IncludeSteam}" />
-                    <CheckBox Content="{DynamicResource Filters_IncludeEpic}"
-                              Style="{StaticResource FilterCheckBoxStyle}"
-                              IsChecked="{Binding Preferences.IncludeEpic, Mode=TwoWay}"
-                              AutomationProperties.Name="{DynamicResource Filters_IncludeEpic}" />
                 </StackPanel>
 
                 <TextBlock Text="{DynamicResource Filters_CollectionLabel}"
