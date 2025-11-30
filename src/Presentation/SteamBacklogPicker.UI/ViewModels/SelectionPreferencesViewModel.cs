@@ -269,6 +269,12 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
         {
             _isHydrating = false;
         }
+
+        // If the selection was reset to "No collection", ensure the filter is cleared
+        if (string.Equals(_selectedCollection, _noCollectionOption, StringComparison.Ordinal))
+        {
+            UpdatePreferences(p => p.Filters.RequiredCollection = null);
+        }
     }
 
     public void RefreshLocalization()
