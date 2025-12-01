@@ -22,10 +22,7 @@ public sealed class GameDetailsViewModelTests
 
         var launchOptions = new GameLaunchOptions(
             GameLaunchAction.Supported("steam://run/440"),
-            GameLaunchAction.Unsupported("Already installed."),
-            null,
-            null,
-            null);
+            GameLaunchAction.Unsupported("Already installed."));
 
         var viewModel = GameDetailsViewModel.FromGame(entry, null, localization, launchOptions);
 

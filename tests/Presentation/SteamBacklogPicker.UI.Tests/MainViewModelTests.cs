@@ -25,10 +25,7 @@ public sealed class MainViewModelTests
     {
         var launchOptions = new GameLaunchOptions(
             GameLaunchAction.Unsupported("Game is not installed."),
-            GameLaunchAction.Unsupported(),
-            null,
-            null,
-            null);
+            GameLaunchAction.Unsupported());
         var launchService = new FakeGameLaunchService(_ => launchOptions);
         var localization = new FakeLocalizationService();
         ProcessStartInfo? startedInfo = null;
@@ -54,10 +51,7 @@ public sealed class MainViewModelTests
         var installAction = GameLaunchAction.Supported("steam://install/440");
         var launchOptions = new GameLaunchOptions(
             GameLaunchAction.Unsupported(),
-            installAction,
-            null,
-            null,
-            null);
+            installAction);
         var launchService = new FakeGameLaunchService(_ => launchOptions);
         var localization = new FakeLocalizationService();
         ProcessStartInfo? startedInfo = null;

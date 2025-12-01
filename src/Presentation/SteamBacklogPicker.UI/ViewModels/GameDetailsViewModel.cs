@@ -62,14 +62,12 @@ public sealed class GameDetailsViewModel : ObservableObject
     public string StorefrontDisplayName => Storefront switch
     {
         Storefront.Steam => _localizationService.GetString("Storefront_Steam"),
-        Storefront.EpicGamesStore => _localizationService.GetString("Storefront_Epic"),
         _ => _localizationService.GetString("Storefront_Unknown"),
     };
 
     public string StorefrontGlyph => Storefront switch
     {
         Storefront.Steam => "🟦",
-        Storefront.EpicGamesStore => "🟪",
         _ => string.Empty,
     };
 
@@ -98,12 +96,6 @@ public sealed class GameDetailsViewModel : ObservableObject
     public string? LaunchErrorMessage => _launchOptions.Launch.ErrorMessage;
 
     public string? InstallErrorMessage => _launchOptions.Install.ErrorMessage;
-
-    public string? EpicAppName => _launchOptions.EpicAppName;
-
-    public string? EpicCatalogItemId => _launchOptions.EpicCatalogItemId;
-
-    public string? EpicCatalogNamespace => _launchOptions.EpicCatalogNamespace;
 
     public string InstallationStatus => InstallState switch
     {
@@ -138,9 +130,6 @@ public sealed class GameDetailsViewModel : ObservableObject
         OnPropertyChanged(nameof(InstallUri));
         OnPropertyChanged(nameof(LaunchErrorMessage));
         OnPropertyChanged(nameof(InstallErrorMessage));
-        OnPropertyChanged(nameof(EpicAppName));
-        OnPropertyChanged(nameof(EpicCatalogItemId));
-        OnPropertyChanged(nameof(EpicCatalogNamespace));
     }
 
     public static GameDetailsViewModel FromGame(

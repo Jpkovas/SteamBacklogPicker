@@ -186,12 +186,6 @@ public sealed class SelectionEngineTests
                 HistoryLimit = 10,
             });
 
-            var epicId = new GameIdentifier
-            {
-                Storefront = Storefront.EpicGamesStore,
-                StoreSpecificId = "fngame",
-            };
-
             var games = new[]
             {
                 new GameEntry
@@ -226,14 +220,6 @@ public sealed class SelectionEngineTests
                     OwnershipType = OwnershipType.Owned,
                     ProductCategory = ProductCategory.Game,
                 },
-                new GameEntry
-                {
-                    Id = epicId,
-                    Title = "Epic Installed",
-                    InstallState = InstallState.Installed,
-                    OwnershipType = OwnershipType.Owned,
-                    ProductCategory = ProductCategory.Game,
-                },
             };
 
             var filtered = engine.FilterGames(games);
@@ -243,7 +229,6 @@ public sealed class SelectionEngineTests
                 GameIdentifier.ForSteam(1),
                 GameIdentifier.ForSteam(2),
                 GameIdentifier.ForSteam(3),
-                epicId,
             });
         }
         finally
@@ -477,23 +462,23 @@ public sealed class SelectionEngineTests
                 OwnershipType = OwnershipType.Owned,
             };
 
-            var epicGame = new GameEntry
+            var gogGame = new GameEntry
             {
                 Id = new GameIdentifier
                 {
-                    Storefront = Storefront.EpicGamesStore,
+                    Storefront = Storefront.Gog,
                     StoreSpecificId = "42",
                 },
-                Title = "Epic Mirror",
+                Title = "GOG Mirror",
                 InstallState = InstallState.Installed,
                 OwnershipType = OwnershipType.Owned,
             };
 
             _ = engine.PickNext(new[] { steamGame });
 
-            var filtered = engine.FilterGames(new[] { steamGame, epicGame });
+            var filtered = engine.FilterGames(new[] { steamGame, gogGame });
 
-            filtered.Should().ContainSingle(game => game.Id == epicGame.Id);
+            filtered.Should().ContainSingle(game => game.Id == gogGame.Id);
         }
         finally
         {
@@ -524,22 +509,22 @@ public sealed class SelectionEngineTests
                 OwnershipType = OwnershipType.Owned,
             };
 
-            var epicGame = new GameEntry
+            var gogGame = new GameEntry
             {
                 Id = new GameIdentifier
                 {
-                    Storefront = Storefront.EpicGamesStore,
+                    Storefront = Storefront.Gog,
                     StoreSpecificId = "101",
                 },
-                Title = "Epic",
+                Title = "GOG",
                 InstallState = InstallState.Installed,
                 OwnershipType = OwnershipType.Owned,
             };
 
-            var filtered = engine.FilterGames(new[] { steamGame, epicGame });
+            var filtered = engine.FilterGames(new[] { steamGame, gogGame });
 
             filtered.Should().ContainSingle(game => game.Id == steamGame.Id);
-            filtered.Should().NotContain(game => game.Id == epicGame.Id);
+            filtered.Should().NotContain(game => game.Id == gogGame.Id);
         }
         finally
         {
