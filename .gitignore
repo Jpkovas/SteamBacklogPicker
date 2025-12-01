@@ -69,3 +69,12 @@ Desktop.ini
 # Local debug dumps accidentally produced while tracing Steam art detection
 debug_steam_art.txt
 output.txt
+
+# Local configuration overrides (prevent accidental secret commits)
+appsettings.local.json
+appsettings.*.json
+!appsettings.json
+
+# Claude Code local settings
+.claude/settings.local.json
+.claude/*.local.json

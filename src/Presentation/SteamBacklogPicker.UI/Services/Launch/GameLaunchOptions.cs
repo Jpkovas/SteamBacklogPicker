@@ -7,16 +7,10 @@ public sealed record class GameLaunchOptions
 {
     public GameLaunchOptions(
         GameLaunchAction launch,
-        GameLaunchAction install,
-        string? epicAppName,
-        string? epicCatalogItemId,
-        string? epicCatalogNamespace)
+        GameLaunchAction install)
     {
         Launch = launch ?? GameLaunchAction.Unsupported();
         Install = install ?? GameLaunchAction.Unsupported();
-        EpicAppName = epicAppName;
-        EpicCatalogItemId = epicCatalogItemId;
-        EpicCatalogNamespace = epicCatalogNamespace;
     }
 
     /// <summary>
@@ -24,10 +18,7 @@ public sealed record class GameLaunchOptions
     /// </summary>
     public static GameLaunchOptions Empty { get; } = new(
         GameLaunchAction.Unsupported(),
-        GameLaunchAction.Unsupported(),
-        null,
-        null,
-        null);
+        GameLaunchAction.Unsupported());
 
     /// <summary>
     /// Gets the launch action metadata for the current game.
@@ -38,19 +29,4 @@ public sealed record class GameLaunchOptions
     /// Gets the installation action metadata for the current game.
     /// </summary>
     public GameLaunchAction Install { get; }
-
-    /// <summary>
-    /// Gets the Epic Games Launcher application name when available.
-    /// </summary>
-    public string? EpicAppName { get; }
-
-    /// <summary>
-    /// Gets the Epic Games catalog item identifier when available.
-    /// </summary>
-    public string? EpicCatalogItemId { get; }
-
-    /// <summary>
-    /// Gets the Epic Games catalog namespace when available.
-    /// </summary>
-    public string? EpicCatalogNamespace { get; }
 }

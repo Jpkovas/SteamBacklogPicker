@@ -23,7 +23,6 @@ public sealed class LocalizationService : ILocalizationService
         ["Filters_IncludeOther"] = "Outros conteúdos",
         ["Filters_StorefrontsLabel"] = "LOJAS",
         ["Filters_IncludeSteam"] = "Steam",
-        ["Filters_IncludeEpic"] = "Epic Games Store",
         ["Filters_CollectionLabel"] = "COLEÇÃO",
         ["Filters_SelectCollection"] = "Selecionar coleção",
         ["Filters_SelectCollection_HelpText"] = "Escolha uma coleção personalizada para filtrar",
@@ -59,7 +58,6 @@ public sealed class LocalizationService : ILocalizationService
         ["Notifications_GameDrawn"] = "Jogo sorteado!",
         ["Filters_NoCollection"] = "Nenhuma coleção",
         ["Storefront_Steam"] = "Steam",
-        ["Storefront_Epic"] = "Epic Games Store",
         ["Storefront_Unknown"] = "Origem desconhecida",
         ["Language_Portuguese"] = "Português",
         ["Language_English"] = "Inglês",
@@ -69,9 +67,6 @@ public sealed class LocalizationService : ILocalizationService
         ["GameLaunch_LaunchNotInstalled"] = "Instale o jogo antes de executá-lo.",
         ["GameLaunch_SteamMissingAppId"] = "O identificador do aplicativo Steam está ausente para este jogo.",
         ["GameLaunch_SteamAlreadyInstalled"] = "O jogo já está instalado via Steam.",
-        ["GameLaunch_EpicMissingAppName"] = "Os metadados da Epic não informam o nome do aplicativo necessário para iniciar este título.",
-        ["GameLaunch_EpicAlreadyInstalled"] = "O jogo já está instalado no Epic Games Launcher.",
-        ["GameLaunch_EpicMissingCatalogItem"] = "Os metadados da Epic não informam o identificador do item de catálogo necessário para instalar este título.",
     };
 
     private static readonly IReadOnlyDictionary<string, string> English = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -89,7 +84,6 @@ public sealed class LocalizationService : ILocalizationService
         ["Filters_IncludeOther"] = "Other content",
         ["Filters_StorefrontsLabel"] = "STORES",
         ["Filters_IncludeSteam"] = "Steam",
-        ["Filters_IncludeEpic"] = "Epic Games Store",
         ["Filters_CollectionLabel"] = "COLLECTION",
         ["Filters_SelectCollection"] = "Select collection",
         ["Filters_SelectCollection_HelpText"] = "Choose a custom collection to filter",
@@ -125,7 +119,6 @@ public sealed class LocalizationService : ILocalizationService
         ["Notifications_GameDrawn"] = "Game drawn!",
         ["Filters_NoCollection"] = "No collection",
         ["Storefront_Steam"] = "Steam",
-        ["Storefront_Epic"] = "Epic Games Store",
         ["Storefront_Unknown"] = "Unknown source",
         ["Language_Portuguese"] = "Portuguese",
         ["Language_English"] = "English",
@@ -135,9 +128,6 @@ public sealed class LocalizationService : ILocalizationService
         ["GameLaunch_LaunchNotInstalled"] = "Install the game before launching it.",
         ["GameLaunch_SteamMissingAppId"] = "The Steam app identifier is missing for this game.",
         ["GameLaunch_SteamAlreadyInstalled"] = "The game is already installed via Steam.",
-        ["GameLaunch_EpicMissingAppName"] = "Epic metadata is missing the application name required to launch this title.",
-        ["GameLaunch_EpicAlreadyInstalled"] = "The game is already installed via the Epic Games Launcher.",
-        ["GameLaunch_EpicMissingCatalogItem"] = "Epic metadata is missing the catalog item identifier required to install this title.",
     };
 
     private readonly IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>> _translations;

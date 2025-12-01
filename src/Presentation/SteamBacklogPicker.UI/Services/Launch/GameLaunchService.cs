@@ -40,10 +40,7 @@ public sealed class GameLaunchService : IGameLaunchService
             var missingAppIdMessage = _localizationService.GetString(SteamMissingAppIdKey);
             return new GameLaunchOptions(
                 GameLaunchAction.Unsupported(missingAppIdMessage),
-                GameLaunchAction.Unsupported(missingAppIdMessage),
-                null,
-                null,
-                null);
+                GameLaunchAction.Unsupported(missingAppIdMessage));
         }
 
         var launchAction = game.InstallState == InstallState.Installed
@@ -55,12 +52,12 @@ public sealed class GameLaunchService : IGameLaunchService
             ? GameLaunchAction.Supported($"steam://install/{appId.Value}")
             : GameLaunchAction.Unsupported(_localizationService.GetString(SteamAlreadyInstalledKey));
 
-        return new GameLaunchOptions(launchAction, installAction, null, null, null);
+        return new GameLaunchOptions(launchAction, installAction);
     }
 
     private GameLaunchOptions BuildUnknownOptions()
     {
         var unsupported = GameLaunchAction.Unsupported(_localizationService.GetString(UnsupportedStorefrontKey));
-        return new GameLaunchOptions(unsupported, unsupported, null, null, null);
+        return new GameLaunchOptions(unsupported, unsupported);
     }
 }

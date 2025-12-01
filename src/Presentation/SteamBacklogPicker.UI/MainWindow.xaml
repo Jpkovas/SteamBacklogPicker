@@ -5,10 +5,11 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         Title="Steam Backlog Picker"
-        Width="1200"
-        Height="720"
-        MinWidth="960"
-        MinHeight="600"
+        Width="1280"
+        Height="800"
+        MinWidth="1000"
+        MinHeight="700"
+        WindowStartupLocation="CenterScreen"
         FontFamily="Segoe UI"
         Background="#0B0E13"
         Foreground="White">
@@ -30,6 +31,15 @@
             <Setter Property="BorderBrush" Value="{StaticResource SurfaceBorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="SnapsToDevicePixels" Value="True" />
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect Color="#000000"
+                                      Direction="270"
+                                      ShadowDepth="4"
+                                      BlurRadius="20"
+                                      Opacity="0.5" />
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <Style x:Key="SectionTitleTextStyle" TargetType="TextBlock">
@@ -379,22 +389,72 @@
             </Style.Triggers>
         </Style>
 
+        <Style x:Key="ModernScrollBarStyle" TargetType="ScrollBar">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Width" Value="8" />
+            <Setter Property="MinWidth" Value="8" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <Grid>
+                            <Border Background="{TemplateBinding Background}"
+                                    CornerRadius="4" />
+                            <Track x:Name="PART_Track"
+                                   IsDirectionReversed="True">
+                                <Track.Thumb>
+                                    <Thumb>
+                                        <Thumb.Style>
+                                            <Style TargetType="Thumb">
+                                                <Setter Property="Background" Value="{StaticResource SurfaceBorderBrush}" />
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="Thumb">
+                                                            <Border x:Name="ThumbBorder"
+                                                                    Background="{TemplateBinding Background}"
+                                                                    CornerRadius="4" />
+                                                            <ControlTemplate.Triggers>
+                                                                <Trigger Property="IsMouseOver" Value="True">
+                                                                    <Setter TargetName="ThumbBorder"
+                                                                            Property="Background"
+                                                                            Value="{StaticResource AccentBrush}" />
+                                                                </Trigger>
+                                                            </ControlTemplate.Triggers>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Style>
+                                        </Thumb.Style>
+                                    </Thumb>
+                                </Track.Thumb>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
     </Window.Resources>
-    <Grid Margin="32">
+    <Grid Margin="36">
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="360" />
+            <ColumnDefinition Width="380" MinWidth="340" MaxWidth="420" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
         <Border Grid.Row="0"
                 Style="{StaticResource CardBorderStyle}"
                 AutomationProperties.Name="{DynamicResource Filters_PanelAutomationName}">
-            <StackPanel>
+            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled"
+                          Padding="0,0,4,0">
+                <ScrollViewer.Resources>
+                    <Style TargetType="ScrollBar" BasedOn="{StaticResource ModernScrollBarStyle}" />
+                </ScrollViewer.Resources>
+                <StackPanel>
                 <TextBlock Text="{DynamicResource Filters_Title}"
                            Style="{StaticResource SectionTitleTextStyle}" />
 
@@ -478,11 +538,12 @@
                            Foreground="{StaticResource MutedForegroundBrush}"
                            TextWrapping="Wrap"
                            AutomationProperties.LiveSetting="Assertive" />
-            </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
         </Border>
         <Border Grid.Row="0"
                 Grid.Column="1"
-                Margin="28,0,0,0"
+                Margin="32,0,0,0"
                 Style="{StaticResource CardBorderStyle}"
                 Background="{StaticResource SurfaceAltBrush}"
                 AutomationProperties.Name="{DynamicResource GameDetails_PanelAutomationName}">
@@ -540,7 +601,8 @@
                     </Border>
                 </StackPanel>
                 <Border Grid.Row="1"
-                        Height="360"
+                        MinHeight="300"
+                        MaxHeight="450"
                         Margin="0,24,0,24"
                         CornerRadius="18"
                         Background="{StaticResource SurfaceAltBrush}"
