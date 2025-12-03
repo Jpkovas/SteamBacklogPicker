@@ -1,7 +1,8 @@
-# This workflow will build a .NET project
+# CI workflow for SteamBacklogPicker
+# Builds, tests, and validates the .NET 8 WPF application
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
 
-name: .NET
+name: CI Build and Test
 
 on:
   push:
@@ -9,20 +10,118 @@ on:
   pull_request:
     branches: [ "main" ]
 
-jobs:
-  build:
+# Cancel in-progress runs when a new commit is pushed to the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
+# Minimal permissions for security
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
+jobs:
+  build-and-test:
+    name: Build and Test (.NET 8)
     runs-on: windows-latest
+    timeout-minutes: 15
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Setup .NET
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for better blame/coverage analysis
+
+    - name: Setup .NET 8
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
+
+    # Cache NuGet packages to speed up builds
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+
     - name: Restore dependencies
-      run: dotnet restore
-    - name: Build
-      run: dotnet build --no-restore
-    - name: Test
-      run: dotnet test --no-build --verbosity normal
+      run: dotnet restore SteamBacklogPicker.sln
+
+    - name: Build solution (Release)
+      run: dotnet build SteamBacklogPicker.sln --configuration Release --no-restore
+
+    - name: Run tests with coverage
+      run: |
+        dotnet test SteamBacklogPicker.sln `
+          --configuration Release `
+          --no-build `
+          --verbosity normal `
+          --logger "trx;LogFileName=test-results.trx" `
+          --collect:"XPlat Code Coverage" `
+          --results-directory ./TestResults `
+          -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+
+    # Upload test results for troubleshooting failures
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()  # Upload even if tests fail
+      with:
+        name: test-results
+        path: TestResults/**/*.trx
+        retention-days: 30
+
+    # Upload code coverage reports
+    - name: Upload coverage reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: code-coverage
+        path: TestResults/**/coverage.opencover.xml
+        retention-days: 30
+
+  # Additional job for build artifacts (optional - only for release builds)
+  build-artifacts:
+    name: Build Release Artifacts
+    runs-on: windows-latest
+    timeout-minutes: 10
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build-and-test
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET 8
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+
+    - name: Restore and build
+      run: |
+        dotnet restore SteamBacklogPicker.sln
+        dotnet build SteamBacklogPicker.sln --configuration Release --no-restore
+
+    - name: Publish application
+      run: |
+        dotnet publish src/Presentation/SteamBacklogPicker.UI/SteamBacklogPicker.UI.csproj `
+          --configuration Release `
+          --no-build `
+          --output ./publish
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: steambacklogpicker-release
+        path: publish/
+        retention-days: 7
