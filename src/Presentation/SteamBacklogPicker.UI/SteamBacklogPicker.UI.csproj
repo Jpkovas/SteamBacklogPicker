@@ -15,10 +15,10 @@
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="8.0.0" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Domain\Domain.csproj" />
-    <ProjectReference Include="..\..\Infrastructure\SteamDiscovery\SteamDiscovery.csproj" />
+    <ProjectReference Include="..\SteamBacklogPicker.AppCore\SteamBacklogPicker.AppCore.csproj" />
     <ProjectReference Include="..\..\Infrastructure\Telemetry\Telemetry.csproj" />
     <ProjectReference Include="..\..\Integration\SteamClientAdapter\SteamClientAdapter.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\SteamDiscovery\SteamDiscovery.csproj" />
     <ProjectReference Include="..\..\Integration\ValveFormatParser\ValveFormatParser.csproj" />
   </ItemGroup>
   <ItemGroup>

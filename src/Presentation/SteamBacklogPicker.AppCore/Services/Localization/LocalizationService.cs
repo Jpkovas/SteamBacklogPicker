@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Windows;
 
 namespace SteamBacklogPicker.UI.Services.Localization;
 
@@ -136,6 +135,8 @@ public sealed class LocalizationService : ILocalizationService
 
     public event EventHandler? LanguageChanged;
 
+    public event EventHandler<IReadOnlyDictionary<string, string>>? ResourcesChanged;
+
     public LocalizationService()
     {
         _translations = new Dictionary<string, IReadOnlyDictionary<string, string>>(StringComparer.OrdinalIgnoreCase)
@@ -207,6 +208,13 @@ public sealed class LocalizationService : ILocalizationService
         return GetString(key, count);
     }
 
+    public IReadOnlyDictionary<string, string> GetAllStrings()
+    {
+        return _translations.TryGetValue(_currentLanguage, out var resources)
+            ? resources
+            : _translations["en-US"];
+    }
+
     private void ApplyLanguage(string languageCode)
     {
         if (!_translations.TryGetValue(languageCode, out var resources))
@@ -216,14 +224,7 @@ public sealed class LocalizationService : ILocalizationService
 
         _currentLanguage = languageCode;
 
-        if (Application.Current is { } app)
-        {
-            foreach (var (key, value) in resources)
-            {
-                app.Resources[key] = value;
-            }
-        }
-
+        ResourcesChanged?.Invoke(this, resources);
         LanguageChanged?.Invoke(this, EventArgs.Empty);
     }
 

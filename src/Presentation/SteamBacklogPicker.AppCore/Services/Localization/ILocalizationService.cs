@@ -7,6 +7,8 @@ public interface ILocalizationService
 {
     event EventHandler? LanguageChanged;
 
+    event EventHandler<IReadOnlyDictionary<string, string>>? ResourcesChanged;
+
     string CurrentLanguage { get; }
 
     IReadOnlyList<string> SupportedLanguages { get; }
@@ -18,4 +20,6 @@ public interface ILocalizationService
     string GetString(string key, params object[] arguments);
 
     string FormatGameCount(int count);
+
+    IReadOnlyDictionary<string, string> GetAllStrings();
 }

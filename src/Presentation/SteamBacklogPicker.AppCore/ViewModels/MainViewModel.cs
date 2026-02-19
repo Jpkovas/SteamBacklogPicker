@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Windows.Input;
 using Domain;
 using Domain.Selection;
 using SteamBacklogPicker.UI.Services.GameArt;
