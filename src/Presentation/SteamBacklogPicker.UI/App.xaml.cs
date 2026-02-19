@@ -124,7 +124,12 @@ public partial class App : Application
 
         services.AddSingleton<ValveTextVdfParser>();
         services.AddSingleton<ValveBinaryVdfParser>();
-        services.AddSingleton<ISteamRegistryReader, SteamRegistryReader>();
+        services.AddSingleton<IEnvironmentProvider, SystemEnvironmentProvider>();
+        services.AddSingleton<IFileSystem, SystemFileSystem>();
+        services.AddSingleton<IPlatformProvider, RuntimePlatformProvider>();
+        services.AddSingleton<IWindowsSteamInstallPathProvider, WindowsSteamInstallPathProvider>();
+        services.AddSingleton<ILinuxSteamInstallPathProvider, LinuxSteamInstallPathProvider>();
+        services.AddSingleton<ISteamInstallPathProvider, DefaultSteamInstallPathProvider>();
         services.AddSingleton<ISteamLibraryFoldersParser, SteamLibraryFoldersParser>();
         services.AddSingleton<ISteamLibraryLocator, SteamLibraryLocator>();
         services.AddSingleton<IFileAccessor, DefaultFileAccessor>();

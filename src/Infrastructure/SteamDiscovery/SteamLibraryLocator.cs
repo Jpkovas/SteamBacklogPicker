@@ -12,7 +12,7 @@ public interface ISteamLibraryLocator
 
 public sealed class SteamLibraryLocator : ISteamLibraryLocator, IDisposable
 {
-    private readonly ISteamRegistryReader _registryReader;
+    private readonly ISteamInstallPathProvider _installPathProvider;
     private readonly ISteamLibraryFoldersParser _parser;
     private readonly object _syncRoot = new();
     private FileSystemWatcher? _watcher;
@@ -20,9 +20,9 @@ public sealed class SteamLibraryLocator : ISteamLibraryLocator, IDisposable
     private IReadOnlyList<string> _cachedLibraries = Array.Empty<string>();
     private bool _initialized;
 
-    public SteamLibraryLocator(ISteamRegistryReader registryReader, ISteamLibraryFoldersParser parser)
+    public SteamLibraryLocator(ISteamInstallPathProvider installPathProvider, ISteamLibraryFoldersParser parser)
     {
-        _registryReader = registryReader ?? throw new ArgumentNullException(nameof(registryReader));
+        _installPathProvider = installPathProvider ?? throw new ArgumentNullException(nameof(installPathProvider));
         _parser = parser ?? throw new ArgumentNullException(nameof(parser));
     }
 
@@ -64,7 +64,7 @@ public sealed class SteamLibraryLocator : ISteamLibraryLocator, IDisposable
 
     private void InitializeWatcherNoLock()
     {
-        var steamPath = _registryReader.GetSteamInstallPath();
+        var steamPath = _installPathProvider.GetSteamInstallPath();
         if (string.IsNullOrWhiteSpace(steamPath))
         {
             _libraryFilePath = null;

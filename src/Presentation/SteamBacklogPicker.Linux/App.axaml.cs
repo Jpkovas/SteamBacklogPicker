@@ -4,7 +4,6 @@ using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
 using Domain.Selection;
 using SteamBacklogPicker.Linux.Services.Notifications;
-using SteamBacklogPicker.Linux.Services.Runtime;
 using SteamBacklogPicker.Linux.Views;
 using SteamBacklogPicker.UI.Services.GameArt;
 using SteamBacklogPicker.UI.Services.Launch;
@@ -44,14 +43,17 @@ public partial class App : Application
         var services = new ServiceCollection();
         services.AddSingleton<ValveTextVdfParser>();
         services.AddSingleton<ValveBinaryVdfParser>();
-        services.AddSingleton<ISteamRegistryReader, LinuxSteamRegistryReader>();
+        services.AddSingleton<IEnvironmentProvider, SystemEnvironmentProvider>();
+        services.AddSingleton<IFileSystem, SystemFileSystem>();
+        services.AddSingleton<ILinuxSteamInstallPathProvider, LinuxSteamInstallPathProvider>();
+        services.AddSingleton<ISteamInstallPathProvider>(sp => sp.GetRequiredService<ILinuxSteamInstallPathProvider>());
         services.AddSingleton<ISteamLibraryFoldersParser, SteamLibraryFoldersParser>();
         services.AddSingleton<ISteamLibraryLocator, SteamLibraryLocator>();
         services.AddSingleton<IFileAccessor, DefaultFileAccessor>();
         services.AddSingleton<SteamAppManifestCache>();
         services.AddSingleton<INativeLibraryLoader, DefaultNativeLibraryLoader>();
         services.AddSingleton<ISteamVdfFallback>(sp => new SteamVdfFallback(
-            sp.GetRequiredService<ISteamRegistryReader>().GetSteamInstallPath() ?? string.Empty,
+            sp.GetRequiredService<ISteamInstallPathProvider>().GetSteamInstallPath() ?? string.Empty,
             sp.GetRequiredService<IFileAccessor>(),
             sp.GetRequiredService<ValveTextVdfParser>(),
             sp.GetRequiredService<ValveBinaryVdfParser>()));

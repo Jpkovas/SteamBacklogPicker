@@ -1,50 +1,16 @@
-using System;
-using System.IO;
 using SteamDiscovery;
 
 namespace SteamBacklogPicker.Linux.Services.Runtime;
 
-public sealed class LinuxSteamRegistryReader : ISteamRegistryReader
+[Obsolete("Use LinuxSteamInstallPathProvider from SteamDiscovery.")]
+public sealed class LinuxSteamRegistryReader : ISteamInstallPathProvider
 {
-    public string? GetSteamInstallPath()
+    private readonly LinuxSteamInstallPathProvider _inner;
+
+    public LinuxSteamRegistryReader()
     {
-        var fromEnvironment = Environment.GetEnvironmentVariable("STEAM_PATH");
-        if (IsValidSteamDirectory(fromEnvironment))
-        {
-            return fromEnvironment;
-        }
-
-        var homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        if (string.IsNullOrWhiteSpace(homeDirectory))
-        {
-            return null;
-        }
-
-        var candidates = new[]
-        {
-            Path.Combine(homeDirectory, ".local", "share", "Steam"),
-            Path.Combine(homeDirectory, ".steam", "steam"),
-            Path.Combine(homeDirectory, ".var", "app", "com.valvesoftware.Steam", ".local", "share", "Steam")
-        };
-
-        foreach (var candidate in candidates)
-        {
-            if (IsValidSteamDirectory(candidate))
-            {
-                return candidate;
-            }
-        }
-
-        return null;
+        _inner = new LinuxSteamInstallPathProvider(new SystemEnvironmentProvider(), new SystemFileSystem());
     }
 
-    private static bool IsValidSteamDirectory(string? candidate)
-    {
-        if (string.IsNullOrWhiteSpace(candidate) || !Directory.Exists(candidate))
-        {
-            return false;
-        }
-
-        return File.Exists(Path.Combine(candidate, "steamapps", "libraryfolders.vdf"));
-    }
+    public string? GetSteamInstallPath() => _inner.GetSteamInstallPath();
 }
