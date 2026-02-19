@@ -11,12 +11,12 @@ namespace SteamBacklogPicker.UI.Services.Runtime;
 /// </summary>
 public sealed class SteamEnvironment : ISteamEnvironment
 {
-    private readonly ISteamRegistryReader _registryReader;
+    private readonly ISteamInstallPathProvider _installPathProvider;
     private readonly Lazy<string> _steamDirectory;
 
-    public SteamEnvironment(ISteamRegistryReader registryReader)
+    public SteamEnvironment(ISteamInstallPathProvider installPathProvider)
     {
-        _registryReader = registryReader ?? throw new ArgumentNullException(nameof(registryReader));
+        _installPathProvider = installPathProvider ?? throw new ArgumentNullException(nameof(installPathProvider));
         _steamDirectory = new Lazy<string>(ResolveSteamDirectory, isThreadSafe: true);
     }
 
@@ -58,7 +58,7 @@ public sealed class SteamEnvironment : ISteamEnvironment
 
     private string ResolveSteamDirectory()
     {
-        var registryPath = _registryReader.GetSteamInstallPath();
+        var registryPath = _installPathProvider.GetSteamInstallPath();
         if (!string.IsNullOrWhiteSpace(registryPath) && Directory.Exists(registryPath))
         {
             return registryPath;

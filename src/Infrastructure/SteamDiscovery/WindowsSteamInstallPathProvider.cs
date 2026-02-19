@@ -3,7 +3,7 @@ using Microsoft.Win32;
 
 namespace SteamDiscovery;
 
-public sealed class SteamRegistryReader : ISteamRegistryReader
+public sealed class WindowsSteamInstallPathProvider : IWindowsSteamInstallPathProvider
 {
     private const string SteamKeyPath = @"Software\\Valve\\Steam";
     private const string SteamPathValueName = "SteamPath";
