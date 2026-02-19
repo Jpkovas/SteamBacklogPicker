@@ -2,25 +2,25 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using System.Windows;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
+using Domain.Selection;
+using Infrastructure.Telemetry;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog.Events;
-using Infrastructure.Telemetry;
-using SteamBacklogPicker.UI.Services.Runtime;
 using SteamBacklogPicker.UI.Services.GameArt;
 using SteamBacklogPicker.UI.Services.Launch;
 using SteamBacklogPicker.UI.Services.Library;
 using SteamBacklogPicker.UI.Services.Localization;
 using SteamBacklogPicker.UI.Services.Notifications;
+using SteamBacklogPicker.UI.Services.Runtime;
 using SteamBacklogPicker.UI.Services.Updates;
 using SteamBacklogPicker.UI.ViewModels;
 using SteamClientAdapter;
 using SteamDiscovery;
 using ValveFormatParser;
-using Domain.Selection;
 
 namespace SteamBacklogPicker.UI;
 
@@ -34,6 +34,13 @@ public partial class App : Application
         base.OnStartup(e);
         _serviceProvider = BuildServices();
         _updateCancellation = new CancellationTokenSource();
+
+        if (_serviceProvider.GetService<ILocalizationService>() is { } localizationService)
+        {
+            localizationService.ResourcesChanged += OnLocalizationResourcesChanged;
+            OnLocalizationResourcesChanged(this, localizationService.GetAllStrings());
+        }
+
         var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
         mainWindow.Show();
 
@@ -60,6 +67,11 @@ public partial class App : Application
             return;
         }
 
+        if (_serviceProvider.GetService<ILocalizationService>() is { } localizationService)
+        {
+            localizationService.ResourcesChanged -= OnLocalizationResourcesChanged;
+        }
+
         if (_serviceProvider.GetService<ITelemetryClient>() is { } telemetryClient)
         {
             telemetryClient.TrackEvent("application_exited");
@@ -79,11 +91,23 @@ public partial class App : Application
         TelemetryBootstrapper.Shutdown();
     }
 
+    private static void OnLocalizationResourcesChanged(object? _, IReadOnlyDictionary<string, string> resources)
+    {
+        if (Application.Current is not { } app)
+        {
+            return;
+        }
+
+        foreach (var (key, value) in resources)
+        {
+            app.Resources[key] = value;
+        }
+    }
+
     private static ServiceProvider BuildServices()
     {
         var services = new ServiceCollection();
 
-        // Build configuration from appsettings.json
         var configuration = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory)
             .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
@@ -125,16 +149,15 @@ public partial class App : Application
             environment.TryInitializeSteamApi(adapter);
             return adapter;
         });
+
         services.AddSingleton<SteamAppManifestCache>();
         services.AddSingleton<ISelectionEngine>(_ => new SelectionEngine());
         services.AddSingleton<IGameLibraryProvider, SteamLibraryProvider>();
         services.AddSingleton<IGameLibraryService, CombinedGameLibraryService>();
-        services.AddSingleton<SteamGameArtLocator>();
         services.AddSingleton<IGameArtLocator, SteamGameArtLocator>();
         services.AddSingleton<ILocalizationService, LocalizationService>();
         services.AddSingleton<IToastNotificationService, ToastNotificationService>();
-        services.AddSingleton<IGameLaunchService>(sp => new GameLaunchService(
-            sp.GetRequiredService<ILocalizationService>()));
+        services.AddSingleton<IGameLaunchService, GameLaunchService>();
         services.AddSingleton<IAppUpdateService, SquirrelUpdateService>();
         services.AddSingleton<MainViewModel>();
         services.AddTransient<MainWindow>();
