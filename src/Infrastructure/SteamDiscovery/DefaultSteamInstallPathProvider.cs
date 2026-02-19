@@ -10,6 +10,7 @@ public sealed class DefaultSteamInstallPathProvider : ISteamInstallPathProvider
         IPlatformProvider platformProvider,
         IWindowsSteamInstallPathProvider windowsProvider,
         ILinuxSteamInstallPathProvider linuxProvider
+    )
     {
         _platformProvider = platformProvider ?? throw new ArgumentNullException(nameof(platformProvider));
         _windowsProvider = windowsProvider ?? throw new ArgumentNullException(nameof(windowsProvider));
