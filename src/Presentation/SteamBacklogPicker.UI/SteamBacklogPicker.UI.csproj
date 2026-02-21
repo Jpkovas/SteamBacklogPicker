@@ -22,6 +22,7 @@
     <ProjectReference Include="..\..\Integration\ValveFormatParser\ValveFormatParser.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Remove="Services\Updates\IAppUpdateService.cs" />
     <Compile Update="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>

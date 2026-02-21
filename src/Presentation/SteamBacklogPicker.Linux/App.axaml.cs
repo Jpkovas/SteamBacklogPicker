@@ -1,15 +1,17 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
+using System.Threading;
+using System.Threading.Tasks;
 using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
 using Domain.Selection;
-using SteamBacklogPicker.Linux.Services.Notifications;
+using SteamBacklogPicker.Linux.Composition;
 using SteamBacklogPicker.Linux.Views;
 using SteamBacklogPicker.UI.Services.GameArt;
 using SteamBacklogPicker.UI.Services.Launch;
 using SteamBacklogPicker.UI.Services.Library;
 using SteamBacklogPicker.UI.Services.Localization;
-using SteamBacklogPicker.UI.Services.Notifications;
+using SteamBacklogPicker.UI.Services.Updates;
 using SteamBacklogPicker.UI.ViewModels;
 using SteamClientAdapter;
 using SteamDiscovery;
@@ -20,6 +22,7 @@ namespace SteamBacklogPicker.Linux;
 public partial class App : Application
 {
     private ServiceProvider? _serviceProvider;
+    private CancellationTokenSource? _updateCancellation;
 
     public override void Initialize()
     {
@@ -29,14 +32,25 @@ public partial class App : Application
     public override void OnFrameworkInitializationCompleted()
     {
         _serviceProvider = BuildServices();
+        _updateCancellation = new CancellationTokenSource();
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.MainWindow = _serviceProvider.GetRequiredService<MainWindow>();
+            desktop.Exit += (_, _) =>
+            {
+                _updateCancellation?.Cancel();
+                _serviceProvider?.Dispose();
+            };
+            if (_serviceProvider.GetService<IAppUpdateService>() is { } updateService)
+            {
+                _ = Task.Run(() => updateService.CheckForUpdatesAsync(_updateCancellation.Token));
+            }
         }
 
         base.OnFrameworkInitializationCompleted();
     }
+
 
     private static ServiceProvider BuildServices()
     {
@@ -66,7 +80,7 @@ public partial class App : Application
         services.AddSingleton<IGameArtLocator, SteamGameArtLocator>();
         services.AddSingleton<ILocalizationService, LocalizationService>();
         services.AddSingleton<IGameLaunchService, GameLaunchService>();
-        services.AddSingleton<IToastNotificationService, LinuxToastNotificationService>();
+        services.AddPlatformUserExperienceServices();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<MainWindow>();
         return services.BuildServiceProvider();
