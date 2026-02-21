@@ -14,6 +14,7 @@ using SteamBacklogPicker.UI.Services.GameArt;
 using SteamBacklogPicker.UI.Services.Launch;
 using SteamBacklogPicker.UI.Services.Library;
 using SteamBacklogPicker.UI.Services.Localization;
+using SteamBacklogPicker.UI.Composition;
 using SteamBacklogPicker.UI.Services.Notifications;
 using SteamBacklogPicker.UI.Services.Runtime;
 using SteamBacklogPicker.UI.Services.Updates;
@@ -161,9 +162,8 @@ public partial class App : Application
         services.AddSingleton<IGameLibraryService, CombinedGameLibraryService>();
         services.AddSingleton<IGameArtLocator, SteamGameArtLocator>();
         services.AddSingleton<ILocalizationService, LocalizationService>();
-        services.AddSingleton<IToastNotificationService, ToastNotificationService>();
         services.AddSingleton<IGameLaunchService, GameLaunchService>();
-        services.AddSingleton<IAppUpdateService, SquirrelUpdateService>();
+        services.AddPlatformUserExperienceServices();
         services.AddSingleton<MainViewModel>();
         services.AddTransient<MainWindow>();
 

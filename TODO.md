@@ -4,3 +4,6 @@
 - Capturar screenshots oficiais dos dois clientes (WPF e Linux Avalonia) para atualizar README e documentação visual.
 - Consolidar o fallback de resolução de diretório em `SteamEnvironment` para usar apenas `ISteamInstallPathProvider`, evitando duplicação de heurísticas fora do Infrastructure.
 - Reutilizar a nova lista de candidatos Linux no bootstrap do cliente Avalonia para tentativa de inicialização explícita do `ISteamClientAdapter` no startup.
+
+- Criar testes automatizados para o fluxo de atualização Linux cobrindo erro de rede, hash inválido e rollback de substituição do AppImage.
+- Evoluir notificação Linux para implementação DBus direta (sem dependência de `notify-send`) para maior controle de timeout/categorias.
