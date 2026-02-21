@@ -20,17 +20,32 @@ This document captures the current research spike for optional, high-risk Steam 
 Two experimental implementations were added:
 
 1. **`SteamNamedPipeHookClient`** – Connects to an IPC pipe, performs the same handshake as the web UI, and parses TSV payloads into strongly typed `SteamDownloadEvent` records. It automatically retries after disconnects and filters events by `AppId` when requested.
-2. **`SteamMemoryPollingHookClient`** – Polls the `steam.exe` process for read-only access, scanning configured memory addresses and parsing textual snapshots. The class is intentionally conservative: it only requests `PROCESS_VM_READ`/`PROCESS_QUERY_INFORMATION`, supports opt-in address lists, and never mutates process memory.
+2. **`SteamMemoryPollingHookClient`** – Polls the `steam` process for read-only access and parses textual snapshots via `SteamSnapshotParser`. The memory reader is selected per OS: Windows uses explicit `ReadProcessMemory` interop, while Linux can optionally use `/proc/<pid>/mem` when `EnableUnsafeLinuxMemoryRead` is set.
 
-A `SteamHookClientFactory` chooses the strategy based on `SteamHookOptions`, making the module easy to guard behind configuration flags. The project is not referenced elsewhere to avoid accidental activation.
+A `SteamHookClientFactory` chooses the strategy based on `SteamHookOptions` and now supports controlled degradation. For unsupported platforms, or Linux with unsafe memory read disabled, the factory returns a no-op client and emits diagnostics through `DiagnosticListener` (for example, `steam_hook_memory_mode_degraded`).
 
-### Outstanding work
-- Reverse-engineer up-to-date message schemas for both the pipe and memory snapshots, ideally under controlled lab conditions with multiple client branches.
-- Replace the ad-hoc TSV parser with protobuf/FlatBuffer decoding if Valve reuses the `ClientUpdate` protocol buffers found in `steamclient.dll`.
-- Harden reconnection logic (exponential backoff, jitter) and add structured logging hooks.
-- Provide sandboxed integration tests that replay captured IPC traffic without touching the real client.
+## 3. Compliance and anti-cheat risks (Windows and Linux)
 
-## 3. Overlay via WebView2
+### Windows-specific notes
+- The current implementation is strictly read-only (`PROCESS_VM_READ` and `PROCESS_QUERY_INFORMATION`) and intentionally avoids handle duplication, DLL injection, and process patching.
+- Even read-only polling may be interpreted as suspicious if sampling becomes aggressive or if combined with unrelated overlays/injection tooling.
+
+### Linux-specific notes
+- `/proc/<pid>/mem` access is often blocked by kernel hardening (`ptrace_scope`, SELinux/AppArmor, container security profiles) unless running with elevated privileges or ptrace capabilities.
+- Enabling `EnableUnsafeLinuxMemoryRead` may violate local security policy and can increase anti-cheat scrutiny if used while protected games are running.
+- Because Linux parity is partial, the default is conservative degradation (memory mode disabled unless explicitly enabled).
+
+## 4. Controlled degradation + parity subtasks
+
+When memory inspection cannot run safely, SteamBacklogPicker should degrade to no-op memory hooks and keep telemetry explicit.
+
+Suggested subtasks toward parity:
+1. Add bounded sampling metrics and user-facing warning surfaces for repeated `steam_hook_linux_memory_read_denied` events.
+2. Prototype non-memory Linux fallback (tailing `content_log.txt` + manifest reconciliation) and compare event latency versus memory mode.
+3. Validate legal/compliance posture with documented Valve policy interpretations before broadening defaults.
+4. Build integration fixtures that replay captured snapshots from both OS families to prevent parser regressions.
+
+## 5. Overlay via WebView2
 
 ### Concept
 Create an auxiliary transparent window that uses WebView2 to render SteamBacklogPicker UI elements (e.g., download completion toasts) on top of the Steam window. Steam’s own overlay is a separate process (`GameOverlayUI.exe`) that injects DirectX hooks; duplicating that behavior is risky. A lighter alternative is to:
@@ -49,7 +64,7 @@ Create an auxiliary transparent window that uses WebView2 to render SteamBacklog
 - Rely on the native Steam overlay (`ISteamFriends::ActivateGameOverlayToWebPage`) to present web content instead of maintaining a custom overlay.
 - Use Windows toast notifications (WinRT) triggered by download completions instead of maintaining a persistent overlay window.
 
-## 4. Summary of current boundaries
+## 6. Summary of current boundaries
 - The hook prototype is purely observational and off by default. Enabling it requires explicit configuration and carries risk of breaking whenever Valve updates the client.
 - No persistent background service is created; all handles are closed once the subscription ends.
 - Further progress depends on legal review of Valve’s terms, stability testing against Steam beta builds, and user opt-in flows that highlight the experimental nature of the feature.

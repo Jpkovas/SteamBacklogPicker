@@ -57,4 +57,18 @@ public sealed record SteamHookOptions
     /// Gets the list of application identifiers to filter on. When empty the hook will report all events.
     /// </summary>
     public ImmutableHashSet<int> WatchedAppIds { get; init; } = ImmutableHashSet<int>.Empty;
+
+    /// <summary>
+    /// Gets a value indicating whether Linux process-memory probing can use <c>/proc/&lt;pid&gt;/mem</c>.
+    /// </summary>
+    /// <remarks>
+    /// This option is disabled by default because most environments deny access unless elevated capabilities are granted,
+    /// and Steam/VAC policies may treat aggressive probing as suspicious behavior.
+    /// </remarks>
+    public bool EnableUnsafeLinuxMemoryRead { get; init; }
+
+    /// <summary>
+    /// Gets an optional callback that receives structured diagnostics emitted by experimental hook flows.
+    /// </summary>
+    public Action<SteamHookDiagnostic>? DiagnosticListener { get; init; }
 }
