@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Runtime.InteropServices;
@@ -101,20 +102,70 @@ public sealed class LinuxAppImageUpdateService : IAppUpdateService
             return;
         }
 
-        var backupPath = marker.TargetBinaryPath + ".bak";
-        File.Copy(marker.TargetBinaryPath, backupPath, overwrite: true);
-        File.Copy(marker.PendingBinaryPath, marker.TargetBinaryPath, overwrite: true);
-        File.SetUnixFileMode(marker.TargetBinaryPath, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute | UnixFileMode.GroupRead | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
-        File.Delete(marker.PendingBinaryPath);
-        File.Delete(markerPath);
+        if (string.Equals(Path.GetFullPath(marker.PendingBinaryPath), Path.GetFullPath(marker.TargetBinaryPath), StringComparison.Ordinal))
+        {
+            return;
+        }
 
-        try
+        await SchedulePostExitSwapAsync(marker, markerPath, cancellationToken);
+    }
+
+    private static async Task SchedulePostExitSwapAsync(PendingUpdateMarker marker, string markerPath, CancellationToken cancellationToken)
+    {
+        var stateDirectory = GetUpdateStateDirectory();
+        Directory.CreateDirectory(stateDirectory);
+
+        var currentProcessId = Environment.ProcessId;
+        var scriptPath = Path.Combine(stateDirectory, "apply-pending-update.sh");
+        var backupPath = marker.TargetBinaryPath + ".bak";
+        var scriptContents = $"""
+#!/usr/bin/env bash
+set -eu
+
+CURRENT_PID={currentProcessId}
+TARGET_PATH='{EscapeForSingleQuotedShellLiteral(marker.TargetBinaryPath)}'
+PENDING_PATH='{EscapeForSingleQuotedShellLiteral(marker.PendingBinaryPath)}'
+BACKUP_PATH='{EscapeForSingleQuotedShellLiteral(backupPath)}'
+MARKER_PATH='{EscapeForSingleQuotedShellLiteral(markerPath)}'
+SCRIPT_PATH='{EscapeForSingleQuotedShellLiteral(scriptPath)}'
+
+for _ in $(seq 1 300); do
+  if ! kill -0 "$CURRENT_PID" 2>/dev/null; then
+    break
+  fi
+  sleep 1
+done
+
+if [ ! -f "$PENDING_PATH" ]; then
+  exit 0
+fi
+
+cp -f "$TARGET_PATH" "$BACKUP_PATH" || true
+mv -f "$PENDING_PATH" "$TARGET_PATH"
+chmod 755 "$TARGET_PATH"
+rm -f "$MARKER_PATH"
+rm -f "$BACKUP_PATH"
+rm -f "$SCRIPT_PATH"
+""";
+
+        await File.WriteAllTextAsync(scriptPath, scriptContents, cancellationToken);
+        File.SetUnixFileMode(scriptPath, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute | UnixFileMode.GroupRead | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
+
+        Process.Start(new ProcessStartInfo
         {
-            File.Delete(backupPath);
-        }
-        catch
-        {
-        }
+            FileName = "/usr/bin/env",
+            ArgumentList = { "bash", scriptPath },
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+        });
+
+    }
+
+    private static string EscapeForSingleQuotedShellLiteral(string value)
+    {
+        return value.Replace("'", "'\\''", StringComparison.Ordinal);
     }
 
     private static string GetUpdateStateDirectory()
