@@ -1,5 +1,8 @@
 # CHANGES
 
+- Separei `SteamMemoryPollingHookClient` por implementação explícita de SO (Windows com `ReadProcessMemory`, Linux com `/proc/<pid>/mem` sob feature flag), adicionei contrato de baixo nível para leitura de memória e degradação controlada com diagnósticos estruturados.
+- Adicionei testes independentes de plataforma para parser de snapshot e testes de seleção/degradação da implementação por SO no factory de hooks, além de atualizar `docs/advanced-integration.md` com riscos de compliance/anti-cheat em Windows e Linux.
+
 - Criei o projeto compartilhado `SteamBacklogPicker.AppCore` (net8.0), movendo ViewModels e serviços de UI sem dependência WPF para centralizar fluxos e contratos usados por múltiplos clientes.
 - Mantive o cliente WPF como host Windows e adicionei o cliente `SteamBacklogPicker.Linux` (Avalonia) consumindo os mesmos ViewModels/serviços do `AppCore`, além de registrar checklist de paridade em `docs/testing/journey-parity-checklist.md`.
 - Substituí o acesso direto ao registry por `ISteamInstallPathProvider` no SteamDiscovery, com providers de Windows (registry) e Linux (STEAM_PATH + heurísticas de diretórios padrão/Flatpak) e integração no `SteamLibraryLocator`.

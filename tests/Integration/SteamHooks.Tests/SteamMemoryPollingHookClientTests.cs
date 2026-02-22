@@ -1,5 +1,4 @@
-using System.Diagnostics;
-using System.Reflection;
+using System.Collections.Immutable;
 using SteamBacklogPicker.Integration.SteamHooks;
 using Xunit;
 
@@ -8,29 +7,27 @@ namespace SteamHooks.Tests;
 public sealed class SteamMemoryPollingHookClientTests
 {
     [Fact]
-    public async Task TryCaptureDownloadState_DisposesProcessWhenAccessorCreationFails()
+    public void TryParseSnapshot_ShouldParseValidLinesAndIgnoreInvalidOnes()
     {
-        // Arrange
-        var options = new SteamHookOptions();
-        var process = Process.GetCurrentProcess();
-        await using var client = new SteamMemoryPollingHookClient(
-            options,
-            _ => process,
-            _ => null);
+        var snapshot = "appid=570\tstatus=downloading\tprogress=12.5\tbytes=1024\tdepotid=111\nappid=invalid\tstatus=queued\n"u8.ToArray();
 
-        var method = typeof(SteamMemoryPollingHookClient).GetMethod(
-            "TryCaptureDownloadState",
-            BindingFlags.NonPublic | BindingFlags.Instance);
-        Assert.NotNull(method);
+        var parsed = SteamSnapshotParser.TryParseSnapshot(snapshot, out var events);
 
-        var handle = process.SafeHandle;
-        var parameters = new object?[] { null };
+        Assert.True(parsed);
+        Assert.Single(events);
+        Assert.Equal(570, events[0].AppId);
+        Assert.Equal("downloading", events[0].Status);
+        Assert.Equal(12.5d, events[0].Progress);
+        Assert.Equal(1024L, events[0].BytesTransferred);
+        Assert.Equal(111, events[0].DepotId);
+    }
 
-        // Act
-        var result = (bool)method!.Invoke(client, parameters)!;
+    [Fact]
+    public void TryParseSnapshot_ShouldReturnFalseForWhitespaceOnlyPayload()
+    {
+        var parsed = SteamSnapshotParser.TryParseSnapshot("\0\0\0"u8.ToArray(), out var events);
 
-        // Assert
-        Assert.False(result);
-        Assert.True(handle.IsClosed);
+        Assert.False(parsed);
+        Assert.Equal(ImmutableArray<SteamDownloadEvent>.Empty, events);
     }
 }

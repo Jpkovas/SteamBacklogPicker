@@ -1,31 +1,27 @@
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
-using Microsoft.Win32.SafeHandles;
 
 namespace SteamBacklogPicker.Integration.SteamHooks;
 
 /// <summary>
-/// Attempts to infer download state by inspecting the memory of the running <c>steam.exe</c> process.
+/// Attempts to infer download state by inspecting the memory of the running <c>steam</c> process.
 /// </summary>
-public sealed class SteamMemoryPollingHookClient : ISteamHookClient
+public sealed partial class SteamMemoryPollingHookClient : ISteamHookClient
 {
     private readonly SteamHookOptions _options;
     private readonly Func<SteamHookOptions, Process?> _processFactory;
-    private readonly Func<Process, SteamProcessAccessor?> _accessorFactory;
+    private readonly Func<Process, ISteamProcessMemoryReader?> _readerFactory;
 
     public SteamMemoryPollingHookClient(
         SteamHookOptions options,
         Func<SteamHookOptions, Process?>? processFactory = null,
-        Func<Process, SteamProcessAccessor?>? accessorFactory = null)
+        Func<Process, ISteamProcessMemoryReader?>? readerFactory = null)
     {
         _options = options;
         _processFactory = processFactory ?? DefaultProcessFactory;
-        _accessorFactory = accessorFactory ?? SteamProcessAccessor.TryCreate;
+        _readerFactory = readerFactory ?? CreateDefaultReader;
     }
 
     /// <inheritdoc />
@@ -64,150 +60,94 @@ public sealed class SteamMemoryPollingHookClient : ISteamHookClient
         var process = _processFactory(_options);
         if (process is null)
         {
+            ReportDiagnostic("steam_hook_memory_process_not_found");
             return false;
         }
 
         using (process)
         {
-            using var accessor = _accessorFactory(process);
-            if (accessor is null)
+            using var reader = _readerFactory(process);
+            if (reader is null)
             {
+                ReportDiagnostic(
+                    "steam_hook_memory_reader_unavailable",
+                    new Dictionary<string, string>
+                    {
+                        ["os"] = RuntimeInformation.OSDescription,
+                    });
+
                 return false;
             }
 
-            return accessor.TryReadDownloadEvents(_options.MemoryScanAddresses, _options.MemoryReadLength, out events);
-        }
-    }
-
-    public sealed class SteamProcessAccessor : IDisposable
-    {
-        private readonly SafeProcessHandle _processHandle;
-
-        private SteamProcessAccessor(SafeProcessHandle processHandle)
-        {
-            _processHandle = processHandle;
-        }
-
-        public static SteamProcessAccessor? TryCreate(Process process)
-        {
-            var access = NativeMethods.ProcessAccessFlags.VirtualMemoryRead | NativeMethods.ProcessAccessFlags.QueryInformation;
-            var handle = NativeMethods.OpenProcess(access, false, process.Id);
-            if (handle.IsInvalid)
-            {
-                handle.Dispose();
-                return null;
-            }
-
-            return new SteamProcessAccessor(handle);
-        }
-
-        public bool TryReadDownloadEvents(ImmutableArray<nuint> addresses, int readLength, out ImmutableArray<SteamDownloadEvent> events)
-        {
+            var foundAny = false;
             var builder = ImmutableArray.CreateBuilder<SteamDownloadEvent>();
-            if (addresses.IsDefaultOrEmpty)
-            {
-                events = builder.MoveToImmutable();
-                return false;
-            }
+            var readBufferLength = Math.Clamp(_options.MemoryReadLength, 32, 16 * 1024);
 
-            var buffer = new byte[Math.Clamp(readLength, 32, 16 * 1024)];
-            foreach (var address in addresses)
+            foreach (var address in _options.MemoryScanAddresses)
             {
                 if (address == 0)
                 {
                     continue;
                 }
 
-                if (!NativeMethods.ReadProcessMemory(_processHandle, (IntPtr)address, buffer, buffer.Length, out var bytesRead) || bytesRead == 0)
+                if (!reader.TryReadMemory(address, readBufferLength, out var data) || data.Length == 0)
                 {
                     continue;
                 }
 
-                if (TryParseSnapshot(buffer.AsSpan(0, bytesRead), out var snapshotEvents))
+                foundAny = true;
+                if (SteamSnapshotParser.TryParseSnapshot(data, out var parsed))
                 {
-                    builder.AddRange(snapshotEvents);
+                    builder.AddRange(parsed);
                 }
             }
 
             events = builder.MoveToImmutable();
+            if (!foundAny)
+            {
+                ReportDiagnostic("steam_hook_memory_snapshot_empty");
+            }
+
             return events.Length > 0;
         }
-
-        private static bool TryParseSnapshot(ReadOnlySpan<byte> data, out IEnumerable<SteamDownloadEvent> events)
-        {
-            events = Enumerable.Empty<SteamDownloadEvent>();
-            var text = Encoding.UTF8.GetString(data).TrimEnd('\0');
-            if (string.IsNullOrWhiteSpace(text))
-            {
-                return false;
-            }
-
-            var results = new List<SteamDownloadEvent>();
-            foreach (var line in text.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-            {
-                var fields = line.Split('\t', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                var fieldMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                foreach (var field in fields)
-                {
-                    var kvp = field.Split('=', 2, StringSplitOptions.TrimEntries);
-                    if (kvp.Length == 2)
-                    {
-                        fieldMap[kvp[0]] = kvp[1];
-                    }
-                }
-
-                if (!fieldMap.TryGetValue("appid", out var appIdRaw) || !int.TryParse(appIdRaw, out var appId))
-                {
-                    continue;
-                }
-
-                fieldMap.TryGetValue("status", out var statusRaw);
-                fieldMap.TryGetValue("progress", out var progressRaw);
-                fieldMap.TryGetValue("bytes", out var bytesRaw);
-                fieldMap.TryGetValue("depotid", out var depotRaw);
-
-                var downloadEvent = new SteamDownloadEvent(
-                    DateTimeOffset.UtcNow,
-                    appId,
-                    int.TryParse(depotRaw, out var depotId) ? depotId : null,
-                    string.IsNullOrWhiteSpace(statusRaw) ? "unknown" : statusRaw!,
-                    double.TryParse(progressRaw, out var progress) ? progress : null,
-                    long.TryParse(bytesRaw, out var bytes) ? bytes : null);
-
-                results.Add(downloadEvent);
-            }
-
-            events = results;
-            return results.Count > 0;
-        }
-
-        public void Dispose()
-        {
-            _processHandle.Dispose();
-        }
     }
 
-    private static class NativeMethods
+    private ISteamProcessMemoryReader? CreateDefaultReader(Process process)
     {
-        [Flags]
-        public enum ProcessAccessFlags : uint
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            QueryInformation = 0x0400,
-            VirtualMemoryRead = 0x0010,
+            return WindowsSteamProcessMemoryReader.TryCreate(process);
         }
 
-        [DllImport("kernel32.dll", SetLastError = true)]
-        public static extern SafeProcessHandle OpenProcess(ProcessAccessFlags processAccess, bool inheritHandle, int processId);
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        {
+            if (!_options.EnableUnsafeLinuxMemoryRead)
+            {
+                ReportDiagnostic(
+                    "steam_hook_linux_memory_read_disabled",
+                    new Dictionary<string, string>
+                    {
+                        ["reason"] = "feature_flag_disabled",
+                    });
 
-        [DllImport("kernel32.dll", SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool ReadProcessMemory(
-            SafeProcessHandle hProcess,
-            IntPtr lpBaseAddress,
-            [Out] byte[] lpBuffer,
-            int dwSize,
-            out int lpNumberOfBytesRead);
+                return null;
+            }
+
+            return LinuxProcMemReader.TryCreate(process, _options.DiagnosticListener);
+        }
+
+        ReportDiagnostic(
+            "steam_hook_memory_os_not_supported",
+            new Dictionary<string, string>
+            {
+                ["os"] = RuntimeInformation.OSDescription,
+            });
+
+        return null;
     }
+
+    private void ReportDiagnostic(string eventName, IDictionary<string, string>? properties = null)
+        => _options.DiagnosticListener?.Invoke(SteamHookDiagnostic.Create(eventName, properties));
 
     private static Process? DefaultProcessFactory(SteamHookOptions options)
         => Process.GetProcessesByName(options.ProcessName).FirstOrDefault();

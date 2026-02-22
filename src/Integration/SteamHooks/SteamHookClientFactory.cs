@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace SteamBacklogPicker.Integration.SteamHooks;
 
@@ -15,9 +16,33 @@ public static class SteamHookClientFactory
         {
             SteamHookMode.None => new NullSteamHookClient(),
             SteamHookMode.NamedPipe => new SteamNamedPipeHookClient(options),
-            SteamHookMode.MemoryInspection => new SteamMemoryPollingHookClient(options),
+            SteamHookMode.MemoryInspection => CreateMemoryClient(options),
             _ => throw new ArgumentOutOfRangeException(nameof(options.Mode), options.Mode, "Unsupported hook mode"),
         };
+
+    private static ISteamHookClient CreateMemoryClient(SteamHookOptions options)
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            return new SteamMemoryPollingHookClient(options);
+        }
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && options.EnableUnsafeLinuxMemoryRead)
+        {
+            return new SteamMemoryPollingHookClient(options);
+        }
+
+        options.DiagnosticListener?.Invoke(
+            SteamHookDiagnostic.Create(
+                "steam_hook_memory_mode_degraded",
+                new Dictionary<string, string>
+                {
+                    ["os"] = RuntimeInformation.OSDescription,
+                    ["linux_mem_enabled"] = options.EnableUnsafeLinuxMemoryRead.ToString(),
+                }));
+
+        return new NullSteamHookClient();
+    }
 
     private sealed class NullSteamHookClient : ISteamHookClient
     {
