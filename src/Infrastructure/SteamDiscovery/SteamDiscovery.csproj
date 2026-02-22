@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0-windows10.0.17763.0</TargetFramework>
+    <TargetFrameworks>net8.0;net8.0-windows10.0.17763.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -8,5 +8,12 @@
     <ProjectReference Include="..\..\Domain\Domain.csproj" />
     <ProjectReference Include="..\..\Integration\SteamClientAdapter\SteamClientAdapter.csproj" />
     <ProjectReference Include="..\..\Integration\ValveFormatParser\ValveFormatParser.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+    <Compile Remove="WindowsSteamInstallPathProvider.cs" />
+    <Compile Include="WindowsSteamInstallPathProvider.NonWindows.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-windows10.0.17763.0'">
+    <Compile Remove="WindowsSteamInstallPathProvider.NonWindows.cs" />
   </ItemGroup>
 </Project>
