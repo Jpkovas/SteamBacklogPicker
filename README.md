@@ -1,49 +1,39 @@
 # SteamBacklogPicker
 
-SteamBacklogPicker is a WPF desktop app that helps you pick the next game from your Steam library without relying on any cloud services. The application reads data directly from the Steam client stored on your PC, so everything stays on your machine and works even when you are offline.
+SteamBacklogPicker é um app desktop para sortear o próximo jogo da sua biblioteca Steam sem depender de serviços em nuvem. Os dados são lidos localmente do cliente Steam.
 
-## Key capabilities
+## Capacidades principais
 
-- **Steam library management** – discover, filter, and draw from your Steam library, including shared Steam Family libraries.
-- **Offline-first metadata** – Steam manifests and the built-in hero art downloader are mirrored locally so cover art and install status remain available without a network connection.
-- **Collection-aware filtering** – constrain the picker with Steam collections, tags, installed status, or any mix of the above before spinning.
-- **Actionable selection cards** – each draw highlights install state and launchability so you know whether you can jump in immediately.
-- **Structured diagnostics** – opt-in telemetry emits anonymised usage events, while detailed logs are written under `%LOCALAPPDATA%\SteamBacklogPicker\logs` for troubleshooting.
-- **Modern UI polish** – responsive dark theme, cover art overlays, and an animated “Sorteando” state keep the picker fun to use.
-- Weighted randomisation and long-form descriptions remain on the roadmap and will arrive in a future update.
+- Descoberta e filtragem da biblioteca Steam (incluindo bibliotecas compartilhadas).
+- Cache local de metadados para uso offline.
+- Sorteio com filtros por coleção, tags e status de instalação.
+- Cartão do jogo sorteado com indicação de estado e ação de abertura.
+- Telemetria opcional e diagnósticos locais.
 
-## System requirements
+## Requisitos por plataforma
 
-- Windows 10 21H2 (build 19044) or newer / Windows 11 (build 22000+) with .NET 8 Desktop Runtime.
-- 64-bit CPU with support for AVX.
-- 4 GB RAM and 512 MB free storage.
-- Steam client installed with access to the `steamapps` manifest files.
+| Item | Windows | Linux |
+| --- | --- | --- |
+| SO | Windows 10 21H2+ ou Windows 11 | Distribuição x64 com desktop moderno (GNOME/KDE/XFCE) |
+| Runtime | .NET 8 Desktop Runtime / SDK para build local | .NET 8 SDK para execução/build local |
+| Steam | Cliente Steam instalado com acesso aos manifests em `steamapps` | Cliente Steam instalado com acesso aos manifests em `steamapps` |
+| Hardware | CPU 64-bit, 4 GB RAM, 512 MB livres | CPU 64-bit, 4 GB RAM, 512 MB livres |
 
-## Installation
+## Instalação e execução (passos paralelos)
 
-1. Download the latest `Setup.exe` from the SteamBacklogPicker releases page.
-2. Run the installer. Squirrel will place the app under `%LOCALAPPDATA%\SteamBacklogPicker` and create shortcuts for you.
-3. Future updates are applied automatically whenever a new release is published.
+| Etapa | Windows | Linux |
+| --- | --- | --- |
+| 1. Clonar | `git clone https://github.com/Jpkovas/SteamBacklogPicker.git` | `git clone https://github.com/Jpkovas/SteamBacklogPicker.git` |
+| 2. Entrar no diretório | `cd SteamBacklogPicker` | `cd SteamBacklogPicker` |
+| 3. Restaurar dependências | `dotnet restore SteamBacklogPicker.sln` | `dotnet restore SteamBacklogPicker.sln` |
+| 4. Build | `dotnet build SteamBacklogPicker.sln -c Release --no-restore` | `dotnet build SteamBacklogPicker.sln -c Release --no-restore` |
+| 5. Executar app | `dotnet run --project src/Presentation/SteamBacklogPicker.UI/SteamBacklogPicker.UI.csproj` | `dotnet run --project src/Presentation/SteamBacklogPicker.Linux/SteamBacklogPicker.Linux.csproj` |
 
-## Building from source
+## Distribuição
 
-1. Install the .NET 8 SDK and Visual Studio 2022 with WPF tools.
-2. Clone the repository and restore dependencies:
-   ```powershell
-   git clone https://github.com/Jpkovas/SteamBacklogPicker.git
-   cd SteamBacklogPicker
-   dotnet restore
-   ```
-3. Run the UI project:
-   ```powershell
-   dotnet run --project src/Presentation/SteamBacklogPicker.UI/SteamBacklogPicker.UI.csproj
-   ```
+- **Windows**: releases com instalador (Squirrel/MSIX) para uso final.
+- **Linux**: cliente Avalonia para execução local e empacotamento via pipeline Linux do projeto.
 
-## Steam discovery details
+## Telemetria e privacidade
 
-- SteamBacklogPicker reads the same manifest directories (`steamapps`) that the official Steam client maintains. Paths can be overridden through configuration when you keep your library on another drive.
-- Hero art is resolved from Steam's local cache and CDN when available.
-
-## Telemetry and privacy
-
-Telemetry is disabled by default. When a user enables telemetry, only anonymised usage events (such as application start, selection success, and unhandled exceptions) are captured. Logs are written locally under `%LOCALAPPDATA%\SteamBacklogPicker\logs` and can be purged by the user at any time. No Steam credentials are collected.
+A telemetria é opcional. Quando ativada, apenas eventos anônimos de uso são coletados. Logs ficam localmente no diretório de dados do app e podem ser removidos pelo usuário.
