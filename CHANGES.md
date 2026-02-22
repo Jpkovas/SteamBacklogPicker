@@ -12,3 +12,7 @@
 - Centralizei o binding de UX por plataforma em extensões de DI (`AddPlatformUserExperienceServices`) e mantive `IToastNotificationService`/`IAppUpdateService` como contrato comum no `AppCore` para Windows e Linux.
 - Implementei notificações Linux via `notify-send` (Freedesktop) e atualização para AppImage com etapas de feed, download, validação SHA-256 e aplicação no próximo start via marcador pendente.
 - Adicionei testes de composição de DI no cliente Linux validando o binding por plataforma (Linux vs fallback no-op).
+
+- Converti `SteamDiscovery` e seus testes para multi-target (`net8.0` + `net8.0-windows10.0.17763.0`) com implementação Windows-only isolada por TFM, mantendo dependências nativas apenas no target Windows.
+- Reestruturei o workflow de CI com matriz `ubuntu-latest` + `windows-latest`, separação entre suíte comum e suíte Windows-only, e publicação de relatório de paridade por camada em `docs/testing/test-parity-report.md`.
+
