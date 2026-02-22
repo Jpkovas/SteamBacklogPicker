@@ -18,7 +18,7 @@ public sealed class SteamMemoryPollingHookClientTests
         Assert.Equal(570, events[0].AppId);
         Assert.Equal("downloading", events[0].Status);
         Assert.Equal(12.5d, events[0].Progress);
-        Assert.Equal(1024L, events[0].BytesDownloaded);
+        Assert.Equal(1024L, events[0].BytesTransferred);
         Assert.Equal(111, events[0].DepotId);
     }
 
