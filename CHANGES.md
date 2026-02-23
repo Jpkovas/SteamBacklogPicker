@@ -1,5 +1,8 @@
 # CHANGES
 
+- Corrigi a documentação de distribuição Linux para refletir o estado real da automação: não há pipeline de release Linux gerando artefatos instaláveis no repositório.
+- Ajustei requisitos/runbook para orientar execução local no Linux até a esteira de empacotamento Linux ser implementada.
+
 - Atualizei a documentação de portabilidade com requisitos, instalação/execução paralela Windows/Linux, critérios de paridade por jornada e runbooks manuais equivalentes em `docs/testing`.
 - Padronizei a convenção de changelog de portabilidade com data-alvo de convergência e alinhei o `docs/user-guide.md` para manter a UX unificada entre plataformas.
 

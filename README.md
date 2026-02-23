@@ -32,7 +32,7 @@ SteamBacklogPicker é um app desktop para sortear o próximo jogo da sua bibliot
 ## Distribuição
 
 - **Windows**: releases com instalador (Squirrel/MSIX) para uso final.
-- **Linux**: cliente Avalonia para execução local e empacotamento via pipeline Linux do projeto.
+- **Linux**: no estado atual, não há job de release Linux no repositório gerando artefatos instaláveis. Para Linux, use execução local via `dotnet run`/build local até a esteira de empacotamento ser adicionada.
 
 ## Telemetria e privacidade
 

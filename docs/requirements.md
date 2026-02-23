@@ -49,7 +49,7 @@ A paridade é validada por jornada do usuário e deve ser mantida para qualquer 
 | Abrir jogo no cliente Steam | Ação de abrir jogo dispara protocolo/comando Steam para título sorteado | Obrigatório | Obrigatório |
 | Diagnóstico e logs | Logs locais incluem erros de descoberta e falhas de inicialização | Obrigatório | Obrigatório |
 | Notificações de UX | Notificação de ação concluída existe (nativa ou fallback documentado) | Obrigatório | Obrigatório |
-| Atualização do app | Fluxo de atualização deve existir; diferenças temporárias devem ser registradas no changelog de portabilidade | Obrigatório | Obrigatório (pode ser temporariamente diferente) |
+| Atualização do app | Fluxo de atualização deve existir; enquanto não houver release Linux automatizada, a diferença deve ser registrada no changelog de portabilidade | Obrigatório | Obrigatório (pode ser temporariamente diferente) |
 
 ### Regra de aceite de paridade
 - Uma release só é considerada "com paridade" quando todas as jornadas acima estiverem com status equivalente ou diferença temporária registrada conforme a convenção abaixo.

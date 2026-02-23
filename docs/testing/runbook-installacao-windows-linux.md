@@ -7,7 +7,7 @@ Objetivo: validar que a instalação e o primeiro lançamento entregam comportam
 | Etapa | Windows | Linux | Critério de aprovação |
 | --- | --- | --- | --- |
 | Preparação | Confirmar Steam instalado e biblioteca com ao menos 10 jogos | Confirmar Steam instalado e biblioteca com ao menos 10 jogos | Pré-condições equivalentes |
-| Instalação | Instalar pacote Windows (Squirrel/MSIX conforme release) | Instalar/rodar cliente Linux conforme release | App inicia sem erro |
+| Instalação | Instalar pacote Windows (Squirrel/MSIX conforme release) | Executar cliente Linux via build local (`dotnet build` + `dotnet run`) até existir release empacotada | App inicia sem erro |
 | Primeiro lançamento | Abrir app pelo atalho/menu | Abrir app pelo menu/comando do ambiente gráfico | Tela principal renderiza |
 | Descoberta inicial | Aguardar varredura inicial da biblioteca | Aguardar varredura inicial da biblioteca | Jogos aparecem sem inconsistência crítica |
 | Telemetria | Revisar prompt de consentimento | Revisar prompt de consentimento | Mensagem e escolha equivalentes |
