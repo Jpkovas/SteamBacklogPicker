@@ -1,0 +1,62 @@
+name: Linux Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to package (defaults to release tag or 0.0.0-local)"
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  linux-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore SteamBacklogPicker.sln
+
+      - name: Build Linux project
+        run: dotnet build src/Presentation/SteamBacklogPicker.Linux/SteamBacklogPicker.Linux.csproj -c Release --no-restore -f net8.0
+
+      - name: Run Linux tests
+        run: dotnet test tests/Presentation/SteamBacklogPicker.Linux.Tests/SteamBacklogPicker.Linux.Tests.csproj -c Release --no-restore -f net8.0
+
+      - name: Package Linux artifact and feed
+        env:
+          VERSION_INPUT: ${{ github.event.inputs.version }}
+        run: |
+          VERSION="${VERSION_INPUT}"
+          if [[ -z "$VERSION" ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+          if [[ -z "$VERSION" ]]; then
+            VERSION="0.0.0-local"
+          fi
+          ./scripts/package-linux-appimage.sh "$VERSION" ./artifacts/linux
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-release-artifacts
+          path: artifacts/linux/
+
+      - name: Publish assets to GitHub Release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${GITHUB_REF_NAME}" \
+            "artifacts/linux/"* \
+            --clobber

@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using SteamBacklogPicker.UI.Services.Updates;
@@ -14,6 +15,7 @@ namespace SteamBacklogPicker.Linux.Services.Updates;
 public sealed class LinuxAppImageUpdateService : IAppUpdateService
 {
     private const string FeedEnvironmentVariable = "SBP_LINUX_UPDATE_FEED_URL";
+    private const string SwapProcessIdOverrideEnvironmentVariable = "SBP_LINUX_UPDATE_SWAP_PID";
     private const string DefaultFeedUrl = "https://github.com/Jpkovas/SteamBacklogPicker/releases/latest/download/linux-appimage-update.json";
     private static readonly HttpClient HttpClient = new();
 
@@ -115,7 +117,7 @@ public sealed class LinuxAppImageUpdateService : IAppUpdateService
         var stateDirectory = GetUpdateStateDirectory();
         Directory.CreateDirectory(stateDirectory);
 
-        var currentProcessId = Environment.ProcessId;
+        var currentProcessId = ResolveSwapProcessId();
         var scriptPath = Path.Combine(stateDirectory, "apply-pending-update.sh");
         var backupPath = marker.TargetBinaryPath + ".bak";
         var scriptContents = $"""
@@ -181,7 +183,21 @@ rm -f "$SCRIPT_PATH"
         return string.Equals(actualHash, expectedHash, StringComparison.OrdinalIgnoreCase);
     }
 
-    private sealed record AppImageUpdateFeed(string Version, string DownloadUrl, string? Sha256);
+    private static int ResolveSwapProcessId()
+    {
+        var overrideValue = Environment.GetEnvironmentVariable(SwapProcessIdOverrideEnvironmentVariable);
+        if (int.TryParse(overrideValue, out var processId) && processId > 0)
+        {
+            return processId;
+        }
+
+        return Environment.ProcessId;
+    }
+
+    private sealed record AppImageUpdateFeed(
+        [property: JsonPropertyName("version")] string Version,
+        [property: JsonPropertyName("downloadUrl")] string DownloadUrl,
+        [property: JsonPropertyName("sha256")] string? Sha256);
 
     private sealed record PendingUpdateMarker(string Version, string PendingBinaryPath, string TargetBinaryPath);
 }

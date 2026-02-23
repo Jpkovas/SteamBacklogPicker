@@ -7,7 +7,7 @@ Objetivo: validar que a instalação e o primeiro lançamento entregam comportam
 | Etapa | Windows | Linux | Critério de aprovação |
 | --- | --- | --- | --- |
 | Preparação | Confirmar Steam instalado e biblioteca com ao menos 10 jogos | Confirmar Steam instalado e biblioteca com ao menos 10 jogos | Pré-condições equivalentes |
-| Instalação | Instalar pacote Windows (Squirrel/MSIX conforme release) | Executar cliente Linux via build local (`dotnet build` + `dotnet run`) até existir release empacotada | App inicia sem erro |
+| Instalação | Instalar pacote Windows (Squirrel/MSIX conforme release) | Baixar e executar pacote Linux da release (`SteamBacklogPicker-<versao>-linux-x64.AppImage`) | App inicia sem erro |
 | Primeiro lançamento | Abrir app pelo atalho/menu | Abrir app pelo menu/comando do ambiente gráfico | Tela principal renderiza |
 | Descoberta inicial | Aguardar varredura inicial da biblioteca | Aguardar varredura inicial da biblioteca | Jogos aparecem sem inconsistência crítica |
 | Telemetria | Revisar prompt de consentimento | Revisar prompt de consentimento | Mensagem e escolha equivalentes |
@@ -45,3 +45,13 @@ Objetivo: validar que a instalação e o primeiro lançamento entregam comportam
 ## Referência de descoberta Steam no Linux
 
 Para diagnóstico de ambiente Linux, a resolução de caminho do Steam usa esta ordem: `STEAM_PATH` válido, caminhos tradicionais (`~/.steam/steam`, `~/.steam/debian-installation`, `~/.local/share/Steam`) e depois Flatpak/Snap. Cada caminho só é aceito se contiver `steamapps/libraryfolders.vdf`.
+
+
+## Fluxo de release Linux (validação manual)
+
+1. Baixar `SteamBacklogPicker-<versao>-linux-x64.AppImage` e `linux-appimage-update.json` da mesma release.
+2. Validar checksum com `sha256sum` e comparar com o campo `sha256` do feed JSON.
+3. Executar o pacote com permissão de execução (`chmod +x`).
+4. Validar update pendente: publicar nova release apontada no feed, reiniciar o app e confirmar substituição do binário no próximo start.
+
+**Resultado esperado:** pacote íntegro, feed compatível (`version`, `downloadUrl`, `sha256`) e atualização aplicada sem erro no ciclo de reinicialização.
