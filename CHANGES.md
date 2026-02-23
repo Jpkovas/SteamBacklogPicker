@@ -1,5 +1,8 @@
 # CHANGES
 
+- Adicionei CI/release Linux com build/test/publish do projeto `SteamBacklogPicker.Linux`, geração de pacote `.AppImage` compatível, publicação do feed JSON de update e validação automatizada de checksum + atualização pendente em ambiente Linux.
+- Atualizei README e runbook de instalação para documentar o fluxo de release Linux com verificação de integridade via SHA-256 e uso do feed `linux-appimage-update.json`.
+
 - Corrigi o fallback de capa na UI Linux: a mensagem `GameDetails_NoCoverSubtitle` agora só aparece quando `SelectedGame.CoverImagePath` está vazio e deixa de sobrepor artes válidas.
 - Adicionei converter + testes de apresentação/conversão para garantir a visibilidade condicional de imagem e mensagem de fallback.
 

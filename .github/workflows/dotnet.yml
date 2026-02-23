@@ -66,6 +66,23 @@ jobs:
           dotnet test tests/Infrastructure/SteamDiscovery.Tests/SteamDiscovery.Tests.csproj -c Release --no-restore -f net8.0 --logger "trx;LogFileName=SteamDiscovery.Tests.${{ runner.os }}.trx" --results-directory ./TestResults
           dotnet test tests/Presentation/SteamBacklogPicker.Linux.Tests/SteamBacklogPicker.Linux.Tests.csproj -c Release --no-restore -f net8.0 --logger "trx;LogFileName=SteamBacklogPicker.Linux.Tests.${{ runner.os }}.trx" --results-directory ./TestResults
 
+      - name: Publish Linux package candidate
+        if: runner.os == 'Linux'
+        run: |
+          dotnet publish src/Presentation/SteamBacklogPicker.Linux/SteamBacklogPicker.Linux.csproj \
+            --configuration Release \
+            --no-restore \
+            --framework net8.0 \
+            --runtime linux-x64 \
+            --self-contained true \
+            /p:PublishSingleFile=true \
+            /p:IncludeNativeLibrariesForSelfExtract=true \
+            --output ./publish/linux
+
+      - name: Validate Linux checksum and pending update flow
+        if: runner.os == 'Linux'
+        run: dotnet test tests/Presentation/SteamBacklogPicker.Linux.Tests/SteamBacklogPicker.Linux.Tests.csproj -c Release --no-restore -f net8.0 --filter "FullyQualifiedName~LinuxAppImageUpdateServiceTests" --logger "trx;LogFileName=LinuxUpdateFlow.Validation.trx" --results-directory ./TestResults
+
       - name: Upload common test results
         uses: actions/upload-artifact@v4
         if: always()

@@ -1,5 +1,6 @@
 # TODO
 
+- Evoluir o empacotamento Linux de “AppImage compatível” para AppImage assinado nativo (com runtime AppImageTool), mantendo o mesmo contrato de feed de atualização.
 - Avaliar exibir placeholder visual dedicado (ícone/skeleton) quando `CoverImagePath` estiver vazio, para melhorar legibilidade do estado sem arte.
 
 - Melhorar feedback visual no cliente Linux para diferenciar ausência de capa de jogo vs. capa ainda em carregamento, evitando mensagem estática sobreposta quando houver imagem.

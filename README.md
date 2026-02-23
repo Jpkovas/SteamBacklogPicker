@@ -32,7 +32,7 @@ SteamBacklogPicker é um app desktop para sortear o próximo jogo da sua bibliot
 ## Distribuição
 
 - **Windows**: releases com instalador (Squirrel/MSIX) para uso final.
-- **Linux**: no estado atual, não há job de release Linux no repositório gerando artefatos instaláveis. Para Linux, use execução local via `dotnet run`/build local até a esteira de empacotamento ser adicionada.
+- **Linux**: release publica pacote Linux x64 autoexecutável (`.AppImage` compatível com fluxo de update), feed `linux-appimage-update.json` e checksum SHA-256 para atualização segura.
 
 ## Resolução de instalação Steam no Linux
 
@@ -46,3 +46,18 @@ A descoberta da pasta principal do Steam no Linux segue prioridade explícita co
 ## Telemetria e privacidade
 
 A telemetria é opcional. Quando ativada, apenas eventos anônimos de uso são coletados. Logs ficam localmente no diretório de dados do app e podem ser removidos pelo usuário.
+
+## Instalação por release (Linux)
+
+1. Abra a página de releases e baixe `SteamBacklogPicker-<versao>-linux-x64.AppImage` e `linux-appimage-update.json`.
+2. Valide o checksum local antes de executar:
+   ```bash
+   sha256sum SteamBacklogPicker-<versao>-linux-x64.AppImage
+   ```
+   Compare com o campo `sha256` do feed JSON publicado na release.
+3. Torne o pacote executável e rode:
+   ```bash
+   chmod +x SteamBacklogPicker-<versao>-linux-x64.AppImage
+   ./SteamBacklogPicker-<versao>-linux-x64.AppImage
+   ```
+4. Para autoatualização, mantenha `SBP_LINUX_UPDATE_FEED_URL` apontando para o `linux-appimage-update.json` da release/canal desejado.
