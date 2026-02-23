@@ -59,6 +59,8 @@ public partial class App : Application
         services.AddSingleton<ValveBinaryVdfParser>();
         services.AddSingleton<IEnvironmentProvider, SystemEnvironmentProvider>();
         services.AddSingleton<IFileSystem, SystemFileSystem>();
+        services.AddSingleton<IPlatformProvider, RuntimePlatformProvider>();
+        services.AddSingleton<IPathComparisonStrategy, PlatformPathComparisonStrategy>();
         services.AddSingleton<ILinuxSteamInstallPathProvider, LinuxSteamInstallPathProvider>();
         services.AddSingleton<ISteamInstallPathProvider>(sp => sp.GetRequiredService<ILinuxSteamInstallPathProvider>());
         services.AddSingleton<ISteamLibraryFoldersParser, SteamLibraryFoldersParser>();

@@ -14,6 +14,7 @@ public sealed class SteamLibraryLocator : ISteamLibraryLocator, IDisposable
 {
     private readonly ISteamInstallPathProvider _installPathProvider;
     private readonly ISteamLibraryFoldersParser _parser;
+    private readonly IPathComparisonStrategy _pathComparison;
     private readonly object _syncRoot = new();
     private FileSystemWatcher? _watcher;
     private string? _libraryFilePath;
@@ -21,9 +22,18 @@ public sealed class SteamLibraryLocator : ISteamLibraryLocator, IDisposable
     private bool _initialized;
 
     public SteamLibraryLocator(ISteamInstallPathProvider installPathProvider, ISteamLibraryFoldersParser parser)
+        : this(installPathProvider, parser, new PlatformPathComparisonStrategy(new RuntimePlatformProvider()))
+    {
+    }
+
+    public SteamLibraryLocator(
+        ISteamInstallPathProvider installPathProvider,
+        ISteamLibraryFoldersParser parser,
+        IPathComparisonStrategy pathComparison)
     {
         _installPathProvider = installPathProvider ?? throw new ArgumentNullException(nameof(installPathProvider));
         _parser = parser ?? throw new ArgumentNullException(nameof(parser));
+        _pathComparison = pathComparison ?? throw new ArgumentNullException(nameof(pathComparison));
     }
 
     public IReadOnlyList<string> GetLibraryFolders()
@@ -184,7 +194,7 @@ public sealed class SteamLibraryLocator : ISteamLibraryLocator, IDisposable
 
         try
         {
-            return string.Equals(Path.GetFullPath(_libraryFilePath), Path.GetFullPath(fullPath), StringComparison.OrdinalIgnoreCase);
+            return _pathComparison.Equals(Path.GetFullPath(_libraryFilePath), Path.GetFullPath(fullPath));
         }
         catch (Exception)
         {
