@@ -1,5 +1,8 @@
 # CHANGES
 
+- Ajustei o bootstrap Linux para registrar `ISteamEnvironment`, padronizar `ISteamInstallPathProvider` com `DefaultSteamInstallPathProvider`, construir `ISteamVdfFallback` via `environment.GetSteamDirectory()` e tentar inicializar a Steam API ao criar `ISteamClientAdapter`.
+- Adicionei testes de composição Linux cobrindo tentativa de init da API no bootstrap e fallback de manifestos VDF quando a biblioteca nativa não é encontrada.
+
 - Corrigi a documentação de distribuição Linux para refletir o estado real da automação: não há pipeline de release Linux gerando artefatos instaláveis no repositório.
 - Ajustei requisitos/runbook para orientar execução local no Linux até a esteira de empacotamento Linux ser implementada.
 

@@ -1,5 +1,6 @@
 # TODO
 
+- Extrair o bootstrap compartilhado de Steam runtime (Windows/Linux) para um módulo comum no `AppCore` e remover o link de arquivos de runtime atualmente reaproveitados do cliente WPF.
 - Implementar job de release Linux (artefato instalável) na automação e atualizar README/runbooks quando a distribuição oficial estiver disponível.
 - Criar um template de issue para divergências de portabilidade que já preencha jornada afetada, impacto e data-alvo de convergência para reduzir inconsistências de registro.
 - Validar em ambiente Linux real (fora de container) permissões de `/proc/<pid>/mem` com diferentes políticas (`ptrace_scope`/AppArmor) e decidir se o fallback por logs deve virar padrão para paridade segura.
