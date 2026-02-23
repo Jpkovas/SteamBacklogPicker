@@ -1,5 +1,8 @@
 # CHANGES
 
+- Ajustei o bootstrap Linux para registrar `ISteamEnvironment`, padronizar `ISteamInstallPathProvider` com `DefaultSteamInstallPathProvider`, construir `ISteamVdfFallback` via `environment.GetSteamDirectory()` e tentar inicializar a Steam API ao criar `ISteamClientAdapter`.
+- Adicionei testes de composição Linux cobrindo tentativa de init da API no bootstrap e fallback de manifestos VDF quando a biblioteca nativa não é encontrada.
+
 - Introduzi `IPathComparisonStrategy` no `SteamDiscovery` para comparação de paths sensível à plataforma (Windows case-insensitive, Linux case-sensitive) e apliquei em `SteamLibraryLocator` e caches/lookups de manifests para evitar colisões indevidas por case.
 - Adicionei testes parametrizados por plataforma simulada para validar colisão de paths, comparação em `FilePathMatches` e refresh após rename com diferença apenas de caixa.
 
