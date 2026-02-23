@@ -1,5 +1,8 @@
 # CHANGES
 
+- Introduzi `IPathComparisonStrategy` no `SteamDiscovery` para comparação de paths sensível à plataforma (Windows case-insensitive, Linux case-sensitive) e apliquei em `SteamLibraryLocator` e caches/lookups de manifests para evitar colisões indevidas por case.
+- Adicionei testes parametrizados por plataforma simulada para validar colisão de paths, comparação em `FilePathMatches` e refresh após rename com diferença apenas de caixa.
+
 - Corrigi a documentação de distribuição Linux para refletir o estado real da automação: não há pipeline de release Linux gerando artefatos instaláveis no repositório.
 - Ajustei requisitos/runbook para orientar execução local no Linux até a esteira de empacotamento Linux ser implementada.
 

@@ -88,6 +88,28 @@ public sealed class SteamInstallPathProviderTests
         Assert.Equal("windows", result);
     }
 
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void SteamLibraryLocator_FilePathMatches_ShouldRespectPlatformPathComparison(bool isWindows)
+    {
+        var provider = new FixedInstallPathProvider("/tmp/steam");
+        var parser = new SteamLibraryFoldersParser();
+        var comparison = new PlatformPathComparisonStrategy(new FakePlatformProvider(isWindows: isWindows, isLinux: !isWindows));
+        using var sut = new SteamLibraryLocator(provider, parser, comparison);
+
+        var libraryPathField = typeof(SteamLibraryLocator).GetField("_libraryFilePath", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        Assert.NotNull(libraryPathField);
+        libraryPathField!.SetValue(sut, "/tmp/Steam/steamapps/libraryfolders.vdf");
+
+        var method = typeof(SteamLibraryLocator).GetMethod("FilePathMatches", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        Assert.NotNull(method);
+        var matches = (bool)method!.Invoke(sut, new object[] { "/tmp/steam/steamapps/libraryfolders.vdf" })!;
+
+        Assert.Equal(isWindows, matches);
+    }
+
     [Fact]
     public void SteamLibraryLocator_ShouldReadFromInstallPathProvider()
     {
