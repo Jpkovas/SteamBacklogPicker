@@ -1,5 +1,8 @@
 # CHANGES
 
+- Mapeei a paridade visual WPF→Avalonia na tela principal Linux, expandi os blocos de filtros/status/detalhes com bindings do `MainViewModel` e conectei atualização dinâmica de recursos de idioma no bootstrap Avalonia.
+- Adicionei testes de apresentação no cliente Linux cobrindo jornadas mínimas de abrir, filtrar, sortear e acionar launch/install, além de checklist atualizado em `docs/testing/journey-parity-checklist.md`.
+
 - Corrigi a documentação de distribuição Linux para refletir o estado real da automação: não há pipeline de release Linux gerando artefatos instaláveis no repositório.
 - Ajustei requisitos/runbook para orientar execução local no Linux até a esteira de empacotamento Linux ser implementada.
 
