@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Markup.Xaml;
@@ -25,14 +26,27 @@ public partial class App : Application
         _serviceProvider = BuildServices();
         _updateCancellation = new CancellationTokenSource();
 
+        if (_serviceProvider.GetService<ILocalizationService>() is { } localizationService)
+        {
+            localizationService.ResourcesChanged += OnLocalizationResourcesChanged;
+            OnLocalizationResourcesChanged(this, localizationService.GetAllStrings());
+        }
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.MainWindow = _serviceProvider.GetRequiredService<MainWindow>();
             desktop.Exit += (_, _) =>
             {
                 _updateCancellation?.Cancel();
+
+                if (_serviceProvider?.GetService<ILocalizationService>() is { } localizationService)
+                {
+                    localizationService.ResourcesChanged -= OnLocalizationResourcesChanged;
+                }
+
                 _serviceProvider?.Dispose();
             };
+
             if (_serviceProvider.GetService<IAppUpdateService>() is { } updateService)
             {
                 _ = Task.Run(() => updateService.CheckForUpdatesAsync(_updateCancellation.Token));
@@ -42,6 +56,18 @@ public partial class App : Application
         base.OnFrameworkInitializationCompleted();
     }
 
+    private static void OnLocalizationResourcesChanged(object? _, IReadOnlyDictionary<string, string> resources)
+    {
+        if (Current is not { } app)
+        {
+            return;
+        }
+
+        foreach (var (key, value) in resources)
+        {
+            app.Resources[key] = value;
+        }
+    }
 
     private static ServiceProvider BuildServices()
     {

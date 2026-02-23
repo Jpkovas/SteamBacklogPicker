@@ -2,19 +2,122 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:converters="clr-namespace:SteamBacklogPicker.Linux.Views.Converters"
         x:Class="SteamBacklogPicker.Linux.Views.MainWindow"
-        Width="900"
-        Height="540"
-        Title="SteamBacklogPicker Linux"
+        Width="1200"
+        Height="760"
+        MinWidth="960"
+        MinHeight="640"
+        Title="Steam Backlog Picker"
         mc:Ignorable="d">
-  <StackPanel Margin="16" Spacing="8">
-    <TextBlock FontSize="20" Text="{Binding SelectedGame.Title}" />
-    <TextBlock Text="{Binding StatusMessage}" />
-    <StackPanel Orientation="Horizontal" Spacing="8">
-      <Button Content="Refresh" Command="{Binding RefreshCommand}" />
-      <Button Content="Draw" Command="{Binding DrawCommand}" />
-      <Button Content="Launch" Command="{Binding LaunchCommand}" />
-      <Button Content="Install" Command="{Binding InstallCommand}" />
+  <Window.Resources>
+    <converters:StringNullOrWhiteSpaceToBoolConverter x:Key="StringNullOrWhiteSpaceToBoolConverter" />
+  </Window.Resources>
+  <Grid Margin="20" RowDefinitions="*,Auto" ColumnDefinitions="360,*">
+    <Border Grid.Row="0" Grid.Column="0" Padding="16" Margin="0,0,8,0" BorderBrush="#303741" BorderThickness="1" CornerRadius="12">
+      <ScrollViewer>
+        <StackPanel Spacing="12">
+          <TextBlock FontSize="22" FontWeight="SemiBold" Text="{DynamicResource Filters_Title}" />
+
+          <CheckBox Content="{DynamicResource Filters_RequireInstalled}"
+                    IsChecked="{Binding Preferences.RequireInstalled, Mode=TwoWay}" />
+          <CheckBox Content="{DynamicResource Filters_ExcludeDeckUnsupported}"
+                    IsChecked="{Binding Preferences.ExcludeDeckUnsupported, Mode=TwoWay}" />
+
+          <TextBlock Margin="0,8,0,0" FontSize="12" FontWeight="Bold" Text="{DynamicResource Filters_ContentTypesLabel}" />
+          <CheckBox Content="{DynamicResource Filters_IncludeGames}" IsChecked="{Binding Preferences.IncludeGames, Mode=TwoWay}" />
+          <CheckBox Content="{DynamicResource Filters_IncludeSoundtracks}" IsChecked="{Binding Preferences.IncludeSoundtracks, Mode=TwoWay}" />
+          <CheckBox Content="{DynamicResource Filters_IncludeSoftware}" IsChecked="{Binding Preferences.IncludeSoftware, Mode=TwoWay}" />
+          <CheckBox Content="{DynamicResource Filters_IncludeTools}" IsChecked="{Binding Preferences.IncludeTools, Mode=TwoWay}" />
+          <CheckBox Content="{DynamicResource Filters_IncludeVideos}" IsChecked="{Binding Preferences.IncludeVideos, Mode=TwoWay}" />
+          <CheckBox Content="{DynamicResource Filters_IncludeOther}" IsChecked="{Binding Preferences.IncludeOther, Mode=TwoWay}" />
+
+          <TextBlock Margin="0,8,0,0" FontSize="12" FontWeight="Bold" Text="{DynamicResource Filters_StorefrontsLabel}" />
+          <CheckBox Content="{DynamicResource Filters_IncludeSteam}" IsChecked="{Binding Preferences.IncludeSteam, Mode=TwoWay}" />
+
+          <TextBlock Margin="0,8,0,0" FontSize="12" FontWeight="Bold" Text="{DynamicResource Filters_CollectionLabel}" />
+          <ComboBox ItemsSource="{Binding Preferences.CollectionOptions}"
+                    SelectedItem="{Binding Preferences.SelectedCollection, Mode=TwoWay}" />
+
+          <Grid Margin="0,8,0,0" ColumnDefinitions="*,*">
+            <Button Grid.Column="0"
+                    Margin="0,0,4,0"
+                    Content="{DynamicResource Filters_RefreshButton}"
+                    Command="{Binding RefreshCommand}" />
+            <Button Grid.Column="1"
+                    Margin="4,0,0,0"
+                    Content="{DynamicResource Filters_DrawButton}"
+                    Command="{Binding DrawCommand}" />
+          </Grid>
+
+          <StackPanel Margin="0,8,0,0" Spacing="4">
+            <TextBlock FontWeight="SemiBold" Text="{DynamicResource Status_Title}" />
+            <TextBlock TextWrapping="Wrap" Text="{Binding StatusMessage}" />
+          </StackPanel>
+        </StackPanel>
+      </ScrollViewer>
+    </Border>
+
+    <Border Grid.Row="0" Grid.Column="1" Padding="16" Margin="8,0,0,0" BorderBrush="#303741" BorderThickness="1" CornerRadius="12">
+      <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+        <TextBlock FontSize="22" FontWeight="SemiBold" Text="{DynamicResource GameDetails_NextGameTitle}" />
+        <TextBlock Grid.Row="1" Margin="0,10,0,0" FontSize="30" FontWeight="Bold" TextWrapping="Wrap" Text="{Binding SelectedGame.Title}" />
+
+        <StackPanel Grid.Row="2" Margin="0,10,0,0" Orientation="Horizontal" Spacing="10">
+          <TextBlock FontWeight="SemiBold" Text="{DynamicResource GameDetails_StorefrontLabel}" />
+          <TextBlock Text="{Binding SelectedGame.StorefrontGlyph}" />
+          <TextBlock Text="{Binding SelectedGame.StorefrontDisplayName}" />
+        </StackPanel>
+
+        <Grid Grid.Row="3" RowDefinitions="Auto,*,Auto" Margin="0,10,0,10">
+          <TextBlock Text="{DynamicResource GameDetails_ArtworkLabel}" FontWeight="SemiBold" />
+          <Border Grid.Row="1" BorderBrush="#303741" BorderThickness="1" CornerRadius="8" MinHeight="260" Padding="8">
+            <Grid>
+              <Image Stretch="Uniform"
+                     Source="{Binding SelectedGame.CoverImagePath}"
+                     IsVisible="{Binding SelectedGame.CoverImagePath, Converter={StaticResource StringNullOrWhiteSpaceToBoolConverter}, ConverterParameter=Invert}" />
+              <TextBlock HorizontalAlignment="Center"
+                         VerticalAlignment="Center"
+                         IsVisible="{Binding SelectedGame.CoverImagePath, Converter={StaticResource StringNullOrWhiteSpaceToBoolConverter}}"
+                         Text="{DynamicResource GameDetails_NoCoverSubtitle}" />
+            </Grid>
+          </Border>
+
+          <StackPanel Grid.Row="2" Spacing="8">
+            <TextBlock FontWeight="SemiBold" Text="{DynamicResource GameDetails_MetadataLabel}" />
+            <TextBlock Text="{Binding SelectedGame.InstallationStatus}" />
+            <ItemsControl ItemsSource="{Binding SelectedGame.Tags}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+            </ItemsControl>
+          </StackPanel>
+        </Grid>
+
+        <Grid Grid.Row="4" ColumnDefinitions="*,*">
+          <Button Grid.Column="0"
+                  Margin="0,0,4,0"
+                  Content="{DynamicResource GameDetails_PlayButton}"
+                  Command="{Binding LaunchCommand}"
+                  IsEnabled="{Binding SelectedGame.CanLaunch}" />
+          <Button Grid.Column="1"
+                  Margin="4,0,0,0"
+                  Content="{DynamicResource GameDetails_InstallButton}"
+                  Command="{Binding InstallCommand}"
+                  IsEnabled="{Binding SelectedGame.CanInstall}" />
+        </Grid>
+      </Grid>
+    </Border>
+
+    <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+      <Button Content="{DynamicResource Language_Portuguese}"
+              Command="{Binding ChangeLanguageCommand}"
+              CommandParameter="pt-BR" />
+      <Button Content="{DynamicResource Language_English}"
+              Command="{Binding ChangeLanguageCommand}"
+              CommandParameter="en-US" />
     </StackPanel>
-  </StackPanel>
+  </Grid>
 </Window>

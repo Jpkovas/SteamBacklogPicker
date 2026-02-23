@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using FluentAssertions;
+using Xunit;
 using Microsoft.Extensions.DependencyInjection;
 using SteamBacklogPicker.Linux.Composition;
 using SteamBacklogPicker.Linux.Services.Notifications;
