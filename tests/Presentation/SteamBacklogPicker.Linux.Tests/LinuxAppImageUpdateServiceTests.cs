@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 using FluentAssertions;
 using SteamBacklogPicker.Linux.Services.Updates;
 using Xunit;
@@ -35,6 +36,11 @@ public sealed class LinuxAppImageUpdateServiceTests : IDisposable
     [Fact]
     public async Task CheckForUpdatesAsync_ShouldDownloadPendingBinaryAndMarker_WhenFeedHasNewerVersion()
     {
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        {
+            return;
+        }
+
         var appImagePath = Path.Combine(_tempDirectory, "SteamBacklogPicker.AppImage");
         await File.WriteAllTextAsync(appImagePath, "current-binary", Encoding.UTF8);
         Environment.SetEnvironmentVariable("APPIMAGE", appImagePath);
@@ -80,6 +86,11 @@ public sealed class LinuxAppImageUpdateServiceTests : IDisposable
     [Fact]
     public async Task CheckForUpdatesAsync_ShouldApplyPendingUpdate_WhenMarkerExists()
     {
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        {
+            return;
+        }
+
         var updateDirectory = Path.Combine(_tempDirectory, ".local", "share", "SteamBacklogPicker", "updates");
         Directory.CreateDirectory(updateDirectory);
 

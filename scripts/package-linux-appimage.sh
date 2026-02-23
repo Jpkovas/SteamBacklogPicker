@@ -20,6 +20,10 @@ dotnet publish "$PROJECT" \
   --framework net8.0 \
   --runtime linux-x64 \
   --self-contained true \
+  /p:Version="$VERSION" \
+  /p:AssemblyVersion="$VERSION" \
+  /p:FileVersion="$VERSION" \
+  /p:InformationalVersion="$VERSION" \
   /p:PublishSingleFile=true \
   /p:IncludeNativeLibrariesForSelfExtract=true \
   --output "$PUBLISH_DIR"
