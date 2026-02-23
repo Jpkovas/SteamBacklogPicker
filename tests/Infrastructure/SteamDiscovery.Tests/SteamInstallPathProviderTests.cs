@@ -47,6 +47,65 @@ public sealed class SteamInstallPathProviderTests
         Assert.Equal(expected, path);
     }
 
+
+    [Fact]
+    public void LinuxProvider_ShouldReturnDebianInstallationPathBeforeFlatpakAndSnap()
+    {
+        var home = "/home/test";
+        var env = new FakeEnvironmentProvider(new Dictionary<string, string?>(), home);
+        var debianPath = Path.Combine(home, ".steam", "debian-installation");
+        var flatpakPath = Path.Combine(home, ".var", "app", "com.valvesoftware.Steam", ".local", "share", "Steam");
+        var snapPath = Path.Combine(home, "snap", "steam", "common", ".local", "share", "Steam");
+        var fs = new FakeFileSystem(
+            directories: new[] { debianPath, flatpakPath, snapPath },
+            files: new[]
+            {
+                Path.Combine(debianPath, "steamapps", "libraryfolders.vdf"),
+                Path.Combine(flatpakPath, "steamapps", "libraryfolders.vdf"),
+                Path.Combine(snapPath, "steamapps", "libraryfolders.vdf")
+            });
+
+        var sut = new LinuxSteamInstallPathProvider(env, fs);
+
+        var path = sut.GetSteamInstallPath();
+
+        Assert.Equal(debianPath, path);
+    }
+
+    [Fact]
+    public void LinuxProvider_ShouldReturnSnapPathWhenTraditionalAndFlatpakAreMissing()
+    {
+        var home = "/home/test";
+        var env = new FakeEnvironmentProvider(new Dictionary<string, string?>(), home);
+        var snapPath = Path.Combine(home, "snap", "steam", "common", ".local", "share", "Steam");
+        var fs = new FakeFileSystem(
+            directories: new[] { snapPath },
+            files: new[] { Path.Combine(snapPath, "steamapps", "libraryfolders.vdf") });
+
+        var sut = new LinuxSteamInstallPathProvider(env, fs);
+
+        var path = sut.GetSteamInstallPath();
+
+        Assert.Equal(snapPath, path);
+    }
+
+    [Fact]
+    public void LinuxProvider_ShouldIgnoreCandidateWithoutLibraryFoldersFile()
+    {
+        var home = "/home/test";
+        var env = new FakeEnvironmentProvider(new Dictionary<string, string?>(), home);
+        var debianPath = Path.Combine(home, ".steam", "debian-installation");
+        var flatpakPath = Path.Combine(home, ".var", "app", "com.valvesoftware.Steam", ".local", "share", "Steam");
+        var fs = new FakeFileSystem(
+            directories: new[] { debianPath, flatpakPath },
+            files: new[] { Path.Combine(flatpakPath, "steamapps", "libraryfolders.vdf") });
+
+        var sut = new LinuxSteamInstallPathProvider(env, fs);
+
+        var path = sut.GetSteamInstallPath();
+
+        Assert.Equal(flatpakPath, path);
+    }
     [Fact]
     public void LinuxProvider_ShouldReturnFlatpakPathWhenOthersAreMissing()
     {

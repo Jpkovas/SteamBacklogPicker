@@ -15,6 +15,11 @@ public sealed class LinuxSteamInstallPathProvider : ILinuxSteamInstallPathProvid
 
     public string? GetSteamInstallPath()
     {
+        // Ordem de resolução Linux:
+        // 1) STEAM_PATH explícito
+        // 2) caminhos tradicionais (~/.steam/steam, ~/.steam/debian-installation, ~/.local/share/Steam)
+        // 3) empacotamentos isolados (Flatpak, Snap)
+        // Cada candidato só é aceito quando contém steamapps/libraryfolders.vdf.
         var fromEnvironment = _environmentProvider.GetEnvironmentVariable("STEAM_PATH");
         if (IsValidSteamDirectory(fromEnvironment))
         {
@@ -30,9 +35,11 @@ public sealed class LinuxSteamInstallPathProvider : ILinuxSteamInstallPathProvid
         var candidates = new[]
         {
             Path.Combine(homeDirectory, ".steam", "steam"),
+            Path.Combine(homeDirectory, ".steam", "debian-installation"),
             Path.Combine(homeDirectory, ".local", "share", "Steam"),
             Path.Combine(homeDirectory, ".var", "app", "com.valvesoftware.Steam", ".local", "share", "Steam"),
-            Path.Combine(homeDirectory, ".var", "app", "com.valvesoftware.Steam", "data", "Steam")
+            Path.Combine(homeDirectory, ".var", "app", "com.valvesoftware.Steam", "data", "Steam"),
+            Path.Combine(homeDirectory, "snap", "steam", "common", ".local", "share", "Steam")
         };
 
         foreach (var candidate in candidates)
