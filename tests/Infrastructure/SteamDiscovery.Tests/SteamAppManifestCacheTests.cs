@@ -122,6 +122,30 @@ public sealed class SteamAppManifestCacheTests
         Assert.True(updated, "Cache did not refresh after manifest change.");
     }
 
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Refresh_ShouldKeepEntry_WhenManifestIsRenamedWithCaseDifference(bool isWindows)
+    {
+        using var environment = new ManifestTestEnvironment();
+        environment.WriteManifest(55, "Case Game", 321, 1700000300);
+
+        var comparison = new PlatformPathComparisonStrategy(new FakePlatformProvider(isWindows, !isWindows));
+        using var cache = environment.CreateCache(new[] { 55u }, Array.Empty<uint>(), comparison);
+        Assert.Single(cache.GetInstalledGames());
+
+        var oldPath = environment.GetManifestPath(55);
+        var renamedPath = Path.Combine(environment.SteamAppsPath, "APPMANIFEST_55.ACF");
+        File.Move(oldPath, renamedPath);
+
+        cache.Refresh();
+        var games = cache.GetInstalledGames();
+
+        var game = Assert.Single(games);
+        Assert.Equal("Case Game", game.Title);
+    }
+
     [Fact]
     public void Cache_RemovesEntry_OnManifestDeletion()
     {
@@ -182,11 +206,13 @@ public sealed class SteamAppManifestCacheTests
         public string GetManifestPath(uint appId)
             => Path.Combine(SteamAppsPath, $"appmanifest_{appId}.acf");
 
-        public SteamAppManifestCache CreateCache(IEnumerable<uint> installed, IEnumerable<uint> shared)
+        public SteamAppManifestCache CreateCache(IEnumerable<uint> installed, IEnumerable<uint> shared, IPathComparisonStrategy? pathComparison = null)
         {
             var adapter = new FakeSteamClientAdapter(installed, shared);
             var fallback = new FakeSteamVdfFallback(_steamId);
-            return new SteamAppManifestCache(_locator, adapter, fallback, _parser);
+            return pathComparison is null
+                ? new SteamAppManifestCache(_locator, adapter, fallback, _parser)
+                : new SteamAppManifestCache(_locator, adapter, fallback, _parser, pathComparison);
         }
 
         public void Dispose()
@@ -239,6 +265,22 @@ public sealed class SteamAppManifestCacheTests
         public void Refresh()
         {
         }
+    }
+
+    private sealed class FakePlatformProvider : IPlatformProvider
+    {
+        private readonly bool _isWindows;
+        private readonly bool _isLinux;
+
+        public FakePlatformProvider(bool isWindows, bool isLinux)
+        {
+            _isWindows = isWindows;
+            _isLinux = isLinux;
+        }
+
+        public bool IsWindows() => _isWindows;
+
+        public bool IsLinux() => _isLinux;
     }
 
     private sealed class FakeSteamClientAdapter : ISteamClientAdapter

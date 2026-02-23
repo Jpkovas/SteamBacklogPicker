@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using FluentAssertions;
 using SteamDiscovery;
 using Xunit;
 
@@ -47,6 +48,65 @@ public sealed class SteamInstallPathProviderTests
         Assert.Equal(expected, path);
     }
 
+
+    [Fact]
+    public void LinuxProvider_ShouldReturnDebianInstallationPathBeforeFlatpakAndSnap()
+    {
+        var home = "/home/test";
+        var env = new FakeEnvironmentProvider(new Dictionary<string, string?>(), home);
+        var debianPath = Path.Combine(home, ".steam", "debian-installation");
+        var flatpakPath = Path.Combine(home, ".var", "app", "com.valvesoftware.Steam", ".local", "share", "Steam");
+        var snapPath = Path.Combine(home, "snap", "steam", "common", ".local", "share", "Steam");
+        var fs = new FakeFileSystem(
+            directories: new[] { debianPath, flatpakPath, snapPath },
+            files: new[]
+            {
+                Path.Combine(debianPath, "steamapps", "libraryfolders.vdf"),
+                Path.Combine(flatpakPath, "steamapps", "libraryfolders.vdf"),
+                Path.Combine(snapPath, "steamapps", "libraryfolders.vdf")
+            });
+
+        var sut = new LinuxSteamInstallPathProvider(env, fs);
+
+        var path = sut.GetSteamInstallPath();
+
+        Assert.Equal(debianPath, path);
+    }
+
+    [Fact]
+    public void LinuxProvider_ShouldReturnSnapPathWhenTraditionalAndFlatpakAreMissing()
+    {
+        var home = "/home/test";
+        var env = new FakeEnvironmentProvider(new Dictionary<string, string?>(), home);
+        var snapPath = Path.Combine(home, "snap", "steam", "common", ".local", "share", "Steam");
+        var fs = new FakeFileSystem(
+            directories: new[] { snapPath },
+            files: new[] { Path.Combine(snapPath, "steamapps", "libraryfolders.vdf") });
+
+        var sut = new LinuxSteamInstallPathProvider(env, fs);
+
+        var path = sut.GetSteamInstallPath();
+
+        Assert.Equal(snapPath, path);
+    }
+
+    [Fact]
+    public void LinuxProvider_ShouldIgnoreCandidateWithoutLibraryFoldersFile()
+    {
+        var home = "/home/test";
+        var env = new FakeEnvironmentProvider(new Dictionary<string, string?>(), home);
+        var debianPath = Path.Combine(home, ".steam", "debian-installation");
+        var flatpakPath = Path.Combine(home, ".var", "app", "com.valvesoftware.Steam", ".local", "share", "Steam");
+        var fs = new FakeFileSystem(
+            directories: new[] { debianPath, flatpakPath },
+            files: new[] { Path.Combine(flatpakPath, "steamapps", "libraryfolders.vdf") });
+
+        var sut = new LinuxSteamInstallPathProvider(env, fs);
+
+        var path = sut.GetSteamInstallPath();
+
+        Assert.Equal(flatpakPath, path);
+    }
     [Fact]
     public void LinuxProvider_ShouldReturnFlatpakPathWhenOthersAreMissing()
     {
@@ -88,6 +148,28 @@ public sealed class SteamInstallPathProviderTests
         Assert.Equal("windows", result);
     }
 
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void SteamLibraryLocator_FilePathMatches_ShouldRespectPlatformPathComparison(bool isWindows)
+    {
+        var provider = new FixedInstallPathProvider("/tmp/steam");
+        var parser = new SteamLibraryFoldersParser();
+        var comparison = new PlatformPathComparisonStrategy(new FakePlatformProvider(isWindows: isWindows, isLinux: !isWindows));
+        using var sut = new SteamLibraryLocator(provider, parser, comparison);
+
+        var libraryPathField = typeof(SteamLibraryLocator).GetField("_libraryFilePath", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        Assert.NotNull(libraryPathField);
+        libraryPathField!.SetValue(sut, "/tmp/Steam/steamapps/libraryfolders.vdf");
+
+        var method = typeof(SteamLibraryLocator).GetMethod("FilePathMatches", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        Assert.NotNull(method);
+        var matches = (bool)method!.Invoke(sut, new object[] { "/tmp/steam/steamapps/libraryfolders.vdf" })!;
+
+        Assert.Equal(isWindows, matches);
+    }
+
     [Fact]
     public void SteamLibraryLocator_ShouldReadFromInstallPathProvider()
     {
@@ -106,6 +188,48 @@ public sealed class SteamInstallPathProviderTests
 
         Assert.Single(result);
         Assert.Equal("C:\\Steam", result.Single());
+    }
+
+    [Fact]
+    public void SteamLibraryLocator_RenameAwayAndRecreate_ShouldKeepTrackingCanonicalLibraryFile()
+    {
+        using var root = new TempDirectory();
+        var steamRoot = Path.Combine(root.Path, "Steam");
+        var steamApps = Path.Combine(steamRoot, "steamapps");
+        Directory.CreateDirectory(steamApps);
+
+        var canonicalLibraryFile = Path.Combine(steamApps, "libraryfolders.vdf");
+        var renamedLibraryFile = Path.Combine(steamApps, "libraryfolders.vdf.bak");
+
+        File.WriteAllText(canonicalLibraryFile, "\"LibraryFolders\" { \"0\" \"C:\\\\Steam\" }");
+
+        var provider = new FixedInstallPathProvider(steamRoot);
+        var parser = new SteamLibraryFoldersParser();
+        using var sut = new SteamLibraryLocator(provider, parser);
+
+        var renamedHandler = typeof(SteamLibraryLocator).GetMethod("OnLibraryFileRenamed", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        var changedHandler = typeof(SteamLibraryLocator).GetMethod("OnLibraryFileChanged", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        var libraryPathField = typeof(SteamLibraryLocator).GetField("_libraryFilePath", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+
+        Assert.NotNull(renamedHandler);
+        Assert.NotNull(changedHandler);
+        Assert.NotNull(libraryPathField);
+
+        _ = sut.GetLibraryFolders();
+
+        File.Move(canonicalLibraryFile, renamedLibraryFile);
+        var renamedArgs = new RenamedEventArgs(WatcherChangeTypes.Renamed, steamApps, Path.GetFileName(renamedLibraryFile), Path.GetFileName(canonicalLibraryFile));
+        renamedHandler!.Invoke(sut, new object[] { sut, renamedArgs });
+
+        File.WriteAllText(canonicalLibraryFile, "\"LibraryFolders\" { \"0\" \"D:\\\\SteamLibrary\" }");
+        var changedArgs = new FileSystemEventArgs(WatcherChangeTypes.Changed, steamApps, Path.GetFileName(canonicalLibraryFile));
+        changedHandler!.Invoke(sut, new object[] { sut, changedArgs });
+
+        var trackedPath = libraryPathField!.GetValue(sut) as string;
+        trackedPath.Should().Be(canonicalLibraryFile);
+
+        var libraries = sut.GetLibraryFolders();
+        libraries.Should().ContainSingle().Which.Should().Be("D:\\SteamLibrary");
     }
 
     private sealed class FixedInstallPathProvider : ISteamInstallPathProvider

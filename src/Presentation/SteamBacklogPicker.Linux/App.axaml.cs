@@ -47,6 +47,35 @@ public partial class App : Application
     {
         var services = new ServiceCollection();
         services.AddLinuxApplicationServices();
+        services.AddSingleton<ValveTextVdfParser>();
+        services.AddSingleton<ValveBinaryVdfParser>();
+        services.AddSingleton<IEnvironmentProvider, SystemEnvironmentProvider>();
+        services.AddSingleton<IFileSystem, SystemFileSystem>();
+        services.AddSingleton<IPlatformProvider, RuntimePlatformProvider>();
+        services.AddSingleton<IPathComparisonStrategy, PlatformPathComparisonStrategy>();
+        services.AddSingleton<ILinuxSteamInstallPathProvider, LinuxSteamInstallPathProvider>();
+        services.AddSingleton<ISteamInstallPathProvider>(sp => sp.GetRequiredService<ILinuxSteamInstallPathProvider>());
+        services.AddSingleton<ISteamLibraryFoldersParser, SteamLibraryFoldersParser>();
+        services.AddSingleton<ISteamLibraryLocator, SteamLibraryLocator>();
+        services.AddSingleton<IFileAccessor, DefaultFileAccessor>();
+        services.AddSingleton<SteamAppManifestCache>();
+        services.AddSingleton<INativeLibraryLoader, DefaultNativeLibraryLoader>();
+        services.AddSingleton<ISteamVdfFallback>(sp => new SteamVdfFallback(
+            sp.GetRequiredService<ISteamInstallPathProvider>().GetSteamInstallPath() ?? string.Empty,
+            sp.GetRequiredService<IFileAccessor>(),
+            sp.GetRequiredService<ValveTextVdfParser>(),
+            sp.GetRequiredService<ValveBinaryVdfParser>()));
+        services.AddSingleton<ISteamClientAdapter>(sp => new SteamClientAdapter.SteamClientAdapter(
+            sp.GetRequiredService<INativeLibraryLoader>(),
+            sp.GetRequiredService<ISteamVdfFallback>()));
+        services.AddSingleton<ISelectionEngine>(_ => new SelectionEngine());
+        services.AddSingleton<IGameLibraryProvider, SteamLibraryProvider>();
+        services.AddSingleton<IGameLibraryService, CombinedGameLibraryService>();
+        services.AddSingleton<IGameArtLocator, SteamGameArtLocator>();
+        services.AddSingleton<ILocalizationService, LocalizationService>();
+        services.AddSingleton<IGameLaunchService, GameLaunchService>();
+        services.AddPlatformUserExperienceServices();
+        services.AddSingleton<MainViewModel>();
         services.AddSingleton<MainWindow>();
         return services.BuildServiceProvider();
     }
