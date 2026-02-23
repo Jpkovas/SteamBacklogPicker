@@ -91,10 +91,18 @@ public sealed class LinuxBootstrapServiceRegistrationTests
     private sealed class FakeSteamVdfFallback : ISteamVdfFallback
     {
         private readonly IReadOnlyCollection<uint> _installedAppIds;
+        private readonly IReadOnlyDictionary<uint, Domain.SteamAppDefinition> _knownApps;
 
         public FakeSteamVdfFallback(IReadOnlyCollection<uint> installedAppIds)
         {
             _installedAppIds = installedAppIds;
+            var knownApps = new Dictionary<uint, Domain.SteamAppDefinition>();
+            foreach (var appId in installedAppIds)
+            {
+                knownApps[appId] = new Domain.SteamAppDefinition(appId, $"App {appId}", true, false, string.Empty, Array.Empty<int>(), Domain.SteamDeckCompatibility.Unknown, Array.Empty<string>());
+            }
+
+            _knownApps = knownApps;
         }
 
         public int GetInstalledAppIdsCallCount { get; private set; }
@@ -106,5 +114,11 @@ public sealed class LinuxBootstrapServiceRegistrationTests
         }
 
         public bool IsSubscribedFromFamilySharing(uint appId) => false;
+
+        public IReadOnlyDictionary<uint, Domain.SteamAppDefinition> GetKnownApps() => _knownApps;
+
+        public string? GetCurrentUserSteamId() => null;
+
+        public IReadOnlyList<Domain.SteamCollectionDefinition> GetCollections() => Array.Empty<Domain.SteamCollectionDefinition>();
     }
 }
