@@ -1,5 +1,7 @@
 # TODO
 
+- Implementar job de release Linux (artefato instalável) na automação e atualizar README/runbooks quando a distribuição oficial estiver disponível.
+- Criar um template de issue para divergências de portabilidade que já preencha jornada afetada, impacto e data-alvo de convergência para reduzir inconsistências de registro.
 - Validar em ambiente Linux real (fora de container) permissões de `/proc/<pid>/mem` com diferentes políticas (`ptrace_scope`/AppArmor) e decidir se o fallback por logs deve virar padrão para paridade segura.
 - Implementar notificações nativas e estratégia de autoatualização no cliente Linux para fechar 100% da paridade funcional com o cliente WPF.
 - Capturar screenshots oficiais dos dois clientes (WPF e Linux Avalonia) para atualizar README e documentação visual.

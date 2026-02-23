@@ -1,5 +1,11 @@
 # CHANGES
 
+- Corrigi a documentação de distribuição Linux para refletir o estado real da automação: não há pipeline de release Linux gerando artefatos instaláveis no repositório.
+- Ajustei requisitos/runbook para orientar execução local no Linux até a esteira de empacotamento Linux ser implementada.
+
+- Atualizei a documentação de portabilidade com requisitos, instalação/execução paralela Windows/Linux, critérios de paridade por jornada e runbooks manuais equivalentes em `docs/testing`.
+- Padronizei a convenção de changelog de portabilidade com data-alvo de convergência e alinhei o `docs/user-guide.md` para manter a UX unificada entre plataformas.
+
 - Separei `SteamMemoryPollingHookClient` por implementação explícita de SO (Windows com `ReadProcessMemory`, Linux com `/proc/<pid>/mem` sob feature flag), adicionei contrato de baixo nível para leitura de memória e degradação controlada com diagnósticos estruturados.
 - Adicionei testes independentes de plataforma para parser de snapshot e testes de seleção/degradação da implementação por SO no factory de hooks, além de atualizar `docs/advanced-integration.md` com riscos de compliance/anti-cheat em Windows e Linux.
 

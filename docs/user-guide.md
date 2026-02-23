@@ -1,48 +1,43 @@
-# SteamBacklogPicker – User Guide
+# SteamBacklogPicker – Guia do Usuário
 
-## Getting started
+## Primeiros passos
 
-1. **Install the application** using the MSIX package, Winget, or Squirrel bootstrapper as described in the [README](../README.md).
-2. Launch SteamBacklogPicker from the Start Menu. On first launch the app scans your Steam and Epic libraries by reading their local cache folders; this may take a few minutes for very large collections.
-3. When prompted, decide whether you want to share anonymous telemetry. Telemetry is optional and can be toggled later.
+1. Instale o aplicativo conforme sua plataforma (detalhes em [README](../README.md)).
+2. Abra o SteamBacklogPicker.
+3. No primeiro uso, permita a leitura da biblioteca Steam local e escolha se deseja ativar telemetria anônima.
 
-## Navigating the interface
+> Experiência de uso (UX), fluxos de filtros e sorteio são os mesmos em Windows e Linux. A diferença entre plataformas fica restrita ao método de instalação/empacotamento.
 
-- **Library overview** – Displays the total number of detected titles across Steam and Epic, filters, and quick actions such as refreshing manifests.
-- **Game card** – Shows the game selected by the backlog engine, including cover art, tags, playtime, and install status.
-- **Filters panel** – Use the checkboxes and sliders to prioritise installed games, exclude multiplayer-only titles, or boost favourites.
-- **Action buttons** –
-  - `Roll Again` triggers another random selection using the configured weights.
-  - `Launch in Steam` opens the selected game directly through the Steam client.
-  - `Open install folder` jumps to the game directory when it is present locally.
+## Navegando na interface
 
-## Managing telemetry and logs
+- **Visão da biblioteca**: mostra total de jogos detectados, filtros ativos e ações rápidas de atualização.
+- **Cartão do jogo sorteado**: exibe capa, status de instalação e ações disponíveis para o jogo atual.
+- **Painel de filtros**: permite priorizar jogos instalados, aplicar recortes por tags/coleções e ajustar critérios de sorteio.
+- **Ações principais**:
+  - `Sortear novamente`: executa novo sorteio com os filtros atuais.
+  - `Abrir no Steam`: abre o jogo selecionado no cliente Steam.
 
-- Open the **Settings** panel from the gear icon.
-- Under **Privacy**, toggle the **Share anonymous telemetry** switch.
-- The current log files live in `%LOCALAPPDATA%\SteamBacklogPicker\logs`. Use the `Export diagnostics` button to create a ZIP bundle for support.
+## Privacidade, telemetria e logs
 
-## Updating the application
+- A telemetria é opcional e pode ser ativada/desativada em **Configurações > Privacidade**.
+- Logs locais registram falhas de descoberta, inicialização e execução para suporte técnico.
 
-- **MSIX installations** are serviced by Windows Update or the Microsoft Store (if sideloaded via Store submission).
-- **Squirrel installations** poll the release feed during start-up. Keep the app running to allow background download; the update is applied the next time the app launches.
-- **Winget** users can run `winget upgrade Contoso.SteamBacklogPicker` to fetch the latest signed package.
+## Atualização do aplicativo
 
-## Troubleshooting
+- O comportamento funcional do app não muda por plataforma; apenas o mecanismo de entrega pode variar por pacote.
+- Consulte o [README](../README.md) para o fluxo de instalação/execução vigente em Windows e Linux.
 
-- If SteamBacklogPicker cannot find your libraries, open **Settings → Steam locations** and add custom library paths.
-- Epic titles require access to the launcher caches under `%PROGRAMDATA%\Epic\EpicGamesLauncher\Data\Manifests` and `%LOCALAPPDATA%\EpicGamesLauncher\Saved\Data\Catalog`; add overrides in the settings file if you keep them elsewhere.
-- When the Steam API is not available, the app falls back to the cached manifests stored in `%LOCALAPPDATA%\SteamBacklogPicker\cache`.
-- Review the latest log file and share it with support if you encounter crashes or repeated selection failures.
-- Reset preferences by deleting `%LOCALAPPDATA%\SteamBacklogPicker\telemetry-consent.json` and `%APPDATA%\SteamBacklogPicker\settings.json` while the app is closed.
+## Solução de problemas
 
-## Offline usage
+- Se a biblioteca não for encontrada, revise os caminhos Steam em **Configurações** e confirme acesso à pasta `steamapps`.
+- Em caso de erro recorrente, exporte/colete logs e informe a versão do app no relato.
+- Se o Steam estiver fechado ou sem metadados recentes, o app pode usar cache local até nova atualização da biblioteca.
 
-- The picker works entirely with data on disk; if Steam or Epic is offline the app still reads the last synced manifests and catalog caches.
-- Refresh operations simply rescan the local directories above, so you can disconnect from the internet after both launchers have written their latest metadata.
-- All selections and history remain local to `%APPDATA%\SteamBacklogPicker`, and no online account linking is required.
+## Uso offline
 
-## Support
+- O sorteio funciona com dados locais já sincronizados.
+- Filtros, histórico e preferências continuam disponíveis sem internet.
 
-For bug reports or feature suggestions open an issue on the project repository. Attach diagnostics if possible and include the application version shown on the splash screen.
+## Suporte
 
+Para bugs ou sugestões, abra uma issue no repositório com versão do app, plataforma (Windows/Linux) e evidências de log.
