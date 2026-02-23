@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using FluentAssertions;
 using SteamDiscovery;
 using Xunit;
 
@@ -128,6 +129,48 @@ public sealed class SteamInstallPathProviderTests
 
         Assert.Single(result);
         Assert.Equal("C:\\Steam", result.Single());
+    }
+
+    [Fact]
+    public void SteamLibraryLocator_RenameAwayAndRecreate_ShouldKeepTrackingCanonicalLibraryFile()
+    {
+        using var root = new TempDirectory();
+        var steamRoot = Path.Combine(root.Path, "Steam");
+        var steamApps = Path.Combine(steamRoot, "steamapps");
+        Directory.CreateDirectory(steamApps);
+
+        var canonicalLibraryFile = Path.Combine(steamApps, "libraryfolders.vdf");
+        var renamedLibraryFile = Path.Combine(steamApps, "libraryfolders.vdf.bak");
+
+        File.WriteAllText(canonicalLibraryFile, "\"LibraryFolders\" { \"0\" \"C:\\\\Steam\" }");
+
+        var provider = new FixedInstallPathProvider(steamRoot);
+        var parser = new SteamLibraryFoldersParser();
+        using var sut = new SteamLibraryLocator(provider, parser);
+
+        var renamedHandler = typeof(SteamLibraryLocator).GetMethod("OnLibraryFileRenamed", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        var changedHandler = typeof(SteamLibraryLocator).GetMethod("OnLibraryFileChanged", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        var libraryPathField = typeof(SteamLibraryLocator).GetField("_libraryFilePath", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+
+        Assert.NotNull(renamedHandler);
+        Assert.NotNull(changedHandler);
+        Assert.NotNull(libraryPathField);
+
+        _ = sut.GetLibraryFolders();
+
+        File.Move(canonicalLibraryFile, renamedLibraryFile);
+        var renamedArgs = new RenamedEventArgs(WatcherChangeTypes.Renamed, steamApps, Path.GetFileName(renamedLibraryFile), Path.GetFileName(canonicalLibraryFile));
+        renamedHandler!.Invoke(sut, new object[] { sut, renamedArgs });
+
+        File.WriteAllText(canonicalLibraryFile, "\"LibraryFolders\" { \"0\" \"D:\\\\SteamLibrary\" }");
+        var changedArgs = new FileSystemEventArgs(WatcherChangeTypes.Changed, steamApps, Path.GetFileName(canonicalLibraryFile));
+        changedHandler!.Invoke(sut, new object[] { sut, changedArgs });
+
+        var trackedPath = libraryPathField!.GetValue(sut) as string;
+        trackedPath.Should().Be(canonicalLibraryFile);
+
+        var libraries = sut.GetLibraryFolders();
+        libraries.Should().ContainSingle().Which.Should().Be("D:\\SteamLibrary");
     }
 
     private sealed class FixedInstallPathProvider : ISteamInstallPathProvider

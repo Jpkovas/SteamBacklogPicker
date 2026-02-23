@@ -167,7 +167,6 @@ public sealed class SteamLibraryLocator : ISteamLibraryLocator, IDisposable
 
             if (oldMatches)
             {
-                _libraryFilePath = e.FullPath;
                 UpdateCacheNoLock();
             }
         }
