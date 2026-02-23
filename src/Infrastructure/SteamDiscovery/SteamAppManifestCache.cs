@@ -13,12 +13,13 @@ public sealed class SteamAppManifestCache : IDisposable
     private readonly ISteamClientAdapter _clientAdapter;
     private readonly ISteamVdfFallback _fallback;
     private readonly ValveTextVdfParser _parser;
+    private readonly IPathComparisonStrategy _pathComparison;
     private readonly object _syncRoot = new();
     private readonly Dictionary<GameIdentifier, GameEntry> _entries = new();
     private readonly Dictionary<GameIdentifier, string> _manifestPathById = new();
-    private readonly Dictionary<string, GameIdentifier> _idByManifestPath = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, FileSystemWatcher> _watchers = new(StringComparer.OrdinalIgnoreCase);
-    private HashSet<string> _knownLibraries = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, GameIdentifier> _idByManifestPath;
+    private readonly Dictionary<string, FileSystemWatcher> _watchers;
+    private HashSet<string> _knownLibraries;
     private GameEntry[] _cachedEntries = Array.Empty<GameEntry>();
     private bool _initialized;
 
@@ -27,11 +28,25 @@ public sealed class SteamAppManifestCache : IDisposable
         ISteamClientAdapter clientAdapter,
         ISteamVdfFallback fallback,
         ValveTextVdfParser parser)
+        : this(libraryLocator, clientAdapter, fallback, parser, new PlatformPathComparisonStrategy(new RuntimePlatformProvider()))
+    {
+    }
+
+    public SteamAppManifestCache(
+        ISteamLibraryLocator libraryLocator,
+        ISteamClientAdapter clientAdapter,
+        ISteamVdfFallback fallback,
+        ValveTextVdfParser parser,
+        IPathComparisonStrategy pathComparison)
     {
         _libraryLocator = libraryLocator ?? throw new ArgumentNullException(nameof(libraryLocator));
         _clientAdapter = clientAdapter ?? throw new ArgumentNullException(nameof(clientAdapter));
         _fallback = fallback ?? throw new ArgumentNullException(nameof(fallback));
         _parser = parser ?? throw new ArgumentNullException(nameof(parser));
+        _pathComparison = pathComparison ?? throw new ArgumentNullException(nameof(pathComparison));
+        _idByManifestPath = new Dictionary<string, GameIdentifier>(_pathComparison.Comparer);
+        _watchers = new Dictionary<string, FileSystemWatcher>(_pathComparison.Comparer);
+        _knownLibraries = new HashSet<string>(_pathComparison.Comparer);
     }
 
     public IReadOnlyCollection<GameEntry> GetInstalledGames()
@@ -76,7 +91,7 @@ public sealed class SteamAppManifestCache : IDisposable
 
     private HashSet<string> GetNormalizedLibraries()
     {
-        var libraries = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var libraries = new HashSet<string>(_pathComparison.Comparer);
         foreach (var path in _libraryLocator.GetLibraryFolders())
         {
             if (string.IsNullOrWhiteSpace(path))
@@ -101,7 +116,7 @@ public sealed class SteamAppManifestCache : IDisposable
         UpdateWatchersNoLock(manifestDirectories);
 
         var installedSet = GetInstalledAppIds();
-        var seenPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var seenPaths = new HashSet<string>(_pathComparison.Comparer);
 
         foreach (var directory in manifestDirectories)
         {
@@ -351,7 +366,7 @@ public sealed class SteamAppManifestCache : IDisposable
         _idByManifestPath.Remove(manifestPath);
 
         if (_manifestPathById.TryGetValue(id, out var storedPath) &&
-            string.Equals(storedPath, manifestPath, StringComparison.OrdinalIgnoreCase))
+            _pathComparison.Equals(storedPath, manifestPath))
         {
             _manifestPathById.Remove(id);
             _entries.Remove(id);
@@ -388,7 +403,7 @@ public sealed class SteamAppManifestCache : IDisposable
 
     private void UpdateWatchersNoLock(IEnumerable<string> manifestDirectories)
     {
-        var desired = new HashSet<string>(manifestDirectories, StringComparer.OrdinalIgnoreCase);
+        var desired = new HashSet<string>(manifestDirectories, _pathComparison.Comparer);
 
         foreach (var existing in _watchers.Keys.ToList())
         {

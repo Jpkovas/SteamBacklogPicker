@@ -40,3 +40,8 @@ Objetivo: validar que a instalação e o primeiro lançamento entregam comportam
 - Captura da tela inicial após instalação.
 - Total de jogos detectados no primeiro scan.
 - Registro da decisão de telemetria.
+
+
+## Referência de descoberta Steam no Linux
+
+Para diagnóstico de ambiente Linux, a resolução de caminho do Steam usa esta ordem: `STEAM_PATH` válido, caminhos tradicionais (`~/.steam/steam`, `~/.steam/debian-installation`, `~/.local/share/Steam`) e depois Flatpak/Snap. Cada caminho só é aceito se contiver `steamapps/libraryfolders.vdf`.

@@ -4,6 +4,9 @@
 
 - Melhorar feedback visual no cliente Linux para diferenciar ausência de capa de jogo vs. capa ainda em carregamento, evitando mensagem estática sobreposta quando houver imagem.
 
+- Extrair o bootstrap compartilhado de Steam runtime (Windows/Linux) para um módulo comum no `AppCore` e remover o link de arquivos de runtime atualmente reaproveitados do cliente WPF.
+- Cobrir com teste de integração de watcher real o fluxo de rename com diferença apenas de caixa no `SteamLibraryLocator`, reduzindo dependência de reflexão nos testes unitários.
+- Avaliar suporte a caminhos Linux derivados de XDG (`XDG_DATA_HOME`) para descoberta Steam sem hardcode de diretórios, mantendo a mesma validação por `libraryfolders.vdf`.
 - Implementar job de release Linux (artefato instalável) na automação e atualizar README/runbooks quando a distribuição oficial estiver disponível.
 - Criar um template de issue para divergências de portabilidade que já preencha jornada afetada, impacto e data-alvo de convergência para reduzir inconsistências de registro.
 - Validar em ambiente Linux real (fora de container) permissões de `/proc/<pid>/mem` com diferentes políticas (`ptrace_scope`/AppArmor) e decidir se o fallback por logs deve virar padrão para paridade segura.

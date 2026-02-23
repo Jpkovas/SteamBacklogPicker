@@ -15,5 +15,10 @@
     <ProjectReference Include="..\..\Infrastructure\SteamDiscovery\SteamDiscovery.csproj" />
     <ProjectReference Include="..\..\Integration\SteamClientAdapter\SteamClientAdapter.csproj" />
     <ProjectReference Include="..\..\Integration\ValveFormatParser\ValveFormatParser.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\Telemetry\Telemetry.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\SteamBacklogPicker.UI\Services\Runtime\ISteamEnvironment.cs" Link="Services\Runtime\ISteamEnvironment.cs" />
+    <Compile Include="..\SteamBacklogPicker.UI\Services\Runtime\SteamEnvironment.cs" Link="Services\Runtime\SteamEnvironment.cs" />
   </ItemGroup>
 </Project>

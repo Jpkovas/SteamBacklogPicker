@@ -6,6 +6,13 @@
 - Mapeei a paridade visual WPF→Avalonia na tela principal Linux, expandi os blocos de filtros/status/detalhes com bindings do `MainViewModel` e conectei atualização dinâmica de recursos de idioma no bootstrap Avalonia.
 - Adicionei testes de apresentação no cliente Linux cobrindo jornadas mínimas de abrir, filtrar, sortear e acionar launch/install, além de checklist atualizado em `docs/testing/journey-parity-checklist.md`.
 
+- Ajustei o bootstrap Linux para registrar `ISteamEnvironment`, padronizar `ISteamInstallPathProvider` com `DefaultSteamInstallPathProvider`, construir `ISteamVdfFallback` via `environment.GetSteamDirectory()` e tentar inicializar a Steam API ao criar `ISteamClientAdapter`.
+- Adicionei testes de composição Linux cobrindo tentativa de init da API no bootstrap e fallback de manifestos VDF quando a biblioteca nativa não é encontrada.
+
+- Introduzi `IPathComparisonStrategy` no `SteamDiscovery` para comparação de paths sensível à plataforma (Windows case-insensitive, Linux case-sensitive) e apliquei em `SteamLibraryLocator` e caches/lookups de manifests para evitar colisões indevidas por case.
+- Adicionei testes parametrizados por plataforma simulada para validar colisão de paths, comparação em `FilePathMatches` e refresh após rename com diferença apenas de caixa.
+
+- Atualizei a descoberta de instalação Steam no Linux com prioridade documentada (`STEAM_PATH` > caminhos tradicionais incluindo `~/.steam/debian-installation` > Flatpak/Snap) mantendo validação por `steamapps/libraryfolders.vdf` e cobrindo novos cenários em testes.
 - Corrigi a documentação de distribuição Linux para refletir o estado real da automação: não há pipeline de release Linux gerando artefatos instaláveis no repositório.
 - Ajustei requisitos/runbook para orientar execução local no Linux até a esteira de empacotamento Linux ser implementada.
 

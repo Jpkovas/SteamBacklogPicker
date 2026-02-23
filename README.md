@@ -34,6 +34,15 @@ SteamBacklogPicker é um app desktop para sortear o próximo jogo da sua bibliot
 - **Windows**: releases com instalador (Squirrel/MSIX) para uso final.
 - **Linux**: no estado atual, não há job de release Linux no repositório gerando artefatos instaláveis. Para Linux, use execução local via `dotnet run`/build local até a esteira de empacotamento ser adicionada.
 
+## Resolução de instalação Steam no Linux
+
+A descoberta da pasta principal do Steam no Linux segue prioridade explícita com validação por manifesto `steamapps/libraryfolders.vdf` em cada candidato, evitando falso-positivo:
+
+1. `STEAM_PATH` (quando definido e válido).
+2. Caminhos tradicionais: `~/.steam/steam`, `~/.steam/debian-installation`, `~/.local/share/Steam`.
+3. Caminhos de sandbox/pacote: Flatpak (`~/.var/app/com.valvesoftware.Steam/.local/share/Steam`, `~/.var/app/com.valvesoftware.Steam/data/Steam`) e Snap (`~/snap/steam/common/.local/share/Steam`).
+
+
 ## Telemetria e privacidade
 
 A telemetria é opcional. Quando ativada, apenas eventos anônimos de uso são coletados. Logs ficam localmente no diretório de dados do app e podem ser removidos pelo usuário.

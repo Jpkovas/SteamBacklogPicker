@@ -5,18 +5,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
-using Domain.Selection;
 using SteamBacklogPicker.Linux.Composition;
 using SteamBacklogPicker.Linux.Views;
-using SteamBacklogPicker.UI.Services.GameArt;
-using SteamBacklogPicker.UI.Services.Launch;
-using SteamBacklogPicker.UI.Services.Library;
-using SteamBacklogPicker.UI.Services.Localization;
 using SteamBacklogPicker.UI.Services.Updates;
-using SteamBacklogPicker.UI.ViewModels;
-using SteamClientAdapter;
-using SteamDiscovery;
-using ValveFormatParser;
 
 namespace SteamBacklogPicker.Linux;
 
@@ -81,10 +72,13 @@ public partial class App : Application
     private static ServiceProvider BuildServices()
     {
         var services = new ServiceCollection();
+        services.AddLinuxApplicationServices();
         services.AddSingleton<ValveTextVdfParser>();
         services.AddSingleton<ValveBinaryVdfParser>();
         services.AddSingleton<IEnvironmentProvider, SystemEnvironmentProvider>();
         services.AddSingleton<IFileSystem, SystemFileSystem>();
+        services.AddSingleton<IPlatformProvider, RuntimePlatformProvider>();
+        services.AddSingleton<IPathComparisonStrategy, PlatformPathComparisonStrategy>();
         services.AddSingleton<ILinuxSteamInstallPathProvider, LinuxSteamInstallPathProvider>();
         services.AddSingleton<ISteamInstallPathProvider>(sp => sp.GetRequiredService<ILinuxSteamInstallPathProvider>());
         services.AddSingleton<ISteamLibraryFoldersParser, SteamLibraryFoldersParser>();

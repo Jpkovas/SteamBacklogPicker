@@ -128,6 +128,7 @@ public partial class App : Application
         services.AddSingleton<IEnvironmentProvider, SystemEnvironmentProvider>();
         services.AddSingleton<IFileSystem, SystemFileSystem>();
         services.AddSingleton<IPlatformProvider, RuntimePlatformProvider>();
+        services.AddSingleton<IPathComparisonStrategy, PlatformPathComparisonStrategy>();
         services.AddSingleton<IWindowsSteamInstallPathProvider, WindowsSteamInstallPathProvider>();
         services.AddSingleton<ILinuxSteamInstallPathProvider, LinuxSteamInstallPathProvider>();
         services.AddSingleton<ISteamInstallPathProvider, DefaultSteamInstallPathProvider>();
