@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Domain;
 using Domain.Selection;
 using FluentAssertions;
+using Xunit;
 using SteamBacklogPicker.UI.Services.GameArt;
 using SteamBacklogPicker.UI.Services.Launch;
 using SteamBacklogPicker.UI.Services.Library;
@@ -100,6 +101,9 @@ public sealed class MainWindowPresentationTests
         axaml.Should().Contain("Command=\"{Binding ChangeLanguageCommand}\"");
         axaml.Should().Contain("{DynamicResource Filters_DrawButton}");
         axaml.Should().Contain("{DynamicResource GameDetails_PlayButton}");
+        axaml.Should().Contain("StringNullOrWhiteSpaceToBoolConverter");
+        axaml.Should().Contain("IsVisible=\"{Binding SelectedGame.CoverImagePath, Converter={StaticResource StringNullOrWhiteSpaceToBoolConverter}}\"");
+        axaml.Should().Contain("ConverterParameter=Invert");
     }
 
     private static void InvokeApplySelection(MainViewModel viewModel, GameEntry game)

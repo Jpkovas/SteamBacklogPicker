@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:converters="clr-namespace:SteamBacklogPicker.Linux.Views.Converters"
         x:Class="SteamBacklogPicker.Linux.Views.MainWindow"
         Width="1200"
         Height="760"
@@ -9,8 +10,11 @@
         MinHeight="640"
         Title="Steam Backlog Picker"
         mc:Ignorable="d">
-  <Grid Margin="20" RowDefinitions="*,Auto" ColumnDefinitions="360,*" ColumnSpacing="16" RowSpacing="16">
-    <Border Grid.Row="0" Grid.Column="0" Padding="16" BorderBrush="#303741" BorderThickness="1" CornerRadius="12">
+  <Window.Resources>
+    <converters:StringNullOrWhiteSpaceToBoolConverter x:Key="StringNullOrWhiteSpaceToBoolConverter" />
+  </Window.Resources>
+  <Grid Margin="20" RowDefinitions="*,Auto" ColumnDefinitions="360,*">
+    <Border Grid.Row="0" Grid.Column="0" Padding="16" Margin="0,0,8,0" BorderBrush="#303741" BorderThickness="1" CornerRadius="12">
       <ScrollViewer>
         <StackPanel Spacing="12">
           <TextBlock FontSize="22" FontWeight="SemiBold" Text="{DynamicResource Filters_Title}" />
@@ -33,14 +37,15 @@
 
           <TextBlock Margin="0,8,0,0" FontSize="12" FontWeight="Bold" Text="{DynamicResource Filters_CollectionLabel}" />
           <ComboBox ItemsSource="{Binding Preferences.CollectionOptions}"
-                    SelectedItem="{Binding Preferences.SelectedCollection, Mode=TwoWay}"
-                    Watermark="{DynamicResource Filters_SelectCollection}" />
+                    SelectedItem="{Binding Preferences.SelectedCollection, Mode=TwoWay}" />
 
-          <Grid Margin="0,8,0,0" ColumnDefinitions="*,*" ColumnSpacing="8">
+          <Grid Margin="0,8,0,0" ColumnDefinitions="*,*">
             <Button Grid.Column="0"
+                    Margin="0,0,4,0"
                     Content="{DynamicResource Filters_RefreshButton}"
                     Command="{Binding RefreshCommand}" />
             <Button Grid.Column="1"
+                    Margin="4,0,0,0"
                     Content="{DynamicResource Filters_DrawButton}"
                     Command="{Binding DrawCommand}" />
           </Grid>
@@ -53,24 +58,27 @@
       </ScrollViewer>
     </Border>
 
-    <Border Grid.Row="0" Grid.Column="1" Padding="16" BorderBrush="#303741" BorderThickness="1" CornerRadius="12">
-      <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" RowSpacing="10">
+    <Border Grid.Row="0" Grid.Column="1" Padding="16" Margin="8,0,0,0" BorderBrush="#303741" BorderThickness="1" CornerRadius="12">
+      <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
         <TextBlock FontSize="22" FontWeight="SemiBold" Text="{DynamicResource GameDetails_NextGameTitle}" />
-        <TextBlock Grid.Row="1" FontSize="30" FontWeight="Bold" TextWrapping="Wrap" Text="{Binding SelectedGame.Title}" />
+        <TextBlock Grid.Row="1" Margin="0,10,0,0" FontSize="30" FontWeight="Bold" TextWrapping="Wrap" Text="{Binding SelectedGame.Title}" />
 
-        <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="10">
+        <StackPanel Grid.Row="2" Margin="0,10,0,0" Orientation="Horizontal" Spacing="10">
           <TextBlock FontWeight="SemiBold" Text="{DynamicResource GameDetails_StorefrontLabel}" />
           <TextBlock Text="{Binding SelectedGame.StorefrontGlyph}" />
           <TextBlock Text="{Binding SelectedGame.StorefrontDisplayName}" />
         </StackPanel>
 
-        <Grid Grid.Row="3" RowDefinitions="Auto,*,Auto" RowSpacing="10">
+        <Grid Grid.Row="3" RowDefinitions="Auto,*,Auto" Margin="0,10,0,10">
           <TextBlock Text="{DynamicResource GameDetails_ArtworkLabel}" FontWeight="SemiBold" />
           <Border Grid.Row="1" BorderBrush="#303741" BorderThickness="1" CornerRadius="8" MinHeight="260" Padding="8">
             <Grid>
-              <Image Stretch="Uniform" Source="{Binding SelectedGame.CoverImagePath}" />
+              <Image Stretch="Uniform"
+                     Source="{Binding SelectedGame.CoverImagePath}"
+                     IsVisible="{Binding SelectedGame.CoverImagePath, Converter={StaticResource StringNullOrWhiteSpaceToBoolConverter}, ConverterParameter=Invert}" />
               <TextBlock HorizontalAlignment="Center"
                          VerticalAlignment="Center"
+                         IsVisible="{Binding SelectedGame.CoverImagePath, Converter={StaticResource StringNullOrWhiteSpaceToBoolConverter}}"
                          Text="{DynamicResource GameDetails_NoCoverSubtitle}" />
             </Grid>
           </Border>
@@ -88,12 +96,14 @@
           </StackPanel>
         </Grid>
 
-        <Grid Grid.Row="4" ColumnDefinitions="*,*" ColumnSpacing="8">
+        <Grid Grid.Row="4" ColumnDefinitions="*,*">
           <Button Grid.Column="0"
+                  Margin="0,0,4,0"
                   Content="{DynamicResource GameDetails_PlayButton}"
                   Command="{Binding LaunchCommand}"
                   IsEnabled="{Binding SelectedGame.CanLaunch}" />
           <Button Grid.Column="1"
+                  Margin="4,0,0,0"
                   Content="{DynamicResource GameDetails_InstallButton}"
                   Command="{Binding InstallCommand}"
                   IsEnabled="{Binding SelectedGame.CanInstall}" />

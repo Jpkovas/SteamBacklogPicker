@@ -1,5 +1,7 @@
 # TODO
 
+- Avaliar exibir placeholder visual dedicado (ícone/skeleton) quando `CoverImagePath` estiver vazio, para melhorar legibilidade do estado sem arte.
+
 - Melhorar feedback visual no cliente Linux para diferenciar ausência de capa de jogo vs. capa ainda em carregamento, evitando mensagem estática sobreposta quando houver imagem.
 
 - Implementar job de release Linux (artefato instalável) na automação e atualizar README/runbooks quando a distribuição oficial estiver disponível.

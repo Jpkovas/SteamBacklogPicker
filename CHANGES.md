@@ -1,5 +1,8 @@
 # CHANGES
 
+- Corrigi o fallback de capa na UI Linux: a mensagem `GameDetails_NoCoverSubtitle` agora só aparece quando `SelectedGame.CoverImagePath` está vazio e deixa de sobrepor artes válidas.
+- Adicionei converter + testes de apresentação/conversão para garantir a visibilidade condicional de imagem e mensagem de fallback.
+
 - Mapeei a paridade visual WPF→Avalonia na tela principal Linux, expandi os blocos de filtros/status/detalhes com bindings do `MainViewModel` e conectei atualização dinâmica de recursos de idioma no bootstrap Avalonia.
 - Adicionei testes de apresentação no cliente Linux cobrindo jornadas mínimas de abrir, filtrar, sortear e acionar launch/install, além de checklist atualizado em `docs/testing/journey-parity-checklist.md`.
 
