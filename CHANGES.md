@@ -38,3 +38,6 @@
 - Converti `SteamDiscovery` e seus testes para multi-target (`net8.0` + `net8.0-windows10.0.17763.0`) com implementação Windows-only isolada por TFM, mantendo dependências nativas apenas no target Windows.
 - Reestruturei o workflow de CI com matriz `ubuntu-latest` + `windows-latest`, separação entre suíte comum e suíte Windows-only, e publicação de relatório de paridade por camada em `docs/testing/test-parity-report.md`.
 
+
+- Revisei os merges de PR já incorporados no branch `work`, validei que não há mudanças locais pendentes e deixei registrado o bloqueio de validação automatizada neste ambiente por ausência do .NET SDK (`dotnet`).
+- Atualizei o plano de continuidade com uma tarefa explícita para reexecutar restore/build/test em ambiente com SDK instalado antes do próximo ciclo de correções.

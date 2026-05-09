@@ -20,3 +20,5 @@
 - Evoluir notificação Linux para implementação DBus direta (sem dependência de `notify-send`) para maior controle de timeout/categorias.
 - Automatizar a geração do relatório de paridade a partir dos resultados TRX (em vez de tabela declarativa) para destacar diferenças de cobertura entre suites automaticamente.
 
+
+- Reexecutar `dotnet restore`, `dotnet build -c Release --no-restore` e `dotnet test -c Release --no-build` em ambiente com .NET SDK instalado para confirmar os PRs mesclados sem regressão funcional.
