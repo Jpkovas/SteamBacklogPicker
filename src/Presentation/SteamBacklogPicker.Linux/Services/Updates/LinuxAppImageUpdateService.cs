@@ -17,6 +17,7 @@ public sealed class LinuxAppImageUpdateService : IAppUpdateService
 {
     private const string FeedEnvironmentVariable = "SBP_LINUX_UPDATE_FEED_URL";
     private const string SwapProcessIdOverrideEnvironmentVariable = "SBP_LINUX_UPDATE_SWAP_PID";
+    private const string EnableUnsignedFeedEnvironmentVariable = "SBP_ENABLE_UNSIGNED_LINUX_UPDATE_FEED";
     private const string DefaultFeedUrl = "https://github.com/Jpkovas/SteamBacklogPicker/releases/latest/download/linux-appimage-update.json";
     private static readonly HttpClient HttpClient = new();
 
@@ -43,12 +44,12 @@ public sealed class LinuxAppImageUpdateService : IAppUpdateService
                 feedUrl = DefaultFeedUrl;
             }
 
-            if (!Uri.TryCreate(feedUrl, UriKind.Absolute, out var feedUri) || !IsAllowedUpdateUri(feedUri))
+            if (!IsUnsignedFeedOptInEnabled())
             {
                 return;
             }
 
-            var feedJson = await HttpClient.GetStringAsync(feedUri, cancellationToken);
+            var feedJson = await HttpClient.GetStringAsync(feedUrl, cancellationToken);
             var feed = JsonSerializer.Deserialize<AppImageUpdateFeed>(feedJson);
             if (feed is null || string.IsNullOrWhiteSpace(feed.Version) || string.IsNullOrWhiteSpace(feed.DownloadUrl) || string.IsNullOrWhiteSpace(feed.Sha256))
             {
@@ -214,17 +215,11 @@ rm -f "$SCRIPT_PATH"
         return string.Equals(actualHash, expectedHash, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static bool IsHexString(string value)
-    {
-        foreach (var character in value)
-        {
-            if (!Uri.IsHexDigit(character))
-            {
-                return false;
-            }
-        }
 
-        return true;
+    private static bool IsUnsignedFeedOptInEnabled()
+    {
+        var value = Environment.GetEnvironmentVariable(EnableUnsignedFeedEnvironmentVariable);
+        return string.Equals(value, "true", StringComparison.OrdinalIgnoreCase);
     }
 
     private static int ResolveSwapProcessId()
