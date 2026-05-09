@@ -152,6 +152,54 @@ public sealed class LinuxAppImageUpdateServiceTests : IDisposable
         (await File.ReadAllTextAsync(targetPath, Encoding.UTF8)).Should().Be("new-content");
     }
 
+    [Fact]
+    public async Task CheckForUpdatesAsync_ShouldNotStagePendingUpdate_WhenSha256IsMissing()
+    {
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        {
+            return;
+        }
+
+        var appImagePath = Path.Combine(_tempDirectory, "SteamBacklogPicker.AppImage");
+        await File.WriteAllTextAsync(appImagePath, "current-binary", Encoding.UTF8);
+        Environment.SetEnvironmentVariable("APPIMAGE", appImagePath);
+
+        await using var server = new LocalFeedServer(async context =>
+        {
+            switch (context.Request.Url?.AbsolutePath)
+            {
+                case "/linux-appimage-update.json":
+                    var feed = JsonSerializer.Serialize(new
+                    {
+                        version = "99.0.0.0",
+                        downloadUrl = $"http://127.0.0.1:{context.Request.LocalEndPoint!.Port}/download/SteamBacklogPicker.AppImage",
+                        sha256 = " ",
+                    });
+                    await WriteUtf8Async(context.Response, feed);
+                    break;
+                case "/download/SteamBacklogPicker.AppImage":
+                    await WriteUtf8Async(context.Response, "new-linux-binary");
+                    break;
+                default:
+                    context.Response.StatusCode = 404;
+                    context.Response.Close();
+                    break;
+            }
+        });
+
+        Environment.SetEnvironmentVariable("SBP_LINUX_UPDATE_FEED_URL", server.FeedUrl);
+
+        var sut = new LinuxAppImageUpdateService();
+        await sut.CheckForUpdatesAsync(CancellationToken.None);
+
+        var updateDirectory = Path.Combine(_tempDirectory, ".local", "share", "SteamBacklogPicker", "updates");
+        var markerPath = Path.Combine(updateDirectory, "pending-update.json");
+        var pendingPath = Path.Combine(updateDirectory, "SteamBacklogPicker.pending.AppImage");
+
+        File.Exists(markerPath).Should().BeFalse();
+        File.Exists(pendingPath).Should().BeFalse();
+    }
+
     public void Dispose()
     {
         Environment.SetEnvironmentVariable("HOME", string.IsNullOrEmpty(_originalHome) ? null : _originalHome);

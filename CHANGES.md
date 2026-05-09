@@ -1,6 +1,7 @@
 # CHANGES
 
-- Mitiguei o risco de execução remota no auto-update Linux desabilitando por padrão o consumo de feed AppImage não assinado; agora o fluxo legado só roda com opt-in explícito via `SBP_ENABLE_UNSIGNED_LINUX_UPDATE_FEED=true`, com cobertura de teste para o novo comportamento.
+- Endureci o auto-update Linux exigindo SHA-256 obrigatório e válido no feed, além de restringir URLs de feed/download para HTTPS (com exceção de loopback para testes locais), bloqueando staging de binários sem integridade mínima.
+
 - Adicionei CI/release Linux com build/test/publish do projeto `SteamBacklogPicker.Linux`, geração de pacote `.AppImage` compatível, publicação do feed JSON de update e validação automatizada de checksum + atualização pendente em ambiente Linux.
 - Atualizei README e runbook de instalação para documentar o fluxo de release Linux com verificação de integridade via SHA-256 e uso do feed `linux-appimage-update.json`.
 
@@ -38,4 +39,3 @@
 
 - Converti `SteamDiscovery` e seus testes para multi-target (`net8.0` + `net8.0-windows10.0.17763.0`) com implementação Windows-only isolada por TFM, mantendo dependências nativas apenas no target Windows.
 - Reestruturei o workflow de CI com matriz `ubuntu-latest` + `windows-latest`, separação entre suíte comum e suíte Windows-only, e publicação de relatório de paridade por camada em `docs/testing/test-parity-report.md`.
-
