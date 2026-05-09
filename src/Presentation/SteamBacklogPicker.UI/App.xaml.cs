@@ -53,10 +53,6 @@ public partial class App : Application
             });
         }
 
-        if (_serviceProvider.GetService<IAppUpdateService>() is { } updateService)
-        {
-            _ = Task.Run(() => updateService.CheckForUpdatesAsync(_updateCancellation.Token));
-        }
     }
 
     protected override void OnExit(ExitEventArgs e)

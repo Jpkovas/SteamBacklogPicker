@@ -19,4 +19,4 @@
 - Criar testes automatizados para o fluxo de atualização Linux cobrindo erro de rede, hash inválido e rollback de substituição do AppImage.
 - Evoluir notificação Linux para implementação DBus direta (sem dependência de `notify-send`) para maior controle de timeout/categorias.
 - Automatizar a geração do relatório de paridade a partir dos resultados TRX (em vez de tabela declarativa) para destacar diferenças de cobertura entre suites automaticamente.
-
+- Definir estratégia segura de atualização no Windows com verificação independente de autenticidade (ex.: assinatura Authenticode/pinning de certificado) antes de reativar auto-update.
