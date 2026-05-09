@@ -1,5 +1,6 @@
 # CHANGES
 
+- Mitiguei o risco de execução remota no auto-update Linux desabilitando por padrão o consumo de feed AppImage não assinado; agora o fluxo legado só roda com opt-in explícito via `SBP_ENABLE_UNSIGNED_LINUX_UPDATE_FEED=true`, com cobertura de teste para o novo comportamento.
 - Adicionei CI/release Linux com build/test/publish do projeto `SteamBacklogPicker.Linux`, geração de pacote `.AppImage` compatível, publicação do feed JSON de update e validação automatizada de checksum + atualização pendente em ambiente Linux.
 - Atualizei README e runbook de instalação para documentar o fluxo de release Linux com verificação de integridade via SHA-256 e uso do feed `linux-appimage-update.json`.
 

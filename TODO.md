@@ -1,5 +1,6 @@
 # TODO
 
+- Implementar assinatura criptográfica do feed/payload de update Linux (ex.: Ed25519/minisign) e remover o opt-in legado de feed não assinado após migração do pipeline de release.
 - Evoluir o empacotamento Linux de “AppImage compatível” para AppImage assinado nativo (com runtime AppImageTool), mantendo o mesmo contrato de feed de atualização.
 - Avaliar exibir placeholder visual dedicado (ícone/skeleton) quando `CoverImagePath` estiver vazio, para melhorar legibilidade do estado sem arte.
 
