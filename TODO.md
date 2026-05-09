@@ -1,5 +1,7 @@
 # TODO
 
+- Evoluir a confiança do update Linux para assinatura/autenticidade independente (ex.: assinatura digital do manifesto/binário), reduzindo dependência exclusiva de hash entregue pelo próprio feed.
+
 - Evoluir o empacotamento Linux de “AppImage compatível” para AppImage assinado nativo (com runtime AppImageTool), mantendo o mesmo contrato de feed de atualização.
 - Avaliar exibir placeholder visual dedicado (ícone/skeleton) quando `CoverImagePath` estiver vazio, para melhorar legibilidade do estado sem arte.
 

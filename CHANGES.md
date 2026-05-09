@@ -1,5 +1,7 @@
 # CHANGES
 
+- Endureci o auto-update Linux exigindo SHA-256 obrigatório e válido no feed, além de restringir URLs de feed/download para HTTPS (com exceção de loopback para testes locais), bloqueando staging de binários sem integridade mínima.
+
 - Adicionei CI/release Linux com build/test/publish do projeto `SteamBacklogPicker.Linux`, geração de pacote `.AppImage` compatível, publicação do feed JSON de update e validação automatizada de checksum + atualização pendente em ambiente Linux.
 - Atualizei README e runbook de instalação para documentar o fluxo de release Linux com verificação de integridade via SHA-256 e uso do feed `linux-appimage-update.json`.
 

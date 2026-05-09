@@ -19,6 +19,7 @@ public sealed class LinuxAppImageUpdateServiceTests : IDisposable
     private readonly string _originalAppImage;
     private readonly string _originalFeedUrl;
     private readonly string _originalSwapPid;
+    private readonly string _originalEnableUnsignedFeed;
 
     public LinuxAppImageUpdateServiceTests()
     {
@@ -29,8 +30,10 @@ public sealed class LinuxAppImageUpdateServiceTests : IDisposable
         _originalAppImage = Environment.GetEnvironmentVariable("APPIMAGE") ?? string.Empty;
         _originalFeedUrl = Environment.GetEnvironmentVariable("SBP_LINUX_UPDATE_FEED_URL") ?? string.Empty;
         _originalSwapPid = Environment.GetEnvironmentVariable("SBP_LINUX_UPDATE_SWAP_PID") ?? string.Empty;
+        _originalEnableUnsignedFeed = Environment.GetEnvironmentVariable("SBP_ENABLE_UNSIGNED_LINUX_UPDATE_FEED") ?? string.Empty;
 
         Environment.SetEnvironmentVariable("HOME", _tempDirectory);
+        Environment.SetEnvironmentVariable("SBP_ENABLE_UNSIGNED_LINUX_UPDATE_FEED", "true");
     }
 
     [Fact]
@@ -83,6 +86,36 @@ public sealed class LinuxAppImageUpdateServiceTests : IDisposable
         (await File.ReadAllTextAsync(pendingPath, Encoding.UTF8)).Should().Be(updatePayload);
     }
 
+
+    [Fact]
+    public async Task CheckForUpdatesAsync_ShouldSkipFeedDownload_WhenUnsignedFeedOptInIsDisabled()
+    {
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        {
+            return;
+        }
+
+        var appImagePath = Path.Combine(_tempDirectory, "SteamBacklogPicker.AppImage");
+        await File.WriteAllTextAsync(appImagePath, "current-binary", Encoding.UTF8);
+        Environment.SetEnvironmentVariable("APPIMAGE", appImagePath);
+        Environment.SetEnvironmentVariable("SBP_ENABLE_UNSIGNED_LINUX_UPDATE_FEED", "false");
+
+        await using var server = new LocalFeedServer(async context =>
+        {
+            context.Response.StatusCode = 500;
+            context.Response.Close();
+            await Task.CompletedTask;
+        });
+
+        Environment.SetEnvironmentVariable("SBP_LINUX_UPDATE_FEED_URL", server.FeedUrl);
+
+        var sut = new LinuxAppImageUpdateService();
+        await sut.CheckForUpdatesAsync(CancellationToken.None);
+
+        var markerPath = Path.Combine(_tempDirectory, ".local", "share", "SteamBacklogPicker", "updates", "pending-update.json");
+        File.Exists(markerPath).Should().BeFalse();
+    }
+
     [Fact]
     public async Task CheckForUpdatesAsync_ShouldApplyPendingUpdate_WhenMarkerExists()
     {
@@ -119,12 +152,61 @@ public sealed class LinuxAppImageUpdateServiceTests : IDisposable
         (await File.ReadAllTextAsync(targetPath, Encoding.UTF8)).Should().Be("new-content");
     }
 
+    [Fact]
+    public async Task CheckForUpdatesAsync_ShouldNotStagePendingUpdate_WhenSha256IsMissing()
+    {
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        {
+            return;
+        }
+
+        var appImagePath = Path.Combine(_tempDirectory, "SteamBacklogPicker.AppImage");
+        await File.WriteAllTextAsync(appImagePath, "current-binary", Encoding.UTF8);
+        Environment.SetEnvironmentVariable("APPIMAGE", appImagePath);
+
+        await using var server = new LocalFeedServer(async context =>
+        {
+            switch (context.Request.Url?.AbsolutePath)
+            {
+                case "/linux-appimage-update.json":
+                    var feed = JsonSerializer.Serialize(new
+                    {
+                        version = "99.0.0.0",
+                        downloadUrl = $"http://127.0.0.1:{context.Request.LocalEndPoint!.Port}/download/SteamBacklogPicker.AppImage",
+                        sha256 = " ",
+                    });
+                    await WriteUtf8Async(context.Response, feed);
+                    break;
+                case "/download/SteamBacklogPicker.AppImage":
+                    await WriteUtf8Async(context.Response, "new-linux-binary");
+                    break;
+                default:
+                    context.Response.StatusCode = 404;
+                    context.Response.Close();
+                    break;
+            }
+        });
+
+        Environment.SetEnvironmentVariable("SBP_LINUX_UPDATE_FEED_URL", server.FeedUrl);
+
+        var sut = new LinuxAppImageUpdateService();
+        await sut.CheckForUpdatesAsync(CancellationToken.None);
+
+        var updateDirectory = Path.Combine(_tempDirectory, ".local", "share", "SteamBacklogPicker", "updates");
+        var markerPath = Path.Combine(updateDirectory, "pending-update.json");
+        var pendingPath = Path.Combine(updateDirectory, "SteamBacklogPicker.pending.AppImage");
+
+        File.Exists(markerPath).Should().BeFalse();
+        File.Exists(pendingPath).Should().BeFalse();
+    }
+
     public void Dispose()
     {
         Environment.SetEnvironmentVariable("HOME", string.IsNullOrEmpty(_originalHome) ? null : _originalHome);
         Environment.SetEnvironmentVariable("APPIMAGE", string.IsNullOrEmpty(_originalAppImage) ? null : _originalAppImage);
         Environment.SetEnvironmentVariable("SBP_LINUX_UPDATE_FEED_URL", string.IsNullOrEmpty(_originalFeedUrl) ? null : _originalFeedUrl);
         Environment.SetEnvironmentVariable("SBP_LINUX_UPDATE_SWAP_PID", string.IsNullOrEmpty(_originalSwapPid) ? null : _originalSwapPid);
+        Environment.SetEnvironmentVariable("SBP_ENABLE_UNSIGNED_LINUX_UPDATE_FEED", string.IsNullOrEmpty(_originalEnableUnsignedFeed) ? null : _originalEnableUnsignedFeed);
 
         if (Directory.Exists(_tempDirectory))
         {

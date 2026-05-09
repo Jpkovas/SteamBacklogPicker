@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -16,6 +17,7 @@ public sealed class LinuxAppImageUpdateService : IAppUpdateService
 {
     private const string FeedEnvironmentVariable = "SBP_LINUX_UPDATE_FEED_URL";
     private const string SwapProcessIdOverrideEnvironmentVariable = "SBP_LINUX_UPDATE_SWAP_PID";
+    private const string EnableUnsignedFeedEnvironmentVariable = "SBP_ENABLE_UNSIGNED_LINUX_UPDATE_FEED";
     private const string DefaultFeedUrl = "https://github.com/Jpkovas/SteamBacklogPicker/releases/latest/download/linux-appimage-update.json";
     private static readonly HttpClient HttpClient = new();
 
@@ -42,9 +44,19 @@ public sealed class LinuxAppImageUpdateService : IAppUpdateService
                 feedUrl = DefaultFeedUrl;
             }
 
+            if (!IsUnsignedFeedOptInEnabled())
+            {
+                return;
+            }
+
             var feedJson = await HttpClient.GetStringAsync(feedUrl, cancellationToken);
             var feed = JsonSerializer.Deserialize<AppImageUpdateFeed>(feedJson);
-            if (feed is null || string.IsNullOrWhiteSpace(feed.Version) || string.IsNullOrWhiteSpace(feed.DownloadUrl))
+            if (feed is null || string.IsNullOrWhiteSpace(feed.Version) || string.IsNullOrWhiteSpace(feed.DownloadUrl) || string.IsNullOrWhiteSpace(feed.Sha256))
+            {
+                return;
+            }
+
+            if (!Uri.TryCreate(feed.DownloadUrl, UriKind.Absolute, out var downloadUri) || !IsAllowedUpdateUri(downloadUri))
             {
                 return;
             }
@@ -60,12 +72,12 @@ public sealed class LinuxAppImageUpdateService : IAppUpdateService
 
             var pendingBinaryPath = Path.Combine(stateDirectory, "SteamBacklogPicker.pending.AppImage");
             await using (var destination = File.Create(pendingBinaryPath))
-            await using (var stream = await HttpClient.GetStreamAsync(feed.DownloadUrl, cancellationToken))
+            await using (var stream = await HttpClient.GetStreamAsync(downloadUri, cancellationToken))
             {
                 await stream.CopyToAsync(destination, cancellationToken);
             }
 
-            if (!string.IsNullOrWhiteSpace(feed.Sha256) && !IsValidSha256(feed.Sha256, pendingBinaryPath))
+            if (!IsValidSha256(feed.Sha256, pendingBinaryPath))
             {
                 File.Delete(pendingBinaryPath);
                 return;
@@ -176,11 +188,38 @@ rm -f "$SCRIPT_PATH"
         return Path.Combine(home, ".local", "share", "SteamBacklogPicker", "updates");
     }
 
+    private static bool IsAllowedUpdateUri(Uri uri)
+    {
+        if (uri.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (!uri.Scheme.Equals(Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        return uri.IsLoopback || uri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase);
+    }
+
     private static bool IsValidSha256(string expectedHash, string filePath)
     {
+        if (expectedHash.Length != 64 || !IsHexString(expectedHash))
+        {
+            return false;
+        }
+
         using var stream = File.OpenRead(filePath);
         var actualHash = Convert.ToHexString(SHA256.HashData(stream));
         return string.Equals(actualHash, expectedHash, StringComparison.OrdinalIgnoreCase);
+    }
+
+
+    private static bool IsUnsignedFeedOptInEnabled()
+    {
+        var value = Environment.GetEnvironmentVariable(EnableUnsignedFeedEnvironmentVariable);
+        return string.Equals(value, "true", StringComparison.OrdinalIgnoreCase);
     }
 
     private static int ResolveSwapProcessId()
