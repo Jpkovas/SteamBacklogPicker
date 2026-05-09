@@ -1,5 +1,7 @@
 # TODO
 
+- Evoluir a confiança do update Linux para assinatura/autenticidade independente (ex.: assinatura digital do manifesto/binário), reduzindo dependência exclusiva de hash entregue pelo próprio feed.
+
 - Evoluir o empacotamento Linux de “AppImage compatível” para AppImage assinado nativo (com runtime AppImageTool), mantendo o mesmo contrato de feed de atualização.
 - Avaliar exibir placeholder visual dedicado (ícone/skeleton) quando `CoverImagePath` estiver vazio, para melhorar legibilidade do estado sem arte.
 
@@ -19,4 +21,3 @@
 - Criar testes automatizados para o fluxo de atualização Linux cobrindo erro de rede, hash inválido e rollback de substituição do AppImage.
 - Evoluir notificação Linux para implementação DBus direta (sem dependência de `notify-send`) para maior controle de timeout/categorias.
 - Automatizar a geração do relatório de paridade a partir dos resultados TRX (em vez de tabela declarativa) para destacar diferenças de cobertura entre suites automaticamente.
-
