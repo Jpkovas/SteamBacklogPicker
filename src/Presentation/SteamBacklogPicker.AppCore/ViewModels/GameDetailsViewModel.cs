@@ -79,6 +79,20 @@ public sealed class GameDetailsViewModel : ObservableObject
 
     public string? CoverImagePath { get; }
 
+    public bool HasCoverImage => !string.IsNullOrWhiteSpace(CoverImagePath);
+
+    public bool IsPlaceholder => _isPlaceholder;
+
+    public bool ShowArtworkPlaceholder => !HasCoverImage;
+
+    public string ArtworkPlaceholderTitle => _isPlaceholder
+        ? _localizationService.GetString("GameDetails_NoSelectionTitle")
+        : _localizationService.GetString("GameDetails_NoCoverTitle");
+
+    public string ArtworkPlaceholderSubtitle => _isPlaceholder
+        ? _localizationService.GetString("GameDetails_DrawPrompt")
+        : _localizationService.GetString("GameDetails_NoCoverSubtitle");
+
     public InstallState InstallState { get; }
 
     public OwnershipType OwnershipType { get; }
@@ -117,6 +131,8 @@ public sealed class GameDetailsViewModel : ObservableObject
 
         OnPropertyChanged(nameof(InstallationStatus));
         OnPropertyChanged(nameof(StorefrontDisplayName));
+        OnPropertyChanged(nameof(ArtworkPlaceholderTitle));
+        OnPropertyChanged(nameof(ArtworkPlaceholderSubtitle));
     }
 
     internal GameLaunchOptions LaunchOptions => _launchOptions;

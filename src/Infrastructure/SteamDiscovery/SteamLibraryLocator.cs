@@ -100,7 +100,7 @@ public sealed class SteamLibraryLocator : ISteamLibraryLocator, IDisposable
                 return;
             }
 
-            var watcher = new FileSystemWatcher(directory, fileName)
+            var watcher = new FileSystemWatcher(directory, "*")
             {
                 NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.CreationTime,
                 EnableRaisingEvents = false

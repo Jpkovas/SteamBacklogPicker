@@ -2,7 +2,6 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:converters="clr-namespace:SteamBacklogPicker.Linux.Views.Converters"
         x:Class="SteamBacklogPicker.Linux.Views.MainWindow"
         Width="1200"
         Height="760"
@@ -10,9 +9,6 @@
         MinHeight="640"
         Title="Steam Backlog Picker"
         mc:Ignorable="d">
-  <Window.Resources>
-    <converters:StringNullOrWhiteSpaceToBoolConverter x:Key="StringNullOrWhiteSpaceToBoolConverter" />
-  </Window.Resources>
   <Grid Margin="20" RowDefinitions="*,Auto" ColumnDefinitions="360,*">
     <Border Grid.Row="0" Grid.Column="0" Padding="16" Margin="0,0,8,0" BorderBrush="#303741" BorderThickness="1" CornerRadius="12">
       <ScrollViewer>
@@ -75,11 +71,24 @@
             <Grid>
               <Image Stretch="Uniform"
                      Source="{Binding SelectedGame.CoverImagePath}"
-                     IsVisible="{Binding SelectedGame.CoverImagePath, Converter={StaticResource StringNullOrWhiteSpaceToBoolConverter}, ConverterParameter=Invert}" />
-              <TextBlock HorizontalAlignment="Center"
-                         VerticalAlignment="Center"
-                         IsVisible="{Binding SelectedGame.CoverImagePath, Converter={StaticResource StringNullOrWhiteSpaceToBoolConverter}}"
-                         Text="{DynamicResource GameDetails_NoCoverSubtitle}" />
+                     IsVisible="{Binding SelectedGame.HasCoverImage}" />
+              <StackPanel HorizontalAlignment="Center"
+                          VerticalAlignment="Center"
+                          Spacing="8"
+                          IsVisible="{Binding SelectedGame.ShowArtworkPlaceholder}">
+                <TextBlock HorizontalAlignment="Center"
+                           FontSize="18"
+                           FontWeight="Bold"
+                           Text="ART" />
+                <TextBlock HorizontalAlignment="Center"
+                           FontWeight="SemiBold"
+                           Text="{Binding SelectedGame.ArtworkPlaceholderTitle}" />
+                <TextBlock HorizontalAlignment="Center"
+                           MaxWidth="360"
+                           TextAlignment="Center"
+                           TextWrapping="Wrap"
+                           Text="{Binding SelectedGame.ArtworkPlaceholderSubtitle}" />
+              </StackPanel>
             </Grid>
           </Border>
 

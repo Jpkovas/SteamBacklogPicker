@@ -22,6 +22,7 @@ public sealed class ServiceCollectionExtensionsTests
 
         provider.GetRequiredService<IToastNotificationService>().Should().BeOfType<LinuxToastNotificationService>();
         provider.GetRequiredService<IAppUpdateService>().Should().BeOfType<LinuxAppImageUpdateService>();
+        provider.GetRequiredService<IFreedesktopNotificationClient>().Should().BeOfType<FreedesktopNotificationClient>();
     }
 
     [Fact]

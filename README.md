@@ -31,16 +31,17 @@ SteamBacklogPicker é um app desktop para sortear o próximo jogo da sua bibliot
 
 ## Distribuição
 
-- **Windows**: releases com instalador (Squirrel/MSIX) para uso final.
-- **Linux**: release publica pacote Linux x64 autoexecutável (`.AppImage` compatível com fluxo de update), feed `linux-appimage-update.json` e checksum SHA-256 para atualização segura.
+- **Windows**: o workflow atual publica saída bruta de `dotnet publish`; instaladores Squirrel/MSIX ainda dependem de automação de empacotamento a ser restaurada. O auto-update Squirrel legado fica desativado por padrão e só roda com `SBP_ENABLE_LEGACY_WINDOWS_UPDATE=true` até existir Authenticode/pinning de certificado.
+- **Linux**: release publica um AppImage Linux x64 nativo, feed `linux-appimage-update.json`, checksum SHA-256 e assinatura do feed quando a chave de release está configurada. Execuções locais do script sem `appimagetool` caem para executável portátil.
 
 ## Resolução de instalação Steam no Linux
 
 A descoberta da pasta principal do Steam no Linux segue prioridade explícita com validação por manifesto `steamapps/libraryfolders.vdf` em cada candidato, evitando falso-positivo:
 
 1. `STEAM_PATH` (quando definido e válido).
-2. Caminhos tradicionais: `~/.steam/steam`, `~/.steam/debian-installation`, `~/.local/share/Steam`.
-3. Caminhos de sandbox/pacote: Flatpak (`~/.var/app/com.valvesoftware.Steam/.local/share/Steam`, `~/.var/app/com.valvesoftware.Steam/data/Steam`) e Snap (`~/snap/steam/common/.local/share/Steam`).
+2. `XDG_DATA_HOME/Steam` (quando `XDG_DATA_HOME` estiver definido e válido).
+3. Caminhos tradicionais: `~/.steam/steam`, `~/.steam/debian-installation`, `~/.local/share/Steam`.
+4. Caminhos de sandbox/pacote: Flatpak (`~/.var/app/com.valvesoftware.Steam/.local/share/Steam`, `~/.var/app/com.valvesoftware.Steam/data/Steam`) e Snap (`~/snap/steam/common/.local/share/Steam`).
 
 
 ## Telemetria e privacidade
@@ -60,4 +61,4 @@ A telemetria é opcional. Quando ativada, apenas eventos anônimos de uso são c
    chmod +x SteamBacklogPicker-<versao>-linux-x64.AppImage
    ./SteamBacklogPicker-<versao>-linux-x64.AppImage
    ```
-4. Para autoatualização, mantenha `SBP_LINUX_UPDATE_FEED_URL` apontando para o `linux-appimage-update.json` da release/canal desejado.
+4. Para autoatualização segura, mantenha `SBP_LINUX_UPDATE_FEED_URL` apontando para o `linux-appimage-update.json` da release/canal desejado e configure `SBP_LINUX_UPDATE_PUBLIC_KEY` com a chave pública PEM que valida a assinatura do feed. Feed sem assinatura só é aceito com `SBP_ENABLE_UNSIGNED_LINUX_UPDATE_FEED=true`, reservado para testes locais.

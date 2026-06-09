@@ -1,0 +1,62 @@
+name: Divergencia de portabilidade
+description: Registre uma diferenca de comportamento entre Windows e Linux.
+title: "[Portabilidade]: "
+labels:
+  - portability
+body:
+  - type: dropdown
+    id: affected_journey
+    attributes:
+      label: Jornada afetada
+      options:
+        - Instalacao e primeiro lancamento
+        - Descoberta da biblioteca Steam
+        - Filtros e sorteio
+        - Jogar ou instalar jogo
+        - Atualizacao do app
+        - Telemetria e diagnosticos
+        - Empacotamento ou release
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Plataforma onde a divergencia aparece
+      options:
+        - Windows
+        - Linux
+        - Ambas
+    validations:
+      required: true
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: Comportamento esperado
+      description: Descreva o comportamento que deveria ser equivalente entre plataformas.
+    validations:
+      required: true
+  - type: textarea
+    id: actual_behavior
+    attributes:
+      label: Comportamento atual
+      description: Descreva a diferenca observada e como reproduzir.
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impacto
+      description: Explique quem e afetado e se ha workaround.
+    validations:
+      required: true
+  - type: input
+    id: target_date
+    attributes:
+      label: Data-alvo de convergencia
+      description: Use AAAA-MM-DD quando houver compromisso de prazo.
+      placeholder: "2026-07-01"
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidencias
+      description: Inclua logs, screenshots, comandos ou links de CI relacionados.

@@ -1,21 +1,8 @@
 # TODO
 
-- Evoluir a confiança do update Linux para assinatura/autenticidade independente (ex.: assinatura digital do manifesto/binário), reduzindo dependência exclusiva de hash entregue pelo próprio feed.
+- Provisionar a chave pública/privada de release para ativar assinatura do feed de update Linux no canal oficial.
 
-- Evoluir o empacotamento Linux de “AppImage compatível” para AppImage assinado nativo (com runtime AppImageTool), mantendo o mesmo contrato de feed de atualização.
-- Avaliar exibir placeholder visual dedicado (ícone/skeleton) quando `CoverImagePath` estiver vazio, para melhorar legibilidade do estado sem arte.
-
-- Melhorar feedback visual no cliente Linux para diferenciar ausência de capa de jogo vs. capa ainda em carregamento, evitando mensagem estática sobreposta quando houver imagem.
-
-- Cobrir com teste de integração de watcher real o fluxo de rename com diferença apenas de caixa no `SteamLibraryLocator`, reduzindo dependência de reflexão nos testes unitários.
-- Avaliar suporte a caminhos Linux derivados de XDG (`XDG_DATA_HOME`) para descoberta Steam sem hardcode de diretórios, mantendo a mesma validação por `libraryfolders.vdf`.
-- Implementar job de release Linux (artefato instalável) na automação e atualizar README/runbooks quando a distribuição oficial estiver disponível.
-- Criar um template de issue para divergências de portabilidade que já preencha jornada afetada, impacto e data-alvo de convergência para reduzir inconsistências de registro.
-- Validar em ambiente Linux real (fora de container) permissões de `/proc/<pid>/mem` com diferentes políticas (`ptrace_scope`/AppArmor) e decidir se o fallback por logs deve virar padrão para paridade segura.
-- Implementar notificações nativas e estratégia de autoatualização no cliente Linux para fechar 100% da paridade funcional com o cliente WPF.
+- Executar validação manual em Linux real das permissões de `/proc/<pid>/mem` com diferentes políticas (`ptrace_scope`/AppArmor), mantendo o fallback/no-op como padrão seguro já implementado.
+- Concluir estratégia de autoatualização no cliente Linux em ambiente de release para fechar a paridade funcional com o cliente WPF.
 - Capturar screenshots oficiais dos dois clientes (WPF e Linux Avalonia) para atualizar README e documentação visual.
-- Consolidar o fallback de resolução de diretório em `SteamEnvironment` para usar apenas `ISteamInstallPathProvider`, evitando duplicação de heurísticas fora do Infrastructure.
-- Criar testes automatizados para o fluxo de atualização Linux cobrindo erro de rede, hash inválido e rollback de substituição do AppImage.
-- Evoluir notificação Linux para implementação DBus direta (sem dependência de `notify-send`) para maior controle de timeout/categorias.
-- Automatizar a geração do relatório de paridade a partir dos resultados TRX (em vez de tabela declarativa) para destacar diferenças de cobertura entre suites automaticamente.
-- Definir estratégia segura de atualização no Windows com verificação independente de autenticidade (ex.: assinatura Authenticode/pinning de certificado) antes de reativar auto-update.
+- Provisionar assinatura Authenticode/pinning de certificado para reativar auto-update Windows sem depender do opt-in legado `SBP_ENABLE_LEGACY_WINDOWS_UPDATE`.

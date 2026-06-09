@@ -527,6 +527,9 @@ public sealed class SteamAppManifestCache : IDisposable
 
     private void OnManifestRenamed(object sender, RenamedEventArgs e)
     {
+        var oldPathWasManifest = IsManifestPath(e.OldFullPath);
+        var newPathIsManifest = IsManifestPath(e.FullPath);
+
         lock (_syncRoot)
         {
             if (!_initialized)
@@ -534,12 +537,12 @@ public sealed class SteamAppManifestCache : IDisposable
                 return;
             }
 
-            if (IsManifestPath(e.OldFullPath))
+            if (oldPathWasManifest && (!newPathIsManifest || !_pathComparison.Equals(e.OldFullPath, e.FullPath)))
             {
                 RemoveEntryByPathNoLock(e.OldFullPath);
             }
 
-            if (IsManifestPath(e.FullPath))
+            if (newPathIsManifest)
             {
                 var installedSet = GetInstalledAppIds();
                 UpdateEntryFromManifestNoLock(e.FullPath, installedSet);

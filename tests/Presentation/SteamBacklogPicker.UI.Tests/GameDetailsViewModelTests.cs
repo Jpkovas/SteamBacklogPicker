@@ -2,6 +2,7 @@ using Domain;
 using FluentAssertions;
 using SteamBacklogPicker.UI.Services.Launch;
 using SteamBacklogPicker.UI.Services.Localization;
+using SteamBacklogPicker.UI.Tests.Fakes;
 using SteamBacklogPicker.UI.ViewModels;
 using Xunit;
 
@@ -31,6 +32,57 @@ public sealed class GameDetailsViewModelTests
         viewModel.LaunchUri.Should().Be("steam://run/440");
     }
 
+    [Fact]
+    public void FromGame_ShouldExposeArtworkPlaceholder_WhenCoverIsMissing()
+    {
+        var localization = new FakeLocalizationService();
+        var entry = new GameEntry
+        {
+            Id = GameIdentifier.ForSteam(440),
+            Title = "Team Fortress 2",
+            InstallState = InstallState.Installed,
+        };
+
+        var viewModel = GameDetailsViewModel.FromGame(entry, null, localization, GameLaunchOptions.Empty);
+
+        viewModel.HasCoverImage.Should().BeFalse();
+        viewModel.IsPlaceholder.Should().BeFalse();
+        viewModel.ShowArtworkPlaceholder.Should().BeTrue();
+        viewModel.ArtworkPlaceholderTitle.Should().Be("GameDetails_NoCoverTitle");
+        viewModel.ArtworkPlaceholderSubtitle.Should().Be("GameDetails_NoCoverSubtitle");
+    }
+
+    [Fact]
+    public void CreateEmpty_ShouldExposeDrawPromptArtworkPlaceholder()
+    {
+        var localization = new FakeLocalizationService();
+
+        var viewModel = GameDetailsViewModel.CreateEmpty(localization);
+
+        viewModel.HasCoverImage.Should().BeFalse();
+        viewModel.IsPlaceholder.Should().BeTrue();
+        viewModel.ShowArtworkPlaceholder.Should().BeTrue();
+        viewModel.ArtworkPlaceholderTitle.Should().Be("GameDetails_NoSelectionTitle");
+        viewModel.ArtworkPlaceholderSubtitle.Should().Be("GameDetails_DrawPrompt");
+    }
+
+    [Fact]
+    public void FromGame_ShouldHideArtworkPlaceholder_WhenCoverExists()
+    {
+        var localization = new FakeLocalizationService();
+        var entry = new GameEntry
+        {
+            Id = GameIdentifier.ForSteam(440),
+            Title = "Team Fortress 2",
+            InstallState = InstallState.Installed,
+        };
+
+        var viewModel = GameDetailsViewModel.FromGame(entry, "/tmp/cover.jpg", localization, GameLaunchOptions.Empty);
+
+        viewModel.HasCoverImage.Should().BeTrue();
+        viewModel.ShowArtworkPlaceholder.Should().BeFalse();
+    }
+
     [Theory]
     [InlineData("en-US", "Install the game before launching it.")]
     [InlineData("pt-BR", "Instale o jogo antes de executá-lo.")]
@@ -53,42 +105,5 @@ public sealed class GameDetailsViewModelTests
 
         viewModel.LaunchErrorMessage.Should().Be(expectedMessage);
         viewModel.CanLaunch.Should().BeFalse();
-    }
-
-    private sealed class FakeLocalizationService : ILocalizationService
-    {
-        public event EventHandler? LanguageChanged
-        {
-            add { }
-            remove { }
-        }
-
-        public event EventHandler<IReadOnlyDictionary<string, string>>? ResourcesChanged
-        {
-            add { }
-            remove { }
-        }
-
-        public string CurrentLanguage => "en";
-
-        public IReadOnlyList<string> SupportedLanguages => new[] { "en" };
-
-        public void SetLanguage(string languageCode)
-        {
-        }
-
-        public string GetString(string key)
-        {
-            return key;
-        }
-
-        public string GetString(string key, params object[] arguments)
-        {
-            return string.Format(key, arguments);
-        }
-
-        public string FormatGameCount(int count) => count.ToString();
-
-        public IReadOnlyDictionary<string, string> GetAllStrings() => new Dictionary<string, string>();
     }
 }
