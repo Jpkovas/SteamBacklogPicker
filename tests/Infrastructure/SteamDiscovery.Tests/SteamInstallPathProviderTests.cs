@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using FluentAssertions;
 using SteamDiscovery;
 using Xunit;
@@ -46,6 +47,50 @@ public sealed class SteamInstallPathProviderTests
         var path = sut.GetSteamInstallPath();
 
         Assert.Equal(expected, path);
+    }
+
+    [Fact]
+    public void LinuxProvider_ShouldPreferXdgDataHomeBeforeDefaultLocalShare()
+    {
+        var home = "/home/test";
+        var xdgSteamPath = Path.Combine("/xdg-data", "Steam");
+        var defaultSteamPath = Path.Combine(home, ".local", "share", "Steam");
+        var env = new FakeEnvironmentProvider(
+            new Dictionary<string, string?> { ["XDG_DATA_HOME"] = "/xdg-data" },
+            home);
+        var fs = new FakeFileSystem(
+            directories: new[] { xdgSteamPath, defaultSteamPath },
+            files: new[]
+            {
+                Path.Combine(xdgSteamPath, "steamapps", "libraryfolders.vdf"),
+                Path.Combine(defaultSteamPath, "steamapps", "libraryfolders.vdf")
+            });
+
+        var sut = new LinuxSteamInstallPathProvider(env, fs);
+
+        var path = sut.GetSteamInstallPath();
+
+        Assert.Equal(xdgSteamPath, path);
+    }
+
+    [Fact]
+    public void LinuxProvider_ShouldIgnoreXdgDataHomeWithoutLibraryFoldersFile()
+    {
+        var home = "/home/test";
+        var xdgSteamPath = Path.Combine("/xdg-data", "Steam");
+        var defaultSteamPath = Path.Combine(home, ".local", "share", "Steam");
+        var env = new FakeEnvironmentProvider(
+            new Dictionary<string, string?> { ["XDG_DATA_HOME"] = "/xdg-data" },
+            home);
+        var fs = new FakeFileSystem(
+            directories: new[] { xdgSteamPath, defaultSteamPath },
+            files: new[] { Path.Combine(defaultSteamPath, "steamapps", "libraryfolders.vdf") });
+
+        var sut = new LinuxSteamInstallPathProvider(env, fs);
+
+        var path = sut.GetSteamInstallPath();
+
+        Assert.Equal(defaultSteamPath, path);
     }
 
 
@@ -230,6 +275,37 @@ public sealed class SteamInstallPathProviderTests
 
         var libraries = sut.GetLibraryFolders();
         libraries.Should().ContainSingle().Which.Should().Be("D:\\SteamLibrary");
+    }
+
+    [Fact]
+    public void SteamLibraryLocator_ShouldRefresh_WhenLibraryFileIsRenamedWithCaseDifference()
+    {
+        using var root = new TempDirectory();
+        var steamRoot = Path.Combine(root.Path, "Steam");
+        var steamApps = Path.Combine(steamRoot, "steamapps");
+        Directory.CreateDirectory(steamApps);
+
+        var canonicalLibraryFile = Path.Combine(steamApps, "libraryfolders.vdf");
+        var renamedLibraryFile = Path.Combine(steamApps, "LibraryFolders.vdf");
+        File.WriteAllText(canonicalLibraryFile, "\"LibraryFolders\" { \"0\" \"C:\\\\Steam\" }");
+        if (File.Exists(renamedLibraryFile))
+        {
+            return;
+        }
+
+        var provider = new FixedInstallPathProvider(steamRoot);
+        var parser = new SteamLibraryFoldersParser();
+        var comparison = new PlatformPathComparisonStrategy(new FakePlatformProvider(isWindows: true, isLinux: false));
+        using var sut = new SteamLibraryLocator(provider, parser, comparison);
+
+        sut.GetLibraryFolders().Should().ContainSingle().Which.Should().Be("C:\\Steam");
+
+        File.Move(canonicalLibraryFile, renamedLibraryFile);
+        File.WriteAllText(renamedLibraryFile, "\"LibraryFolders\" { \"0\" \"D:\\\\SteamLibrary\" }");
+
+        sut.GetLibraryFolders().Should().ContainSingle().Which.Should().Be(
+            "D:\\SteamLibrary",
+            "the locator should recover when the watcher misses a case-only libraryfolders.vdf rename under Windows-style path comparison");
     }
 
     private sealed class FixedInstallPathProvider : ISteamInstallPathProvider

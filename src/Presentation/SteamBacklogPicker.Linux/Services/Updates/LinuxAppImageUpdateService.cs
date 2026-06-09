@@ -18,6 +18,7 @@ public sealed class LinuxAppImageUpdateService : IAppUpdateService
     private const string FeedEnvironmentVariable = "SBP_LINUX_UPDATE_FEED_URL";
     private const string SwapProcessIdOverrideEnvironmentVariable = "SBP_LINUX_UPDATE_SWAP_PID";
     private const string EnableUnsignedFeedEnvironmentVariable = "SBP_ENABLE_UNSIGNED_LINUX_UPDATE_FEED";
+    private const string PublicKeyEnvironmentVariable = "SBP_LINUX_UPDATE_PUBLIC_KEY";
     private const string DefaultFeedUrl = "https://github.com/Jpkovas/SteamBacklogPicker/releases/latest/download/linux-appimage-update.json";
     private static readonly HttpClient HttpClient = new();
 
@@ -32,8 +33,8 @@ public sealed class LinuxAppImageUpdateService : IAppUpdateService
 
             await ApplyPendingUpdateAsync(cancellationToken);
 
-            var appImagePath = Environment.GetEnvironmentVariable("APPIMAGE");
-            if (string.IsNullOrWhiteSpace(appImagePath) || !File.Exists(appImagePath))
+            var currentExecutablePath = ResolveCurrentExecutablePath();
+            if (currentExecutablePath is null)
             {
                 return;
             }
@@ -44,14 +45,14 @@ public sealed class LinuxAppImageUpdateService : IAppUpdateService
                 feedUrl = DefaultFeedUrl;
             }
 
-            if (!IsUnsignedFeedOptInEnabled())
+            var feedJson = await HttpClient.GetStringAsync(feedUrl, cancellationToken);
+            var feed = JsonSerializer.Deserialize<AppImageUpdateFeed>(feedJson);
+            if (feed is null || string.IsNullOrWhiteSpace(feed.Version) || string.IsNullOrWhiteSpace(feed.DownloadUrl) || string.IsNullOrWhiteSpace(feed.Sha256))
             {
                 return;
             }
 
-            var feedJson = await HttpClient.GetStringAsync(feedUrl, cancellationToken);
-            var feed = JsonSerializer.Deserialize<AppImageUpdateFeed>(feedJson);
-            if (feed is null || string.IsNullOrWhiteSpace(feed.Version) || string.IsNullOrWhiteSpace(feed.DownloadUrl) || string.IsNullOrWhiteSpace(feed.Sha256))
+            if (!IsTrustedFeed(feed))
             {
                 return;
             }
@@ -70,7 +71,7 @@ public sealed class LinuxAppImageUpdateService : IAppUpdateService
             var stateDirectory = GetUpdateStateDirectory();
             Directory.CreateDirectory(stateDirectory);
 
-            var pendingBinaryPath = Path.Combine(stateDirectory, "SteamBacklogPicker.pending.AppImage");
+            var pendingBinaryPath = Path.Combine(stateDirectory, "SteamBacklogPicker.pending");
             await using (var destination = File.Create(pendingBinaryPath))
             await using (var stream = await HttpClient.GetStreamAsync(downloadUri, cancellationToken))
             {
@@ -83,7 +84,7 @@ public sealed class LinuxAppImageUpdateService : IAppUpdateService
                 return;
             }
 
-            var marker = new PendingUpdateMarker(targetVersion.ToString(), pendingBinaryPath, appImagePath);
+            var marker = new PendingUpdateMarker(targetVersion.ToString(), pendingBinaryPath, currentExecutablePath);
             var markerPath = Path.Combine(stateDirectory, "pending-update.json");
             await File.WriteAllTextAsync(markerPath, JsonSerializer.Serialize(marker), cancellationToken);
         }
@@ -132,16 +133,30 @@ public sealed class LinuxAppImageUpdateService : IAppUpdateService
         var currentProcessId = ResolveSwapProcessId();
         var scriptPath = Path.Combine(stateDirectory, "apply-pending-update.sh");
         var backupPath = marker.TargetBinaryPath + ".bak";
-        var scriptContents = $"""
+        var scriptContents = $$"""
 #!/usr/bin/env bash
 set -eu
 
-CURRENT_PID={currentProcessId}
-TARGET_PATH='{EscapeForSingleQuotedShellLiteral(marker.TargetBinaryPath)}'
-PENDING_PATH='{EscapeForSingleQuotedShellLiteral(marker.PendingBinaryPath)}'
-BACKUP_PATH='{EscapeForSingleQuotedShellLiteral(backupPath)}'
-MARKER_PATH='{EscapeForSingleQuotedShellLiteral(markerPath)}'
-SCRIPT_PATH='{EscapeForSingleQuotedShellLiteral(scriptPath)}'
+CURRENT_PID={{currentProcessId}}
+TARGET_PATH='{{EscapeForSingleQuotedShellLiteral(marker.TargetBinaryPath)}}'
+PENDING_PATH='{{EscapeForSingleQuotedShellLiteral(marker.PendingBinaryPath)}}'
+BACKUP_PATH='{{EscapeForSingleQuotedShellLiteral(backupPath)}}'
+MARKER_PATH='{{EscapeForSingleQuotedShellLiteral(markerPath)}}'
+SCRIPT_PATH='{{EscapeForSingleQuotedShellLiteral(scriptPath)}}'
+
+rollback_on_failure() {
+  status=$?
+  if [ "$status" -ne 0 ]; then
+    if [ -f "$BACKUP_PATH" ]; then
+      cp -f "$BACKUP_PATH" "$TARGET_PATH" || true
+    fi
+    rm -f "$MARKER_PATH"
+    rm -f "$BACKUP_PATH"
+    rm -f "$SCRIPT_PATH"
+  fi
+}
+
+trap rollback_on_failure EXIT
 
 for _ in $(seq 1 300); do
   if ! kill -0 "$CURRENT_PID" 2>/dev/null; then
@@ -189,6 +204,26 @@ rm -f "$SCRIPT_PATH"
     {
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         return Path.Combine(home, ".local", "share", "SteamBacklogPicker", "updates");
+    }
+
+    private static string? ResolveCurrentExecutablePath()
+    {
+        var appImagePath = Environment.GetEnvironmentVariable("APPIMAGE");
+        if (!string.IsNullOrWhiteSpace(appImagePath) && File.Exists(appImagePath))
+        {
+            return appImagePath;
+        }
+
+        var processPath = Environment.ProcessPath;
+        if (string.IsNullOrWhiteSpace(processPath) || !File.Exists(processPath))
+        {
+            return null;
+        }
+
+        var fileName = Path.GetFileName(processPath);
+        return fileName.StartsWith("SteamBacklogPicker", StringComparison.Ordinal)
+            ? processPath
+            : null;
     }
 
     private static bool IsAllowedUpdateUri(Uri uri)
@@ -242,6 +277,40 @@ rm -f "$SCRIPT_PATH"
         return string.Equals(value, "true", StringComparison.OrdinalIgnoreCase);
     }
 
+    private static bool IsTrustedFeed(AppImageUpdateFeed feed)
+    {
+        var publicKeyPem = Environment.GetEnvironmentVariable(PublicKeyEnvironmentVariable);
+        if (string.IsNullOrWhiteSpace(publicKeyPem))
+        {
+            return IsUnsignedFeedOptInEnabled();
+        }
+
+        if (string.IsNullOrWhiteSpace(feed.Signature) || string.IsNullOrWhiteSpace(feed.Sha256))
+        {
+            return false;
+        }
+
+        try
+        {
+            using var rsa = RSA.Create();
+            rsa.ImportFromPem(publicKeyPem);
+
+            var payload = GetFeedSignaturePayload(feed);
+            return rsa.VerifyData(
+                System.Text.Encoding.UTF8.GetBytes(payload),
+                Convert.FromBase64String(feed.Signature),
+                HashAlgorithmName.SHA256,
+                RSASignaturePadding.Pkcs1);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static string GetFeedSignaturePayload(AppImageUpdateFeed feed)
+        => string.Join('\n', feed.Version.Trim(), feed.DownloadUrl.Trim(), feed.Sha256!.Trim().ToUpperInvariant());
+
     private static int ResolveSwapProcessId()
     {
         var overrideValue = Environment.GetEnvironmentVariable(SwapProcessIdOverrideEnvironmentVariable);
@@ -256,7 +325,8 @@ rm -f "$SCRIPT_PATH"
     private sealed record AppImageUpdateFeed(
         [property: JsonPropertyName("version")] string Version,
         [property: JsonPropertyName("downloadUrl")] string DownloadUrl,
-        [property: JsonPropertyName("sha256")] string? Sha256);
+        [property: JsonPropertyName("sha256")] string? Sha256,
+        [property: JsonPropertyName("signature")] string? Signature = null);
 
     private sealed record PendingUpdateMarker(string Version, string PendingBinaryPath, string TargetBinaryPath);
 }

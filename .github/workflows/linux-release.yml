@@ -33,9 +33,20 @@ jobs:
       - name: Run Linux tests
         run: dotnet test tests/Presentation/SteamBacklogPicker.Linux.Tests/SteamBacklogPicker.Linux.Tests.csproj -c Release --no-restore -f net8.0
 
+      - name: Download appimagetool
+        run: |
+          APPIMAGETOOL_DOWNLOAD="${RUNNER_TEMP}/appimagetool-x86_64.AppImage"
+          curl --fail --location \
+            --output "${APPIMAGETOOL_DOWNLOAD}" \
+            "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage"
+          chmod +x "${APPIMAGETOOL_DOWNLOAD}"
+          (cd "${RUNNER_TEMP}" && "${APPIMAGETOOL_DOWNLOAD}" --appimage-extract)
+          echo "APPIMAGETOOL_PATH=${RUNNER_TEMP}/squashfs-root/AppRun" >> "${GITHUB_ENV}"
+
       - name: Package Linux artifact and feed
         env:
           VERSION_INPUT: ${{ github.event.inputs.version }}
+          SBP_LINUX_UPDATE_PRIVATE_KEY: ${{ secrets.SBP_LINUX_UPDATE_PRIVATE_KEY }}
         run: |
           VERSION="${VERSION_INPUT}"
           if [[ -z "$VERSION" ]]; then
@@ -44,6 +55,14 @@ jobs:
           if [[ -z "$VERSION" ]]; then
             VERSION="0.0.0-local"
           fi
+
+          if [[ -n "${SBP_LINUX_UPDATE_PRIVATE_KEY}" ]]; then
+            UPDATE_PRIVATE_KEY_PATH="${RUNNER_TEMP}/sbp-linux-update-private.pem"
+            printf '%s' "${SBP_LINUX_UPDATE_PRIVATE_KEY}" > "${UPDATE_PRIVATE_KEY_PATH}"
+            chmod 600 "${UPDATE_PRIVATE_KEY_PATH}"
+            export SBP_LINUX_UPDATE_PRIVATE_KEY_PATH="${UPDATE_PRIVATE_KEY_PATH}"
+          fi
+
           ./scripts/package-linux-appimage.sh "$VERSION" ./artifacts/linux
 
       - name: Upload workflow artifacts

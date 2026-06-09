@@ -1,69 +1,96 @@
 # Arquitetura do SteamBacklogPicker
 
-## Justificativa Tecnológica
-- **C#/.NET 8**: oferece suporte de primeira linha a APIs modernas, desempenho aprimorado e acesso facilitado ao ecossistema Steamworks. A linguagem e o runtime garantem integração nativa com bibliotecas Windows necessárias para comunicar-se com o cliente Steam e manipular DLLs de terceiros.
-- **WPF (Windows Presentation Foundation)**: facilita a construção de interfaces desktop ricas e responsivas no Windows, com MVVM, data binding e recursos de composição gráfica necessários para exibir bibliotecas extensas de jogos e filtros avançados.
+## Justificativa tecnológica
 
-Essa combinação reduz a complexidade de interoperabilidade com APIs nativas, aproveita o suporte da Microsoft ao Windows Desktop e possibilita uma experiência de usuário fluida para quem executa o Steam localmente.
+- **C#/.NET 8**: mantém domínio, parsing de manifests e integrações locais em uma base testável e multiplataforma.
+- **WPF no Windows**: entrega a experiência nativa Windows e integrações específicas como notificações e atualização via Squirrel quando o app está instalado nesse formato.
+- **Avalonia no Linux**: reutiliza AppCore e domínio, mantendo uma UI desktop Linux sem duplicar regras de seleção, localização ou leitura da biblioteca. O release Linux usa AppImage nativo quando `appimagetool` está disponível no CI.
 
-## Visão de Componentes
+O projeto é offline-first: a biblioteca é descoberta a partir de arquivos locais do Steam e do cliente Steam instalado, sem depender de serviços em nuvem.
+
+## Visão de componentes
 
 ```mermaid
 flowchart LR
-    subgraph UI[Interface do Usuário (WPF)]
-        View[Views XAML]
-        ViewModel[ViewModels]
+    subgraph Windows["Windows UI (WPF)"]
+        WpfView["XAML views"]
+        WpfBootstrap["Windows bootstrap"]
     end
 
-    UI -->|Comandos, Bindings| SelectionEngine
-    UI -->|Eventos de carregamento| LibraryRepository
+    subgraph Linux["Linux UI (Avalonia)"]
+        LinuxView["AXAML views"]
+        LinuxBootstrap["Linux bootstrap"]
+    end
 
-    SelectionEngine -->|Solicita catálogo filtrado| LibraryRepository
-    LibraryRepository -->|Consulta| SteamClientAdapter
-    LibraryRepository -->|Consulta| EpicDiscovery[(Epic Manifest & Catalog Cache)]
-    EpicDiscovery -->|Leitura local| EpicCaches[(%PROGRAMDATA%/%APPDATA% caches)]
-    SteamClientAdapter -->|Dados de biblioteca| SteamAPI[(Steam Client / Steamworks.NET)]
+    subgraph AppCore["AppCore compartilhado"]
+        ViewModels["ViewModels"]
+        LibraryService["CombinedGameLibraryService"]
+        Localization["LocalizationService"]
+        Launch["GameLaunchService"]
+    end
+
+    subgraph Infrastructure["Infrastructure / Integration"]
+        Discovery["SteamDiscovery"]
+        Parser["ValveFormatParser"]
+        Adapter["SteamClientAdapter"]
+        Telemetry["Telemetry"]
+    end
+
+    Domain["Domain selection engine"]
+    SteamFiles["Steam manifests e libraryfolders.vdf"]
+    SteamClient["Steam client / Steamworks"]
+
+    WpfView --> WpfBootstrap --> AppCore
+    LinuxView --> LinuxBootstrap --> AppCore
+    ViewModels --> Domain
+    ViewModels --> LibraryService
+    LibraryService --> Discovery
+    Discovery --> Parser
+    Discovery --> SteamFiles
+    Discovery --> Adapter
+    Adapter --> SteamClient
+    AppCore --> Telemetry
 ```
 
-### Detalhamento Interno
+## Responsabilidades por camada
 
-```mermaid
-flowchart TB
-    SteamAPI[(Steamworks.NET
-    + Steam API DLL)] --> SteamClientAdapter
-    SteamClientAdapter --> Cache[(Cache Local)]
-    SteamClientAdapter --> LibraryRepository
-    LibraryRepository --> SelectionEngine
-    SelectionEngine --> Criteria[Regras de Seleção]
-    SelectionEngine --> UI
-```
+- **Domain**: modelos imutáveis, preferências, histórico e regras de seleção. Não faz I/O.
+- **SteamDiscovery**: localiza instalações Steam, lê `libraryfolders.vdf`, acompanha manifests `appmanifest_*.acf` e mantém cache de jogos.
+- **SteamClientAdapter**: isola Steamworks.NET, fallback de VDF do Steam e ciclo de vida da API nativa.
+- **ValveFormatParser**: faz parsing dos formatos Valve usados por SteamDiscovery e SteamClientAdapter.
+- **Telemetry**: registra diagnósticos locais quando habilitado.
+- **AppCore**: contém ViewModels, serviços compartilhados de biblioteca, localização, arte, lançamento e contratos de UX.
+- **SteamBacklogPicker.UI**: WPF, notificações/atualização Windows e bootstrap específico do Windows.
+- **SteamBacklogPicker.Linux**: Avalonia, notificações/atualização Linux e bootstrap específico do Linux.
 
-- **SteamClientAdapter**: abstrai chamadas à Steamworks.NET e converte respostas da Steam API para modelos internos.
-- **EpicDiscovery**: reúne `EpicManifestCache` e `EpicCatalogCache`, lendo os manifestos `.item` e os caches `.json/.sqlite` do Epic Games Launcher para unificar as bibliotecas sem depender de chamadas online. O cache cataloga tabelas nomeadas como `CatalogItems`, `Offers` ou `OfflineOffers`, garantindo que variações pluralizadas e ofertas offline sejam interpretadas automaticamente.
-- **LibraryRepository**: provê operações de leitura e caching de dados da biblioteca, protegendo o restante do sistema de mudanças no esquema de dados bruto.
-- **SelectionEngine**: aplica regras configuráveis (filtros, exclusões, prioridades) para escolher jogos candidatos e expõe resultados à camada de UI.
-- **UI (WPF)**: apresenta a biblioteca filtrada, permite escolher critérios e exibe o jogo sorteado.
+## Encapsulamento de dependências externas
 
-## Dependências Externas e Encapsulamento
-
-| Dependência | Função | Estratégias de Encapsulamento |
-|-------------|--------|--------------------------------|
-| **Steamworks.NET** | Wrapper .NET para APIs do Steamworks, permitindo autenticação e consulta à biblioteca do usuário. | Encapsulado pelo `SteamClientAdapter`, que expõe interfaces internas independentes da biblioteca externa e centraliza tratamento de erros/interop. |
-| **Steam API DLL (steam_api64.dll)** | Biblioteca nativa necessária pelo Steamworks.NET para comunicar com o cliente Steam. | Distribuída junto à aplicação, carregada indiretamente por Steamworks.NET; nunca referenciada diretamente pelo restante do código. O `SteamClientAdapter` valida presença e versão antes de inicializar. |
-| **Epic Games Launcher caches** | Manifestos (`%PROGRAMDATA%\Epic\EpicGamesLauncher\Data\Manifests`) e catálogos (`%LOCALAPPDATA%\EpicGamesLauncher\Saved\Data\Catalog` ou `%APPDATA%\Epic\EpicGamesLauncher\Saved\Data\Catalog`). | Lidos exclusivamente pelos caches `EpicManifestCache` e `EpicCatalogCache`, que tratam diferenças de formato e mantêm watch de arquivos para refletir mudanças locais sem dependências de rede. |
+| Dependência | Função | Estratégia |
+| --- | --- | --- |
+| Steamworks.NET | Consulta capacidades do cliente Steam quando disponível. | Isolado por `ISteamClientAdapter`; falhas retornam fallback seguro. |
+| Steam API nativa | Inicialização e chamadas locais do Steam client. | Carregamento e reset ficam no adapter; consumidores usam contratos internos. |
+| Arquivos Steam (`libraryfolders.vdf`, `appmanifest_*.acf`) | Fonte principal da biblioteca offline. | Lidos por `SteamDiscovery` com comparação de caminho por plataforma e testes de fixture. |
+| Avalonia | UI Linux. | Restrita ao projeto Linux; ViewModels ficam em AppCore. |
+| Tmds.DBus.Protocol | Notificações Freedesktop no Linux. | Restrito ao projeto Linux; falhas são opcionais e não interrompem o sorteio. |
+| WPF/Squirrel | UI e update Windows. | Restritos ao projeto Windows; Squirrel legado exige opt-in até existir Authenticode/pinning. |
 
 ## Garantias de operação offline
 
-- Toda a coleta de dados ocorre em disco: se Steam ou Epic estiverem fechados, o aplicativo continua operando com os manifestos e catálogos armazenados nas pastas acima.
-- Watchers de sistema de arquivos mantêm os caches sincronizados quando os launchers atualizam arquivos, sem abrir conexões externas.
-- Preferências do usuário e histórico de sorteios residem em `%APPDATA%\SteamBacklogPicker`, garantindo que nenhuma decisão dependa de serviços externos.
+- A descoberta de biblioteca usa apenas Steam local e arquivos em disco.
+- Preferências e histórico ficam no diretório local do app.
+- Watchers atualizam o cache quando manifests mudam, mas falhas transitórias preservam o último estado válido.
+- Updates Linux aceitam feeds assinados por RSA SHA-256; feeds sem assinatura exigem opt-in explícito para teste local.
+- Updates Windows via Squirrel ficam desativados por padrão enquanto não houver verificação independente de autenticidade.
+- Linux e Windows compartilham as mesmas regras de domínio e seleção.
 
-Para reduzir acoplamento:
-- Interfaces (`ISteamClientAdapter`, `ILibraryRepository`, `ISelectionEngine`) isolam cada componente e permitem testes com mocks.
-- Tratamento de exceções e timeouts é concentrado no adaptador, evitando vazamento de detalhes de erro nativos.
-- Os modelos de domínio usados por `SelectionEngine` e UI são definidos no projeto principal, mantendo invariantes consistentes independentemente das mudanças no fornecedor da API.
+## Fluxo de bootstrap
 
-## Próximos Passos Arquiteturais
-- Implementar camadas de testes unitários focadas em `SelectionEngine` e mocks do `LibraryRepository`.
-- Adicionar telemetria mínima para diagnosticar falhas de inicialização da Steam API.
-- Planejar suporte multiplataforma futuro (ex.: Avalonia) mantendo a lógica de domínio desacoplada da UI.
+1. O projeto de plataforma chama os registros compartilhados de AppCore.
+2. AppCore registra domínio, parsing, descoberta Steam, biblioteca combinada, localização e ViewModels.
+3. O projeto de plataforma registra apenas serviços UX específicos: notificações e update.
+4. A janela principal resolve `MainViewModel` pelo provedor de DI.
+
+## Próximos passos arquiteturais
+
+- Provisionar chaves oficiais para assinatura do feed Linux e assinatura Authenticode/pinning no Windows.
+- Validar empacotamento/update em ambiente Linux real de release.

@@ -21,6 +21,12 @@ public sealed class SquirrelUpdateService : IAppUpdateService
 
     public async Task CheckForUpdatesAsync(CancellationToken cancellationToken)
     {
+        if (!LegacyWindowsUpdatePolicy.IsSquirrelUpdateEnabled())
+        {
+            _telemetryClient?.TrackEvent("squirrel_update_disabled_pending_authenticity");
+            return;
+        }
+
         if (!IsRunningFromSquirrelInstall())
         {
             return;

@@ -105,38 +105,9 @@ public sealed class SteamEnvironment : ISteamEnvironment
 
     private string ResolveSteamDirectory()
     {
-        var registryPath = _installPathProvider.GetSteamInstallPath();
-        if (!string.IsNullOrWhiteSpace(registryPath) && Directory.Exists(registryPath))
-        {
-            return registryPath;
-        }
-
-        var environmentPath = Environment.GetEnvironmentVariable("STEAM_PATH");
-        if (!string.IsNullOrWhiteSpace(environmentPath) && Directory.Exists(environmentPath))
-        {
-            return environmentPath;
-        }
-
-        var programFilesX86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
-        if (!string.IsNullOrWhiteSpace(programFilesX86))
-        {
-            var candidate = Path.Combine(programFilesX86, "Steam");
-            if (Directory.Exists(candidate))
-            {
-                return candidate;
-            }
-        }
-
-        var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        if (!string.IsNullOrWhiteSpace(localAppData))
-        {
-            var candidate = Path.Combine(localAppData, "Steam");
-            if (Directory.Exists(candidate))
-            {
-                return candidate;
-            }
-        }
-
-        return string.Empty;
+        var installPath = _installPathProvider.GetSteamInstallPath();
+        return !string.IsNullOrWhiteSpace(installPath) && Directory.Exists(installPath)
+            ? installPath
+            : string.Empty;
     }
 }

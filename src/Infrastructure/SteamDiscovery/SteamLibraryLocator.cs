@@ -41,6 +41,7 @@ public sealed class SteamLibraryLocator : ISteamLibraryLocator, IDisposable
         EnsureInitialized();
         lock (_syncRoot)
         {
+            EnsureTrackedLibraryFileNoLock();
             return _cachedLibraries;
         }
     }
@@ -100,7 +101,7 @@ public sealed class SteamLibraryLocator : ISteamLibraryLocator, IDisposable
                 return;
             }
 
-            var watcher = new FileSystemWatcher(directory, fileName)
+            var watcher = new FileSystemWatcher(directory, "*")
             {
                 NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.CreationTime,
                 EnableRaisingEvents = false
@@ -228,6 +229,44 @@ public sealed class SteamLibraryLocator : ISteamLibraryLocator, IDisposable
         catch (FormatException)
         {
             _cachedLibraries = Array.Empty<string>();
+        }
+    }
+
+    private void EnsureTrackedLibraryFileNoLock()
+    {
+        var filePath = _libraryFilePath;
+        if (string.IsNullOrEmpty(filePath) || File.Exists(filePath))
+        {
+            return;
+        }
+
+        var directory = Path.GetDirectoryName(filePath);
+        if (string.IsNullOrEmpty(directory) || !Directory.Exists(directory))
+        {
+            UpdateCacheNoLock();
+            return;
+        }
+
+        try
+        {
+            var replacement = Directory
+                .EnumerateFiles(directory, "*", SearchOption.TopDirectoryOnly)
+                .FirstOrDefault(FilePathMatches);
+
+            if (replacement is not null)
+            {
+                _libraryFilePath = replacement;
+            }
+
+            UpdateCacheNoLock();
+        }
+        catch (IOException)
+        {
+            // keep previous cache on transient IO errors
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // keep previous cache on permission issues
         }
     }
 

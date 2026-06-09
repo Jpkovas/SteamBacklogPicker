@@ -12,8 +12,6 @@ concurrency:
 
 permissions:
   contents: read
-  checks: write
-  pull-requests: write
 
 jobs:
   common-suite:
@@ -137,20 +135,89 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Generate parity report by layer
+      - name: Download test result artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-*
+          path: TestResults
+          merge-multiple: true
+
+      - name: Generate parity report from TRX results
         run: |
-          cat > docs/testing/test-parity-report.md <<'REPORT'
-          # Test parity report by layer
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          import xml.etree.ElementTree as ET
 
-          | Layer | Linux (common suite) | Windows (common suite) | Windows-only suite |
-          | --- | --- | --- | --- |
-          | Domain | `Domain.Tests` | `Domain.Tests` | N/A |
-          | Infrastructure | `SteamDiscovery.Tests` (`net8.0`) | `SteamDiscovery.Tests` (`net8.0`) | `SteamDiscovery.Tests` (`net8.0-windows10.0.17763.0`) |
-          | Integration | `SteamClientAdapter.Tests`, `SteamHooks.Tests` | `SteamClientAdapter.Tests`, `SteamHooks.Tests` | N/A |
-          | Presentation | `SteamBacklogPicker.Linux.Tests` | `SteamBacklogPicker.Linux.Tests` | `SteamBacklogPicker.UI.Tests` (`net8.0-windows10.0.18362.0`) |
+          trx_files = sorted(Path("TestResults").glob("**/*.trx"))
+          if not trx_files:
+              raise SystemExit("No TRX files found under TestResults")
 
-          Este relatório garante visibilidade explícita de cobertura por sistema operacional e ajuda a prevenir regressões de paridade entre Linux e Windows na esteira de CI.
-          REPORT
+          def layer_for(name: str) -> str:
+              if name.startswith("Domain."):
+                  return "Domain"
+              if name.startswith("SteamDiscovery."):
+                  return "Infrastructure"
+              if name.startswith(("SteamClientAdapter.", "SteamHooks.")):
+                  return "Integration"
+              if name.startswith("SteamBacklogPicker."):
+                  return "Presentation"
+              return "Other"
+
+          def suite_for(file_name: str) -> str:
+              if "WindowsOnly" in file_name:
+                  return "Windows-only suite"
+              if "ubuntu" in file_name.lower() or "linux" in file_name.lower():
+                  return "Linux (common suite)"
+              if "windows" in file_name.lower():
+                  return "Windows (common suite)"
+              return "Unclassified"
+
+          def framework_for(path: Path) -> str:
+              text = path.read_text(encoding="utf-8", errors="ignore")
+              match = re.search(r"bin[\\/]+Release[\\/]+([^\\/]+)[\\/]+", text)
+              return match.group(1) if match else "unknown"
+
+          rows = {}
+          for path in trx_files:
+              root = ET.parse(path).getroot()
+              counters = root.find(".//{*}Counters")
+              total = counters.attrib.get("total", "0") if counters is not None else "0"
+              failed = counters.attrib.get("failed", "0") if counters is not None else "0"
+              name = path.stem.split(".LinuxUpdateFlow", 1)[0]
+              name = re.sub(r"\.(Linux|Windows|WindowsOnly)$", "", name)
+              suite = suite_for(path.name)
+              layer = layer_for(name)
+              framework = framework_for(path)
+              cell = f"`{name}` ({framework}, {total} tests, {failed} failed)"
+              rows.setdefault(layer, {}).setdefault(suite, []).append(cell)
+
+          suites = ["Linux (common suite)", "Windows (common suite)", "Windows-only suite"]
+          layers = ["Domain", "Infrastructure", "Integration", "Presentation", "Other"]
+          lines = [
+              "# Test parity report by layer",
+              "",
+              "| Layer | Linux (common suite) | Windows (common suite) | Windows-only suite |",
+              "| --- | --- | --- | --- |",
+          ]
+
+          for layer in layers:
+              if layer not in rows:
+                  continue
+              cells = []
+              for suite in suites:
+                  values = rows[layer].get(suite, [])
+                  cells.append("<br>".join(sorted(values)) if values else "N/A")
+              lines.append(f"| {layer} | {cells[0]} | {cells[1]} | {cells[2]} |")
+
+          lines.extend([
+              "",
+              "Este relatório foi gerado a partir dos arquivos TRX publicados pelos jobs de teste.",
+          ])
+
+          Path("docs/testing").mkdir(parents=True, exist_ok=True)
+          Path("docs/testing/test-parity-report.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+          PY
 
       - name: Upload parity report
         uses: actions/upload-artifact@v4
