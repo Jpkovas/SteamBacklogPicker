@@ -19,6 +19,7 @@ public sealed class SteamClientAdapter : ISteamClientAdapter, IDisposable
     private readonly ISteamVdfFallback _fallback;
     private IntPtr _libraryHandle;
     private bool _initialized;
+    private bool _steamApiStarted;
     private bool _disposed;
     private IntPtr _steamAppsPointer;
     private IntPtr _steamAppListPointer;
@@ -64,6 +65,8 @@ public sealed class SteamClientAdapter : ISteamClientAdapter, IDisposable
                 Reset();
                 return false;
             }
+
+            _steamApiStarted = true;
 
             if (_steamAppsAccessor is null)
             {
@@ -173,18 +176,26 @@ public sealed class SteamClientAdapter : ISteamClientAdapter, IDisposable
 
         _disposed = true;
 
-        if (_initialized)
-        {
-            _steamApiShutdown?.Invoke();
-        }
-
         Reset();
         GC.SuppressFinalize(this);
     }
 
     private void Reset()
     {
+        if (_steamApiStarted)
+        {
+            try
+            {
+                _steamApiShutdown?.Invoke();
+            }
+            catch
+            {
+                // Native shutdown is best-effort; still release the loaded library handle below.
+            }
+        }
+
         _initialized = false;
+        _steamApiStarted = false;
 
         if (_libraryHandle != IntPtr.Zero)
         {

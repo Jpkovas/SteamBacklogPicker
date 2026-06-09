@@ -96,7 +96,7 @@ public sealed partial class SteamMemoryPollingHookClient : ISteamHookClient
                 }
 
                 foundAny = true;
-                if (SteamSnapshotParser.TryParseSnapshot(data, out var parsed))
+                if (SteamSnapshotParser.TryParseSnapshot(data.Span, out var parsed))
                 {
                     builder.AddRange(parsed);
                 }

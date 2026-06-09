@@ -188,7 +188,7 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
             IncludeOther = categories.Contains(ProductCategory.Other);
 
             var storefronts = preferences.Filters.IncludedStorefronts ?? new List<Storefront>();
-            if (storefronts.Count == 0)
+            if (!preferences.Filters.FilterByStorefront)
             {
                 IncludeSteam = true;
             }
@@ -324,6 +324,7 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
     {
         UpdatePreferences(p =>
         {
+            p.Filters.FilterByStorefront = true;
             p.Filters.IncludedStorefronts = BuildSelectedStorefronts();
         });
     }

@@ -5,6 +5,18 @@ namespace SteamDiscovery;
 
 public sealed class SteamLibraryFoldersParser : ISteamLibraryFoldersParser
 {
+    private readonly IPathComparisonStrategy _pathComparison;
+
+    public SteamLibraryFoldersParser()
+        : this(new PlatformPathComparisonStrategy(new RuntimePlatformProvider()))
+    {
+    }
+
+    public SteamLibraryFoldersParser(IPathComparisonStrategy pathComparison)
+    {
+        _pathComparison = pathComparison ?? throw new ArgumentNullException(nameof(pathComparison));
+    }
+
     public IReadOnlyList<string> Parse(string content)
     {
         if (content is null)
@@ -26,7 +38,7 @@ public sealed class SteamLibraryFoldersParser : ISteamLibraryFoldersParser
         return collector
             .Where(path => !string.IsNullOrWhiteSpace(path))
             .Select(path => path.Trim())
-            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Distinct(_pathComparison.Comparer)
             .ToArray();
     }
 

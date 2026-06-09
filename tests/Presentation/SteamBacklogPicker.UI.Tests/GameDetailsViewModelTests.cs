@@ -63,6 +63,12 @@ public sealed class GameDetailsViewModelTests
             remove { }
         }
 
+        public event EventHandler<IReadOnlyDictionary<string, string>>? ResourcesChanged
+        {
+            add { }
+            remove { }
+        }
+
         public string CurrentLanguage => "en";
 
         public IReadOnlyList<string> SupportedLanguages => new[] { "en" };
@@ -82,5 +88,7 @@ public sealed class GameDetailsViewModelTests
         }
 
         public string FormatGameCount(int count) => count.ToString();
+
+        public IReadOnlyDictionary<string, string> GetAllStrings() => new Dictionary<string, string>();
     }
 }

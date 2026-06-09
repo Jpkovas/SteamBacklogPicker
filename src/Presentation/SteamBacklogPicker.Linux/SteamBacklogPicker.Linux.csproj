@@ -6,9 +6,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Avalonia" Version="11.1.3" />
-    <PackageReference Include="Avalonia.Desktop" Version="11.1.3" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+    <PackageReference Include="Avalonia" Version="11.3.17" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.17" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SteamBacklogPicker.AppCore\SteamBacklogPicker.AppCore.csproj" />
@@ -16,9 +16,5 @@
     <ProjectReference Include="..\..\Integration\SteamClientAdapter\SteamClientAdapter.csproj" />
     <ProjectReference Include="..\..\Integration\ValveFormatParser\ValveFormatParser.csproj" />
     <ProjectReference Include="..\..\Infrastructure\Telemetry\Telemetry.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="..\SteamBacklogPicker.UI\Services\Runtime\ISteamEnvironment.cs" Link="Services\Runtime\ISteamEnvironment.cs" />
-    <Compile Include="..\SteamBacklogPicker.UI\Services\Runtime\SteamEnvironment.cs" Link="Services\Runtime\SteamEnvironment.cs" />
   </ItemGroup>
 </Project>

@@ -99,7 +99,6 @@
             <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
             <Setter Property="Margin" Value="0,24,0,10" />
             <Setter Property="TextOptions.TextFormattingMode" Value="Display" />
-            <Setter Property="CharacterSpacing" Value="50" />
         </Style>
 
         <!-- Base Button Style with Animations -->

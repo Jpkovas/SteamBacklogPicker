@@ -320,6 +320,80 @@ public sealed class SelectionEngineTests
     }
 
     [Fact]
+    public void FilterGames_ShouldReturnNoMatches_WhenAllCategoriesAreExcluded()
+    {
+        var settingsPath = CreateSettingsPath();
+        try
+        {
+            var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
+            engine.UpdatePreferences(new SelectionPreferences
+            {
+                Filters = new SelectionFilters
+                {
+                    IncludedCategories = new List<ProductCategory>(),
+                },
+                HistoryLimit = 10,
+            });
+
+            var games = new[]
+            {
+                new GameEntry
+                {
+                    Id = GameIdentifier.ForSteam(1),
+                    Title = "Base Game",
+                    InstallState = InstallState.Installed,
+                    OwnershipType = OwnershipType.Owned,
+                    ProductCategory = ProductCategory.Game,
+                },
+                new GameEntry
+                {
+                    Id = GameIdentifier.ForSteam(2),
+                    Title = "OST",
+                    InstallState = InstallState.Installed,
+                    OwnershipType = OwnershipType.Owned,
+                    ProductCategory = ProductCategory.Soundtrack,
+                },
+            };
+
+            engine.GetPreferences().Filters.IncludedCategories.Should().BeEmpty();
+            engine.FilterGames(games).Should().BeEmpty();
+        }
+        finally
+        {
+            Cleanup(settingsPath);
+        }
+    }
+
+    [Fact]
+    public void UpdatePreferences_ShouldPersistSettingsWithoutLeavingTemporaryFiles()
+    {
+        var settingsPath = CreateSettingsPath();
+        try
+        {
+            var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
+            engine.UpdatePreferences(new SelectionPreferences
+            {
+                Filters = new SelectionFilters
+                {
+                    RequireInstalled = true,
+                },
+                HistoryLimit = 7,
+            });
+
+            var reloaded = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
+            var preferences = reloaded.GetPreferences();
+
+            preferences.Filters.RequireInstalled.Should().BeTrue();
+            preferences.HistoryLimit.Should().Be(7);
+            Directory.GetFiles(Path.GetDirectoryName(settingsPath)!, "*.tmp").Should().BeEmpty();
+        }
+        finally
+        {
+            Cleanup(settingsPath);
+        }
+    }
+
+    [Fact]
     public void FilterGames_ShouldRespectCollectionSelection()
     {
         var settingsPath = CreateSettingsPath();
@@ -497,6 +571,7 @@ public sealed class SelectionEngineTests
             {
                 Filters = new SelectionFilters
                 {
+                    FilterByStorefront = true,
                     IncludedStorefronts = new List<Storefront> { Storefront.Steam },
                 },
             });
@@ -525,6 +600,70 @@ public sealed class SelectionEngineTests
 
             filtered.Should().ContainSingle(game => game.Id == steamGame.Id);
             filtered.Should().NotContain(game => game.Id == gogGame.Id);
+        }
+        finally
+        {
+            Cleanup(settingsPath);
+        }
+    }
+
+    [Fact]
+    public void FilterGames_ShouldReturnNoMatches_WhenAllStorefrontsAreExcluded()
+    {
+        var settingsPath = CreateSettingsPath();
+        try
+        {
+            var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
+            engine.UpdatePreferences(new SelectionPreferences
+            {
+                Filters = new SelectionFilters
+                {
+                    FilterByStorefront = true,
+                    IncludedStorefronts = new List<Storefront>(),
+                },
+            });
+
+            var steamGame = new GameEntry
+            {
+                Id = GameIdentifier.ForSteam(101),
+                Title = "Steam",
+                InstallState = InstallState.Installed,
+                OwnershipType = OwnershipType.Owned,
+            };
+
+            engine.GetPreferences().Filters.IncludedStorefronts.Should().BeEmpty();
+            engine.FilterGames(new[] { steamGame }).Should().BeEmpty();
+        }
+        finally
+        {
+            Cleanup(settingsPath);
+        }
+    }
+
+    [Fact]
+    public void FilterGames_ShouldTreatEmptyStorefrontsAsUnfiltered_ForLegacySettings()
+    {
+        var settingsPath = CreateSettingsPath();
+        try
+        {
+            var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
+            engine.UpdatePreferences(new SelectionPreferences
+            {
+                Filters = new SelectionFilters
+                {
+                    IncludedStorefronts = new List<Storefront>(),
+                },
+            });
+
+            var steamGame = new GameEntry
+            {
+                Id = GameIdentifier.ForSteam(101),
+                Title = "Steam",
+                InstallState = InstallState.Installed,
+                OwnershipType = OwnershipType.Owned,
+            };
+
+            engine.FilterGames(new[] { steamGame }).Should().ContainSingle(game => game.Id == steamGame.Id);
         }
         finally
         {

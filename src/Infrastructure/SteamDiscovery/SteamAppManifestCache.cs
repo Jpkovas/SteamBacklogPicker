@@ -125,7 +125,7 @@ public sealed class SteamAppManifestCache : IDisposable
                 continue;
             }
 
-            foreach (var manifestPath in Directory.EnumerateFiles(directory, "appmanifest_*.acf", SearchOption.TopDirectoryOnly))
+            foreach (var manifestPath in EnumerateManifestFiles(directory))
             {
                 seenPaths.Add(manifestPath);
                 UpdateEntryFromManifestNoLock(manifestPath, installedSet);
@@ -143,7 +143,7 @@ public sealed class SteamAppManifestCache : IDisposable
         UpdateCachedEntriesNoLock();
     }
 
-    private void UpdateEntryFromManifestNoLock(string manifestPath, HashSet<uint> installedSet)
+    private void UpdateEntryFromManifestNoLock(string manifestPath, HashSet<uint> installedSet, bool removeOnFailure = true)
     {
         if (TryLoadManifest(manifestPath, installedSet, out var entry))
         {
@@ -152,9 +152,25 @@ public sealed class SteamAppManifestCache : IDisposable
             _manifestPathById[id] = manifestPath;
             _idByManifestPath[manifestPath] = id;
         }
-        else
+        else if (removeOnFailure)
         {
             RemoveEntryByPathNoLock(manifestPath);
+        }
+    }
+
+    private static IEnumerable<string> EnumerateManifestFiles(string directory)
+    {
+        try
+        {
+            return Directory.EnumerateFiles(directory, "appmanifest_*.acf", SearchOption.TopDirectoryOnly).ToArray();
+        }
+        catch (IOException)
+        {
+            return Array.Empty<string>();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Array.Empty<string>();
         }
     }
 
@@ -468,7 +484,7 @@ public sealed class SteamAppManifestCache : IDisposable
             }
 
             var installedSet = GetInstalledAppIds();
-            UpdateEntryFromManifestNoLock(e.FullPath, installedSet);
+            UpdateEntryFromManifestNoLock(e.FullPath, installedSet, removeOnFailure: false);
             UpdateCachedEntriesNoLock();
         }
     }

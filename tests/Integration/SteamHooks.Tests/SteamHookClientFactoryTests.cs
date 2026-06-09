@@ -7,7 +7,7 @@ namespace SteamHooks.Tests;
 public sealed class SteamHookClientFactoryTests
 {
     [Fact]
-    public void Create_MemoryModeWithoutLinuxFlag_ShouldDegradeOnLinux()
+    public void Create_MemoryModeWithoutLinuxFlag_ShouldDegradeWhenMemoryModeIsUnsupported()
     {
         var diagnostics = new List<SteamHookDiagnostic>();
         var options = new SteamHookOptions
@@ -19,7 +19,7 @@ public sealed class SteamHookClientFactoryTests
 
         var client = SteamHookClientFactory.Create(options);
 
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             Assert.Contains(diagnostics, d => d.EventName == "steam_hook_memory_mode_degraded");
             Assert.Equal("NullSteamHookClient", client.GetType().Name);

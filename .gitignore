@@ -33,6 +33,7 @@ coverage/
 
 # Build tooling and packaging workspace
 build/
+codex-scripts/
 
 # Installer and package artifacts
 *.msix

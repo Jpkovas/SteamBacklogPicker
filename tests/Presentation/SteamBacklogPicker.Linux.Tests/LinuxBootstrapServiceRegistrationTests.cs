@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using SteamBacklogPicker.Linux.Composition;
 using SteamBacklogPicker.UI.Services.Runtime;
 using SteamClientAdapter;
+using Xunit;
 
 namespace SteamBacklogPicker.Linux.Tests;
 
@@ -91,15 +92,19 @@ public sealed class LinuxBootstrapServiceRegistrationTests
     private sealed class FakeSteamVdfFallback : ISteamVdfFallback
     {
         private readonly IReadOnlyCollection<uint> _installedAppIds;
-        private readonly IReadOnlyDictionary<uint, Domain.SteamAppDefinition> _knownApps;
+        private readonly IReadOnlyDictionary<uint, SteamAppDefinition> _knownApps;
 
         public FakeSteamVdfFallback(IReadOnlyCollection<uint> installedAppIds)
         {
             _installedAppIds = installedAppIds;
-            var knownApps = new Dictionary<uint, Domain.SteamAppDefinition>();
+            var knownApps = new Dictionary<uint, SteamAppDefinition>();
             foreach (var appId in installedAppIds)
             {
-                knownApps[appId] = new Domain.SteamAppDefinition(appId, $"App {appId}", true, false, string.Empty, Array.Empty<int>(), Domain.SteamDeckCompatibility.Unknown, Array.Empty<string>());
+                knownApps[appId] = new SteamAppDefinition(appId, $"App {appId}", true, "game", Array.Empty<string>())
+                {
+                    DeckCompatibility = Domain.SteamDeckCompatibility.Unknown,
+                    StoreCategoryIds = Array.Empty<int>(),
+                };
             }
 
             _knownApps = knownApps;
@@ -115,10 +120,10 @@ public sealed class LinuxBootstrapServiceRegistrationTests
 
         public bool IsSubscribedFromFamilySharing(uint appId) => false;
 
-        public IReadOnlyDictionary<uint, Domain.SteamAppDefinition> GetKnownApps() => _knownApps;
+        public IReadOnlyDictionary<uint, SteamAppDefinition> GetKnownApps() => _knownApps;
 
         public string? GetCurrentUserSteamId() => null;
 
-        public IReadOnlyList<Domain.SteamCollectionDefinition> GetCollections() => Array.Empty<Domain.SteamCollectionDefinition>();
+        public IReadOnlyList<SteamCollectionDefinition> GetCollections() => Array.Empty<SteamCollectionDefinition>();
     }
 }
