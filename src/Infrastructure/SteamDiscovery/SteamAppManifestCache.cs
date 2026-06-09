@@ -162,7 +162,10 @@ public sealed class SteamAppManifestCache : IDisposable
     {
         try
         {
-            return Directory.EnumerateFiles(directory, "appmanifest_*.acf", SearchOption.TopDirectoryOnly).ToArray();
+            return Directory
+                .EnumerateFiles(directory, "*", SearchOption.TopDirectoryOnly)
+                .Where(IsManifestPath)
+                .ToArray();
         }
         catch (IOException)
         {
@@ -444,7 +447,7 @@ public sealed class SteamAppManifestCache : IDisposable
 
             try
             {
-                var watcher = new FileSystemWatcher(directory, "appmanifest_*.acf")
+                var watcher = new FileSystemWatcher(directory, "*")
                 {
                     NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.Size,
                     IncludeSubdirectories = false,

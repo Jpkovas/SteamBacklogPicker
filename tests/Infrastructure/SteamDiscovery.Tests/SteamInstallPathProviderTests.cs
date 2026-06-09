@@ -18,7 +18,7 @@ public sealed class SteamInstallPathProviderTests
             "/home/test");
         var fs = new FakeFileSystem(
             directories: new[] { "/custom/steam" },
-            files: new[] { "/custom/steam/steamapps/libraryfolders.vdf" });
+            files: new[] { Path.Combine("/custom/steam", "steamapps", "libraryfolders.vdf") });
 
         var sut = new LinuxSteamInstallPathProvider(env, fs);
 
