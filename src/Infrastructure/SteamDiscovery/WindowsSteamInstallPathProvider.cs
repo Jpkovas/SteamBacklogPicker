@@ -1,14 +1,26 @@
 using System.IO;
+using System.Runtime.Versioning;
 using Microsoft.Win32;
 
 namespace SteamDiscovery;
 
 public sealed class WindowsSteamInstallPathProvider : IWindowsSteamInstallPathProvider
 {
-    private const string SteamKeyPath = @"Software\\Valve\\Steam";
+    private const string SteamKeyPath = @"Software\Valve\Steam";
     private const string SteamPathValueName = "SteamPath";
 
     public string? GetSteamInstallPath()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return null;
+        }
+
+        return GetSteamInstallPathFromRegistry();
+    }
+
+    [SupportedOSPlatform("windows")]
+    private static string? GetSteamInstallPathFromRegistry()
     {
         try
         {
@@ -29,6 +41,7 @@ public sealed class WindowsSteamInstallPathProvider : IWindowsSteamInstallPathPr
         }
     }
 
+    [SupportedOSPlatform("windows")]
     private static string? TryGetSteamPath(RegistryView view)
     {
         try

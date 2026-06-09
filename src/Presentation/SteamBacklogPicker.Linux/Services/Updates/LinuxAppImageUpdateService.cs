@@ -112,7 +112,7 @@ public sealed class LinuxAppImageUpdateService : IAppUpdateService
             return;
         }
 
-        if (!File.Exists(marker.PendingBinaryPath) || !File.Exists(marker.TargetBinaryPath))
+        if (!Path.Exists(marker.PendingBinaryPath) || !File.Exists(marker.TargetBinaryPath))
         {
             return;
         }
@@ -159,13 +159,16 @@ rollback_on_failure() {
 trap rollback_on_failure EXIT
 
 for _ in $(seq 1 300); do
+  if [ ! -d "/proc/$CURRENT_PID" ]; then
+    break
+  fi
   if ! kill -0 "$CURRENT_PID" 2>/dev/null; then
     break
   fi
   sleep 1
 done
 
-if [ ! -f "$PENDING_PATH" ]; then
+if [ ! -e "$PENDING_PATH" ]; then
   exit 0
 fi
 
@@ -177,7 +180,7 @@ rm -f "$BACKUP_PATH"
 rm -f "$SCRIPT_PATH"
 """;
 
-        await File.WriteAllTextAsync(scriptPath, scriptContents, cancellationToken);
+        await File.WriteAllTextAsync(scriptPath, NormalizeShellScriptLineEndings(scriptContents), cancellationToken);
         if (OperatingSystem.IsLinux())
         {
             File.SetUnixFileMode(scriptPath, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute | UnixFileMode.GroupRead | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
@@ -199,6 +202,9 @@ rm -f "$SCRIPT_PATH"
     {
         return value.Replace("'", "'\\''", StringComparison.Ordinal);
     }
+
+    private static string NormalizeShellScriptLineEndings(string scriptContents)
+        => scriptContents.Replace("\r\n", "\n", StringComparison.Ordinal);
 
     private static string GetUpdateStateDirectory()
     {
