@@ -134,7 +134,7 @@ public sealed class SteamAppManifestCache : IDisposable
 
         foreach (var existingPath in _idByManifestPath.Keys.ToList())
         {
-            if (!seenPaths.Contains(existingPath) || !File.Exists(existingPath))
+            if (!seenPaths.Contains(existingPath))
             {
                 RemoveEntryByPathNoLock(existingPath);
             }
@@ -148,15 +148,8 @@ public sealed class SteamAppManifestCache : IDisposable
         if (TryLoadManifest(manifestPath, installedSet, out var entry))
         {
             var id = entry.Id;
-            if (_manifestPathById.TryGetValue(id, out var previousPath) &&
-                !string.Equals(previousPath, manifestPath, StringComparison.Ordinal))
-            {
-                _idByManifestPath.Remove(previousPath);
-            }
-
             _entries[id] = entry;
-            _manifestPathById[id] = manifestPath;
-            _idByManifestPath[manifestPath] = id;
+            TrackManifestPathNoLock(id, manifestPath);
         }
         else if (removeOnFailure)
         {
@@ -270,6 +263,21 @@ public sealed class SteamAppManifestCache : IDisposable
         }
     }
 
+    private void TrackManifestPathNoLock(GameIdentifier id, string manifestPath)
+    {
+        foreach (var existingPath in _idByManifestPath
+                     .Where(pair => pair.Value.Equals(id) &&
+                                    !string.Equals(pair.Key, manifestPath, StringComparison.Ordinal))
+                     .Select(pair => pair.Key)
+                     .ToList())
+        {
+            _idByManifestPath.Remove(existingPath);
+        }
+
+        _manifestPathById[id] = manifestPath;
+        _idByManifestPath[manifestPath] = id;
+    }
+
     private static string? GetString(ValveKeyValueNode parent, string childName)
         => parent.TryGetChild(childName, out var child) ? child.Value : null;
 
@@ -376,7 +384,11 @@ public sealed class SteamAppManifestCache : IDisposable
 
     private void RemoveEntryByPathNoLock(string manifestPath)
     {
-        if (!_idByManifestPath.TryGetValue(manifestPath, out var id))
+        if (TryGetExactTrackedManifestPathNoLock(manifestPath, out var trackedPath, out var id))
+        {
+            _idByManifestPath.Remove(trackedPath);
+        }
+        else
         {
             if (TryGetAppIdFromPath(manifestPath, out var extracted))
             {
@@ -388,10 +400,8 @@ public sealed class SteamAppManifestCache : IDisposable
             }
         }
 
-        _idByManifestPath.Remove(manifestPath);
-
         if (_manifestPathById.TryGetValue(id, out var storedPath) &&
-            _pathComparison.Equals(storedPath, manifestPath))
+            string.Equals(storedPath, manifestPath, StringComparison.Ordinal))
         {
             _manifestPathById.Remove(id);
             _entries.Remove(id);
@@ -402,6 +412,23 @@ public sealed class SteamAppManifestCache : IDisposable
         }
 
         UpdateCachedEntriesNoLock();
+    }
+
+    private bool TryGetExactTrackedManifestPathNoLock(string manifestPath, out string trackedPath, out GameIdentifier id)
+    {
+        foreach (var pair in _idByManifestPath)
+        {
+            if (string.Equals(pair.Key, manifestPath, StringComparison.Ordinal))
+            {
+                trackedPath = pair.Key;
+                id = pair.Value;
+                return true;
+            }
+        }
+
+        trackedPath = string.Empty;
+        id = default!;
+        return false;
     }
 
     private static bool TryGetAppIdFromPath(string manifestPath, out uint appId)
