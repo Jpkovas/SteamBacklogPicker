@@ -121,6 +121,43 @@ public sealed class SteamLibraryFoldersParserTests
     }
 
     [Fact]
+    public void Parse_ShouldPreserveCaseDistinctPaths_WhenPlatformIsCaseSensitive()
+    {
+        var parser = new SteamLibraryFoldersParser(new PlatformPathComparisonStrategy(new FakePlatformProvider(isWindows: false)));
+        const string content = """
+"LibraryFolders"
+{
+    "0" "/mnt/Games/Steam"
+    "1" "/mnt/games/Steam"
+}
+""";
+
+        var result = parser.Parse(content);
+
+        Assert.Collection(result,
+            path => Assert.Equal("/mnt/Games/Steam", path),
+            path => Assert.Equal("/mnt/games/Steam", path));
+    }
+
+    [Fact]
+    public void Parse_ShouldDeduplicateCaseDistinctPaths_WhenPlatformIsCaseInsensitive()
+    {
+        var parser = new SteamLibraryFoldersParser(new PlatformPathComparisonStrategy(new FakePlatformProvider(isWindows: true)));
+        const string content = """
+"LibraryFolders"
+{
+    "0" "C:\\Steam"
+    "1" "c:\\steam"
+}
+""";
+
+        var result = parser.Parse(content);
+
+        Assert.Single(result);
+        Assert.Equal("C:\\Steam", result[0]);
+    }
+
+    [Fact]
     public void Parse_IgnoresComments()
     {
         const string content = """
@@ -151,5 +188,19 @@ public sealed class SteamLibraryFoldersParserTests
 
         Assert.Single(result);
         Assert.Equal("C:\\Games\\Steam\\\"Quotes\\Folder", result[0]);
+    }
+
+    private sealed class FakePlatformProvider : IPlatformProvider
+    {
+        private readonly bool _isWindows;
+
+        public FakePlatformProvider(bool isWindows)
+        {
+            _isWindows = isWindows;
+        }
+
+        public bool IsWindows() => _isWindows;
+
+        public bool IsLinux() => !_isWindows;
     }
 }

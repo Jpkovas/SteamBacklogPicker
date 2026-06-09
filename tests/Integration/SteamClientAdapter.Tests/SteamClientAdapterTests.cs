@@ -163,12 +163,7 @@ public sealed class SteamClientAdapterTests
         var mocks = new SteamApiMocks(new uint[] { 10 });
         var adapter = CreateAdapter(mocks);
         adapter.Initialize("steam_api64.dll");
-        var firstCallCount = 0;
-        var originalInitResult = mocks.SteamApi.InitResult;
 
-        // Track if Init is called again
-        var initCallCount = 0;
-        var originalInit = mocks.SteamApi.InitResult;
         mocks.SteamApi.InitResult = false; // Change to false to detect if Init is called again
 
         // Act

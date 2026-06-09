@@ -97,7 +97,9 @@ public sealed class SelectionPreferencesViewModelTests
         viewModel.IncludeSteam.Should().BeTrue();
 
         viewModel.IncludeSteam = false;
+        engine.LastUpdatedPreferences.Filters.FilterByStorefront.Should().BeTrue();
         engine.LastUpdatedPreferences.Filters.IncludedStorefronts.Should().BeEmpty();
+        viewModel.IncludeSteam.Should().BeFalse();
     }
 
     private sealed class FakeSelectionEngine : ISelectionEngine
@@ -135,6 +137,8 @@ public sealed class SelectionPreferencesViewModelTests
     {
         public event EventHandler? LanguageChanged;
 
+        public event EventHandler<IReadOnlyDictionary<string, string>>? ResourcesChanged;
+
         public string CurrentLanguage { get; private set; } = "pt-BR";
 
         public IReadOnlyList<string> SupportedLanguages { get; } = new[] { "en-US", "pt-BR" };
@@ -143,6 +147,7 @@ public sealed class SelectionPreferencesViewModelTests
         {
             CurrentLanguage = languageCode;
             LanguageChanged?.Invoke(this, EventArgs.Empty);
+            ResourcesChanged?.Invoke(this, GetAllStrings());
         }
 
         public string GetString(string key) => key switch
@@ -154,5 +159,7 @@ public sealed class SelectionPreferencesViewModelTests
         public string GetString(string key, params object[] arguments) => string.Format(GetString(key), arguments);
 
         public string FormatGameCount(int count) => count.ToString();
+
+        public IReadOnlyDictionary<string, string> GetAllStrings() => new Dictionary<string, string>();
     }
 }

@@ -144,6 +144,12 @@ public sealed class SteamAppManifestCacheTests
 
         var game = Assert.Single(games);
         Assert.Equal("Case Game", game.Title);
+
+        var pathIndexField = typeof(SteamAppManifestCache).GetField("_idByManifestPath", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        Assert.NotNull(pathIndexField);
+        var pathIndex = Assert.IsAssignableFrom<IReadOnlyDictionary<string, GameIdentifier>>(pathIndexField!.GetValue(cache));
+        Assert.Contains(renamedPath, pathIndex.Keys);
+        Assert.DoesNotContain(oldPath, pathIndex.Keys);
     }
 
     [Fact]
@@ -305,6 +311,5 @@ public sealed class SteamAppManifestCacheTests
         }
     }
 }
-
 
 

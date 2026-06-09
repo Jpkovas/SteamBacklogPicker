@@ -14,7 +14,9 @@ public sealed class SelectionFilters
 
     public List<ProductCategory> IncludedCategories { get; set; } = new() { ProductCategory.Game };
 
-    public List<Storefront> IncludedStorefronts { get; set; } = new();
+    public bool FilterByStorefront { get; set; }
+
+    public List<Storefront>? IncludedStorefronts { get; set; }
 
     public SelectionFilters Clone()
     {
@@ -24,7 +26,8 @@ public sealed class SelectionFilters
             ExcludeDeckUnsupported = ExcludeDeckUnsupported,
             RequiredCollection = RequiredCollection,
             IncludedCategories = IncludedCategories is null ? new List<ProductCategory>() : new List<ProductCategory>(IncludedCategories),
-            IncludedStorefronts = IncludedStorefronts is null ? new List<Storefront>() : new List<Storefront>(IncludedStorefronts),
+            FilterByStorefront = FilterByStorefront,
+            IncludedStorefronts = IncludedStorefronts is null ? null : new List<Storefront>(IncludedStorefronts),
         };
     }
 
@@ -33,10 +36,9 @@ public sealed class SelectionFilters
         RequiredCollection = string.IsNullOrWhiteSpace(RequiredCollection)
             ? null
             : RequiredCollection.Trim();
-        IncludedCategories ??= new List<ProductCategory>();
-        if (IncludedCategories.Count == 0)
+        if (IncludedCategories is null)
         {
-            IncludedCategories.Add(ProductCategory.Game);
+            IncludedCategories = new List<ProductCategory> { ProductCategory.Game };
         }
         else
         {
@@ -45,8 +47,7 @@ public sealed class SelectionFilters
                 .ToList();
         }
 
-        IncludedStorefronts ??= new List<Storefront>();
-        if (IncludedStorefronts.Count > 0)
+        if (IncludedStorefronts is not null)
         {
             IncludedStorefronts = IncludedStorefronts
                 .Where(store => store != Storefront.Unknown)

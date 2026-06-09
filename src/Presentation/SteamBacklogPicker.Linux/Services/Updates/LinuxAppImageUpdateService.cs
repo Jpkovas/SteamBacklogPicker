@@ -163,7 +163,10 @@ rm -f "$SCRIPT_PATH"
 """;
 
         await File.WriteAllTextAsync(scriptPath, scriptContents, cancellationToken);
-        File.SetUnixFileMode(scriptPath, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute | UnixFileMode.GroupRead | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
+        if (OperatingSystem.IsLinux())
+        {
+            File.SetUnixFileMode(scriptPath, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute | UnixFileMode.GroupRead | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
+        }
 
         Process.Start(new ProcessStartInfo
         {
@@ -215,6 +218,23 @@ rm -f "$SCRIPT_PATH"
         return string.Equals(actualHash, expectedHash, StringComparison.OrdinalIgnoreCase);
     }
 
+    private static bool IsHexString(string value)
+    {
+        foreach (var character in value)
+        {
+            var isHex =
+                character is >= '0' and <= '9' ||
+                character is >= 'a' and <= 'f' ||
+                character is >= 'A' and <= 'F';
+
+            if (!isHex)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 
     private static bool IsUnsignedFeedOptInEnabled()
     {

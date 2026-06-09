@@ -110,7 +110,11 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
             return new Dictionary<uint, SteamAppDefinition>();
         }
 
-        var loginUsers = _textParser.Parse(_files.ReadAllText(loginUsersPath));
+        if (!TryParseTextVdfFile(loginUsersPath, out var loginUsers))
+        {
+            return new Dictionary<uint, SteamAppDefinition>();
+        }
+
         var usersNode = loginUsers.FindPath("users") ?? FindChildCaseInsensitive(loginUsers, "users");
         if (usersNode is null)
         {
@@ -151,7 +155,11 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
                 continue;
             }
 
-            var localConfig = _textParser.Parse(_files.ReadAllText(localConfigPath));
+            if (!TryParseTextVdfFile(localConfigPath, out var localConfig))
+            {
+                continue;
+            }
+
             var storeNode = localConfig.FindPath("UserLocalConfigStore") ?? FindChildCaseInsensitive(localConfig, "UserLocalConfigStore");
             if (storeNode is null)
             {
@@ -243,7 +251,11 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
                 continue;
             }
 
-            var sharedConfig = _textParser.Parse(_files.ReadAllText(sharedConfigPath));
+            if (!TryParseTextVdfFile(sharedConfigPath, out var sharedConfig))
+            {
+                continue;
+            }
+
             var storeNode = sharedConfig.FindPath("UserRoamingConfigStore") ?? FindChildCaseInsensitive(sharedConfig, "UserRoamingConfigStore");
             if (storeNode is null)
             {
@@ -455,10 +467,10 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
         var appInfoPath = Path.Combine(_steamDirectory, "appcache", "appinfo.vdf");
         if (!_files.FileExists(appInfoPath))
         {
-            _appInfoLoaded = true;
             return;
         }
 
+        var loaded = false;
         try
         {
             using var stream = _files.OpenRead(appInfoPath);
@@ -491,15 +503,15 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
                     _appDeckCompatibility[appId] = compatibility;
                 }
             }
+
+            loaded = true;
         }
         catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or KeyValueException or ZstdException)
         {
             // Ignore appinfo parsing errors and continue with limited metadata.
         }
-        finally
-        {
-            _appInfoLoaded = true;
-        }
+
+        _appInfoLoaded = loaded;
     }
 
     private static bool TryGetFamilySharingFlag(ValveKeyValueNode node, out bool flag)
@@ -631,7 +643,16 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
             if (timestampNode is not null &&
                 long.TryParse(timestampNode.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var timestamp))
             {
-                var userTime = DateTimeOffset.FromUnixTimeSeconds(timestamp);
+                DateTimeOffset userTime;
+                try
+                {
+                    userTime = DateTimeOffset.FromUnixTimeSeconds(timestamp);
+                }
+                catch (ArgumentOutOfRangeException)
+                {
+                    continue;
+                }
+
                 if (userTime > mostRecentTimestamp)
                 {
                     mostRecentTimestamp = userTime;
@@ -761,6 +782,26 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
         }
 
         return null;
+    }
+
+    private bool TryParseTextVdfFile(string path, out ValveKeyValueNode root)
+    {
+        root = default!;
+
+        if (!_files.FileExists(path))
+        {
+            return false;
+        }
+
+        try
+        {
+            root = _textParser.Parse(_files.ReadAllText(path));
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
+        {
+            return false;
+        }
     }
 
     private const ulong SteamIdOffset = 76561197960265728UL;
@@ -1030,9 +1071,6 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
         return compatibility != SteamDeckCompatibility.Unknown;
     }
 }
-
-
-
 
 
 

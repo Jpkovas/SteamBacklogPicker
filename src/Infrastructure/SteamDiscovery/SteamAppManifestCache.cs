@@ -125,7 +125,7 @@ public sealed class SteamAppManifestCache : IDisposable
                 continue;
             }
 
-            foreach (var manifestPath in Directory.EnumerateFiles(directory, "appmanifest_*.acf", SearchOption.TopDirectoryOnly))
+            foreach (var manifestPath in EnumerateManifestFiles(directory))
             {
                 seenPaths.Add(manifestPath);
                 UpdateEntryFromManifestNoLock(manifestPath, installedSet);
@@ -134,7 +134,7 @@ public sealed class SteamAppManifestCache : IDisposable
 
         foreach (var existingPath in _idByManifestPath.Keys.ToList())
         {
-            if (!seenPaths.Contains(existingPath) || !File.Exists(existingPath))
+            if (!seenPaths.Contains(existingPath))
             {
                 RemoveEntryByPathNoLock(existingPath);
             }
@@ -143,18 +143,36 @@ public sealed class SteamAppManifestCache : IDisposable
         UpdateCachedEntriesNoLock();
     }
 
-    private void UpdateEntryFromManifestNoLock(string manifestPath, HashSet<uint> installedSet)
+    private void UpdateEntryFromManifestNoLock(string manifestPath, HashSet<uint> installedSet, bool removeOnFailure = true)
     {
         if (TryLoadManifest(manifestPath, installedSet, out var entry))
         {
             var id = entry.Id;
             _entries[id] = entry;
-            _manifestPathById[id] = manifestPath;
-            _idByManifestPath[manifestPath] = id;
+            TrackManifestPathNoLock(id, manifestPath);
         }
-        else
+        else if (removeOnFailure)
         {
             RemoveEntryByPathNoLock(manifestPath);
+        }
+    }
+
+    private static IEnumerable<string> EnumerateManifestFiles(string directory)
+    {
+        try
+        {
+            return Directory
+                .EnumerateFiles(directory, "*", SearchOption.TopDirectoryOnly)
+                .Where(IsManifestPath)
+                .ToArray();
+        }
+        catch (IOException)
+        {
+            return Array.Empty<string>();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Array.Empty<string>();
         }
     }
 
@@ -243,6 +261,21 @@ public sealed class SteamAppManifestCache : IDisposable
         {
             return false;
         }
+    }
+
+    private void TrackManifestPathNoLock(GameIdentifier id, string manifestPath)
+    {
+        foreach (var existingPath in _idByManifestPath
+                     .Where(pair => pair.Value.Equals(id) &&
+                                    !string.Equals(pair.Key, manifestPath, StringComparison.Ordinal))
+                     .Select(pair => pair.Key)
+                     .ToList())
+        {
+            _idByManifestPath.Remove(existingPath);
+        }
+
+        _manifestPathById[id] = manifestPath;
+        _idByManifestPath[manifestPath] = id;
     }
 
     private static string? GetString(ValveKeyValueNode parent, string childName)
@@ -351,7 +384,11 @@ public sealed class SteamAppManifestCache : IDisposable
 
     private void RemoveEntryByPathNoLock(string manifestPath)
     {
-        if (!_idByManifestPath.TryGetValue(manifestPath, out var id))
+        if (TryGetExactTrackedManifestPathNoLock(manifestPath, out var trackedPath, out var id))
+        {
+            _idByManifestPath.Remove(trackedPath);
+        }
+        else
         {
             if (TryGetAppIdFromPath(manifestPath, out var extracted))
             {
@@ -363,10 +400,8 @@ public sealed class SteamAppManifestCache : IDisposable
             }
         }
 
-        _idByManifestPath.Remove(manifestPath);
-
         if (_manifestPathById.TryGetValue(id, out var storedPath) &&
-            _pathComparison.Equals(storedPath, manifestPath))
+            string.Equals(storedPath, manifestPath, StringComparison.Ordinal))
         {
             _manifestPathById.Remove(id);
             _entries.Remove(id);
@@ -377,6 +412,23 @@ public sealed class SteamAppManifestCache : IDisposable
         }
 
         UpdateCachedEntriesNoLock();
+    }
+
+    private bool TryGetExactTrackedManifestPathNoLock(string manifestPath, out string trackedPath, out GameIdentifier id)
+    {
+        foreach (var pair in _idByManifestPath)
+        {
+            if (string.Equals(pair.Key, manifestPath, StringComparison.Ordinal))
+            {
+                trackedPath = pair.Key;
+                id = pair.Value;
+                return true;
+            }
+        }
+
+        trackedPath = string.Empty;
+        id = default!;
+        return false;
     }
 
     private static bool TryGetAppIdFromPath(string manifestPath, out uint appId)
@@ -428,7 +480,7 @@ public sealed class SteamAppManifestCache : IDisposable
 
             try
             {
-                var watcher = new FileSystemWatcher(directory, "appmanifest_*.acf")
+                var watcher = new FileSystemWatcher(directory, "*")
                 {
                     NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.Size,
                     IncludeSubdirectories = false,
@@ -468,7 +520,7 @@ public sealed class SteamAppManifestCache : IDisposable
             }
 
             var installedSet = GetInstalledAppIds();
-            UpdateEntryFromManifestNoLock(e.FullPath, installedSet);
+            UpdateEntryFromManifestNoLock(e.FullPath, installedSet, removeOnFailure: false);
             UpdateCachedEntriesNoLock();
         }
     }

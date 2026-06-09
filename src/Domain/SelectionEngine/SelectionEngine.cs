@@ -149,8 +149,24 @@ public sealed class SelectionEngine : ISelectionEngine
             Directory.CreateDirectory(directory);
         }
 
-        using var stream = File.Create(_settingsPath);
-        JsonSerializer.Serialize(stream, _state, SerializerOptions);
+        var tempPath = $"{_settingsPath}.{Guid.NewGuid():N}.tmp";
+        try
+        {
+            using (var stream = File.Create(tempPath))
+            {
+                JsonSerializer.Serialize(stream, _state, SerializerOptions);
+                stream.Flush(flushToDisk: true);
+            }
+
+            File.Move(tempPath, _settingsPath, overwrite: true);
+        }
+        finally
+        {
+            if (File.Exists(tempPath))
+            {
+                File.Delete(tempPath);
+            }
+        }
     }
 
     private static string BuildDefaultSettingsPath()
@@ -219,13 +235,10 @@ public sealed class SelectionEngine : ISelectionEngine
         var excludedIds = GetExcludedGameIds();
         var skipExclusionCheck = excludedIds.Count == 0;
         var allowedCategories = filters.IncludedCategories;
-        var filterByCategory = allowedCategories.Count > 0;
-        var allowedCategorySet = filterByCategory
-            ? new HashSet<ProductCategory>(allowedCategories)
-            : null;
+        var allowedCategorySet = new HashSet<ProductCategory>(allowedCategories);
         var allowedStorefronts = filters.IncludedStorefronts;
-        var allowedStorefrontSet = allowedStorefronts is not null && allowedStorefronts.Count > 0
-            ? new HashSet<Storefront>(allowedStorefronts)
+        var allowedStorefrontSet = filters.FilterByStorefront
+            ? new HashSet<Storefront>(allowedStorefronts ?? new List<Storefront>())
             : null;
         var requiredCollection = filters.RequiredCollection;
         var filterByCollection = !string.IsNullOrWhiteSpace(requiredCollection);

@@ -57,6 +57,19 @@ public sealed class SteamVdfFallbackTests : IDisposable
         Assert.Equal(new uint[] { 10, 20 }, appIds);
     }
 
+    [Fact]
+    public void GetKnownApps_ReturnsEmpty_WhenLoginUsersVdfIsMalformed()
+    {
+        var loginUsersPath = Path.Combine(_steamRoot, "config", "loginusers.vdf");
+        File.WriteAllText(loginUsersPath, "\"users\" { \"76561198000000000\" { ");
+
+        var fallback = CreateFallback();
+
+        var apps = fallback.GetKnownApps();
+
+        Assert.Empty(apps);
+    }
+
     [Theory]
     [InlineData(10u, false)]
     [InlineData(20u, true)]

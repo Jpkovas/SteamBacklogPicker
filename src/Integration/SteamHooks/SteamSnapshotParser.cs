@@ -51,7 +51,7 @@ public static class SteamSnapshotParser
             results.Add(downloadEvent);
         }
 
-        events = results.MoveToImmutable();
+        events = results.ToImmutable();
         return events.Length > 0;
     }
 }
