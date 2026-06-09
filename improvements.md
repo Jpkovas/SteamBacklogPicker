@@ -247,6 +247,17 @@ Impact: Future release work could accidentally treat process-memory reads as a n
 Suggestion: Keep fallback/no-op as the product default, document real-Linux validation as manual release evidence only, and require explicit opt-in for unsafe memory reads.
 Correlation notes: `SteamHookClientFactoryTests` covers degradation when `EnableUnsafeLinuxMemoryRead` is false.
 
+### A022
+Category: Bug
+Severity: Medium
+Status: Fixed in this pass
+Location: `src/Infrastructure/SteamDiscovery/SteamLibraryLocator.cs`, `tests/Infrastructure/SteamDiscovery.Tests/SteamInstallPathProviderTests.cs`
+Reachability: Linux CI and real Steam installs where `libraryfolders.vdf` is renamed with only casing differences while the app applies Windows-style path comparison.
+Problem: `SteamLibraryLocator` depended on `FileSystemWatcher` delivering the case-only rename event; if the event was missed or delayed, the locator kept returning stale cached library folders.
+Impact: CI could fail intermittently, and a real app session could keep stale Steam library paths until restart or explicit refresh.
+Suggestion: On `GetLibraryFolders`, recover when the tracked file path no longer exists by scanning the watched directory for an equivalent path using the active platform comparison strategy, then refresh the cache.
+Correlation notes: `SteamLibraryLocator_ShouldRefresh_WhenLibraryFileIsRenamedWithCaseDifference` now validates deterministic recovery without waiting on watcher timing.
+
 ## 5. Prioritized backlog
 | Priority | Finding | Effort | Rationale |
 | --- | --- | --- | --- |
@@ -260,6 +271,7 @@ Correlation notes: `SteamHookClientFactoryTests` covers degradation when `Enable
 | 8 | A019 | S | Completed: legacy Windows Squirrel auto-update is disabled by default. |
 | 9 | A020 | M | Completed: Linux release workflow now produces native AppImage when appimagetool is available. |
 | 10 | A021 | S | Completed: Linux memory hook default is documented as fallback/no-op, with real-Linux validation kept manual. |
+| 11 | A022 | S | Completed: library folder cache recovery no longer depends on watcher timing for case-only renames. |
 
 ## 6. Detailed phased remediation plan
 Phase 1 - Compile/test gate  

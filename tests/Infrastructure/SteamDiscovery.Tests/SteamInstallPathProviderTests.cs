@@ -303,13 +303,9 @@ public sealed class SteamInstallPathProviderTests
         File.Move(canonicalLibraryFile, renamedLibraryFile);
         File.WriteAllText(renamedLibraryFile, "\"LibraryFolders\" { \"0\" \"D:\\\\SteamLibrary\" }");
 
-        var refreshed = SpinWait.SpinUntil(() =>
-        {
-            Thread.Sleep(50);
-            return sut.GetLibraryFolders().SingleOrDefault() == "D:\\SteamLibrary";
-        }, TimeSpan.FromSeconds(3));
-
-        refreshed.Should().BeTrue("the real watcher should observe case-only libraryfolders.vdf renames under Windows-style path comparison");
+        sut.GetLibraryFolders().Should().ContainSingle().Which.Should().Be(
+            "D:\\SteamLibrary",
+            "the locator should recover when the watcher misses a case-only libraryfolders.vdf rename under Windows-style path comparison");
     }
 
     private sealed class FixedInstallPathProvider : ISteamInstallPathProvider
