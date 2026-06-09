@@ -148,6 +148,12 @@ public sealed class SteamAppManifestCache : IDisposable
         if (TryLoadManifest(manifestPath, installedSet, out var entry))
         {
             var id = entry.Id;
+            if (_manifestPathById.TryGetValue(id, out var previousPath) &&
+                !string.Equals(previousPath, manifestPath, StringComparison.Ordinal))
+            {
+                _idByManifestPath.Remove(previousPath);
+            }
+
             _entries[id] = entry;
             _manifestPathById[id] = manifestPath;
             _idByManifestPath[manifestPath] = id;
