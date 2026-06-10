@@ -9,6 +9,7 @@ public sealed class LocalizationService : ILocalizationService
 {
     private static readonly IReadOnlyDictionary<string, string> Portuguese = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
     {
+        ["Header_Tagline"] = "Descubra o próximo jogo da sua fila",
         ["Filters_PanelAutomationName"] = "Painel de filtros",
         ["Filters_Title"] = "Filtros",
         ["Filters_RequireInstalled"] = "Somente instalados",
@@ -74,6 +75,7 @@ public sealed class LocalizationService : ILocalizationService
 
     private static readonly IReadOnlyDictionary<string, string> English = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
     {
+        ["Header_Tagline"] = "Discover the next game in your queue",
         ["Filters_PanelAutomationName"] = "Filter panel",
         ["Filters_Title"] = "Filters",
         ["Filters_RequireInstalled"] = "Only installed",

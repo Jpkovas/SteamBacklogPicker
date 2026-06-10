@@ -10,462 +10,12 @@
         MinWidth="900"
         MinHeight="650"
         WindowStartupLocation="CenterScreen"
+        Icon="{StaticResource AppIconImage}"
         FontFamily="Segoe UI"
-        Background="#080A0F"
-        Foreground="#F0F4F8">
+        Background="{StaticResource WindowGradientBrush}"
+        Foreground="{StaticResource TextPrimaryBrush}">
     <Window.Resources>
-        <!-- Enhanced Color Palette -->
-        <Color x:Key="BackgroundColor">#080A0F</Color>
-        <Color x:Key="SurfaceColor">#0F1318</Color>
-        <Color x:Key="SurfaceAltColor">#161B24</Color>
-        <Color x:Key="SurfaceHoverColor">#1E2530</Color>
-        <Color x:Key="SurfaceBorderColor">#2A3444</Color>
-        <Color x:Key="AccentColor">#3B9EFF</Color>
-        <Color x:Key="AccentLightColor">#5CB4FF</Color>
-        <Color x:Key="AccentDeepColor">#2178D1</Color>
-        <Color x:Key="AccentGlowColor">#1A3B9EFF</Color>
-        <Color x:Key="SuccessColor">#34D399</Color>
-        <Color x:Key="TextPrimaryColor">#F0F4F8</Color>
-        <Color x:Key="TextSecondaryColor">#8B9AAD</Color>
-        <Color x:Key="TextMutedColor">#5A6778</Color>
-
-        <!-- Solid Brushes -->
-        <SolidColorBrush x:Key="BackgroundBrush" Color="{StaticResource BackgroundColor}" />
-        <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}" />
-        <SolidColorBrush x:Key="SurfaceAltBrush" Color="{StaticResource SurfaceAltColor}" />
-        <SolidColorBrush x:Key="SurfaceHoverBrush" Color="{StaticResource SurfaceHoverColor}" />
-        <SolidColorBrush x:Key="SurfaceBorderBrush" Color="{StaticResource SurfaceBorderColor}" />
-        <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
-        <SolidColorBrush x:Key="AccentLightBrush" Color="{StaticResource AccentLightColor}" />
-        <SolidColorBrush x:Key="AccentDeepBrush" Color="{StaticResource AccentDeepColor}" />
-        <SolidColorBrush x:Key="AccentGlowBrush" Color="{StaticResource AccentGlowColor}" />
-        <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}" />
-        <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimaryColor}" />
-        <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondaryColor}" />
-        <SolidColorBrush x:Key="TextMutedBrush" Color="{StaticResource TextMutedColor}" />
-        <SolidColorBrush x:Key="AccentForegroundBrush" Color="#FFFFFF" />
-
-        <!-- Tag Colors -->
-        <SolidColorBrush x:Key="TagBrush" Color="#1A2636" />
-        <SolidColorBrush x:Key="TagBorderBrush" Color="#2E3E52" />
-
-        <!-- Gradient Brushes -->
-        <LinearGradientBrush x:Key="CardGradientBrush" StartPoint="0,0" EndPoint="0,1">
-            <GradientStop Color="#0F1318" Offset="0" />
-            <GradientStop Color="#0C0F14" Offset="1" />
-        </LinearGradientBrush>
-
-        <LinearGradientBrush x:Key="AccentGradientBrush" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#3B9EFF" Offset="0" />
-            <GradientStop Color="#2178D1" Offset="1" />
-        </LinearGradientBrush>
-
-        <LinearGradientBrush x:Key="AccentHoverGradientBrush" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#5CB4FF" Offset="0" />
-            <GradientStop Color="#3B9EFF" Offset="1" />
-        </LinearGradientBrush>
-
-        <!-- Card Style with Glassmorphism Effect -->
-        <Style x:Key="CardBorderStyle" TargetType="Border">
-            <Setter Property="Background" Value="{StaticResource CardGradientBrush}" />
-            <Setter Property="Padding" Value="28" />
-            <Setter Property="CornerRadius" Value="20" />
-            <Setter Property="BorderBrush" Value="{StaticResource SurfaceBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="SnapsToDevicePixels" Value="True" />
-            <Setter Property="Effect">
-                <Setter.Value>
-                    <DropShadowEffect Color="#000000"
-                                      Direction="270"
-                                      ShadowDepth="8"
-                                      BlurRadius="32"
-                                      Opacity="0.4" />
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- Typography Styles -->
-        <Style x:Key="SectionTitleTextStyle" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="26" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
-            <Setter Property="TextOptions.TextFormattingMode" Value="Ideal" />
-            <Setter Property="TextOptions.TextRenderingMode" Value="ClearType" />
-        </Style>
-
-        <Style x:Key="SectionLabelTextStyle" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
-            <Setter Property="Margin" Value="0,24,0,10" />
-            <Setter Property="TextOptions.TextFormattingMode" Value="Display" />
-        </Style>
-
-        <!-- Base Button Style with Animations -->
-        <Style x:Key="BaseButtonStyle" TargetType="Button">
-            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
-            <Setter Property="Background" Value="{StaticResource SurfaceAltBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="BorderBrush" Value="{StaticResource SurfaceBorderBrush}" />
-            <Setter Property="Padding" Value="20,12" />
-            <Setter Property="FontSize" Value="14" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="SnapsToDevicePixels" Value="True" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="ButtonRoot"
-                                Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="12"
-                                Padding="{TemplateBinding Padding}"
-                                SnapsToDevicePixels="True">
-                            <ContentPresenter HorizontalAlignment="Center"
-                                              VerticalAlignment="Center"
-                                              RecognizesAccessKey="True" />
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ButtonRoot" Property="Background" Value="{StaticResource SurfaceHoverBrush}" />
-                                <Setter TargetName="ButtonRoot" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="ButtonRoot" Property="Background" Value="{StaticResource SurfaceBrush}" />
-                                <Setter TargetName="ButtonRoot" Property="BorderBrush" Value="{StaticResource AccentDeepBrush}" />
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="ButtonRoot" Property="Opacity" Value="0.4" />
-                                <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- Primary Button with Gradient -->
-        <Style x:Key="PrimaryButtonStyle" TargetType="Button">
-            <Setter Property="Foreground" Value="{StaticResource AccentForegroundBrush}" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Padding" Value="24,14" />
-            <Setter Property="FontSize" Value="16" />
-            <Setter Property="FontWeight" Value="Bold" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="SnapsToDevicePixels" Value="True" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Grid>
-                            <!-- Glow Effect Layer -->
-                            <Border x:Name="GlowBorder"
-                                    CornerRadius="14"
-                                    Opacity="0">
-                                <Border.Effect>
-                                    <BlurEffect Radius="16" />
-                                </Border.Effect>
-                                <Border.Background>
-                                    <SolidColorBrush Color="{StaticResource AccentColor}" />
-                                </Border.Background>
-                            </Border>
-                            <!-- Main Button -->
-                            <Border x:Name="ButtonRoot"
-                                    Background="{StaticResource AccentGradientBrush}"
-                                    CornerRadius="14"
-                                    Padding="{TemplateBinding Padding}"
-                                    SnapsToDevicePixels="True">
-                                <ContentPresenter HorizontalAlignment="Center"
-                                                  VerticalAlignment="Center"
-                                                  RecognizesAccessKey="True" />
-                            </Border>
-                        </Grid>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ButtonRoot" Property="Background" Value="{StaticResource AccentHoverGradientBrush}" />
-                                <Setter TargetName="GlowBorder" Property="Opacity" Value="0.3" />
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="ButtonRoot" Property="Background" Value="{StaticResource AccentDeepBrush}" />
-                                <Setter TargetName="GlowBorder" Property="Opacity" Value="0.2" />
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="ButtonRoot" Property="Opacity" Value="0.35" />
-                                <Setter TargetName="GlowBorder" Property="Opacity" Value="0" />
-                                <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- Language Button Style -->
-        <Style x:Key="LanguageButtonStyle" TargetType="Button">
-            <Setter Property="Width" Value="56" />
-            <Setter Property="Height" Value="56" />
-            <Setter Property="Padding" Value="12" />
-            <Setter Property="Background" Value="{StaticResource SurfaceAltBrush}" />
-            <Setter Property="Foreground" Value="White" />
-            <Setter Property="BorderBrush" Value="{StaticResource SurfaceBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="ButtonRoot"
-                                Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="14">
-                            <ContentPresenter HorizontalAlignment="Center"
-                                              VerticalAlignment="Center" />
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ButtonRoot" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
-                                <Setter TargetName="ButtonRoot" Property="Background" Value="{StaticResource SurfaceHoverBrush}" />
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="ButtonRoot" Property="Background" Value="{StaticResource SurfaceBrush}" />
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="ButtonRoot" Property="Opacity" Value="0.5" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- ComboBox Toggle Button Style -->
-        <Style x:Key="ComboBoxToggleButtonStyle" TargetType="ToggleButton">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Focusable" Value="False" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ToggleButton">
-                        <Grid>
-                            <Border Background="{TemplateBinding Background}"
-                                    BorderBrush="{TemplateBinding BorderBrush}"
-                                    BorderThickness="{TemplateBinding BorderThickness}"
-                                    CornerRadius="12" />
-                            <Path x:Name="Arrow"
-                                  Data="M 0 0 L 5 5 L 10 0"
-                                  Stroke="{StaticResource TextSecondaryBrush}"
-                                  StrokeThickness="2"
-                                  StrokeLineJoin="Round"
-                                  StrokeEndLineCap="Round"
-                                  StrokeStartLineCap="Round"
-                                  VerticalAlignment="Center"
-                                  HorizontalAlignment="Right"
-                                  Margin="0,0,16,0" />
-                        </Grid>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Arrow" Property="Stroke" Value="{StaticResource AccentBrush}" />
-                            </Trigger>
-                            <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="Arrow" Property="Stroke" Value="{StaticResource AccentBrush}" />
-                                <Setter TargetName="Arrow" Property="RenderTransform">
-                                    <Setter.Value>
-                                        <RotateTransform Angle="180" CenterX="5" CenterY="2.5" />
-                                    </Setter.Value>
-                                </Setter>
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="Arrow" Property="Opacity" Value="0.4" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- ComboBox Item Style -->
-        <Style x:Key="SurfaceComboBoxItemStyle" TargetType="ComboBoxItem">
-            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
-            <Setter Property="FontSize" Value="14" />
-            <Setter Property="Padding" Value="14,10" />
-            <Setter Property="SnapsToDevicePixels" Value="True" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ComboBoxItem">
-                        <Border x:Name="BackgroundBorder"
-                                Background="Transparent"
-                                CornerRadius="8"
-                                Padding="{TemplateBinding Padding}"
-                                Margin="4,2">
-                            <ContentPresenter HorizontalAlignment="Left"
-                                              VerticalAlignment="Center"
-                                              TextElement.Foreground="{TemplateBinding Foreground}" />
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsHighlighted" Value="True">
-                                <Setter TargetName="BackgroundBorder" Property="Background" Value="{StaticResource SurfaceHoverBrush}" />
-                            </Trigger>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="BackgroundBorder" Property="Background" Value="{StaticResource AccentBrush}" />
-                                <Setter Property="Foreground" Value="{StaticResource AccentForegroundBrush}" />
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="BackgroundBorder" Property="Opacity" Value="0.35" />
-                                <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- ComboBox Style -->
-        <Style x:Key="SurfaceComboBoxStyle" TargetType="ComboBox">
-            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
-            <Setter Property="Background" Value="{StaticResource SurfaceAltBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource SurfaceBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Padding" Value="14,10" />
-            <Setter Property="MinHeight" Value="44" />
-            <Setter Property="FontSize" Value="14" />
-            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
-            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
-            <Setter Property="ItemContainerStyle" Value="{StaticResource SurfaceComboBoxItemStyle}" />
-            <Setter Property="SnapsToDevicePixels" Value="True" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ComboBox">
-                        <Grid>
-                            <Border x:Name="BackgroundBorder"
-                                    Background="{TemplateBinding Background}"
-                                    BorderBrush="{TemplateBinding BorderBrush}"
-                                    BorderThickness="{TemplateBinding BorderThickness}"
-                                    CornerRadius="12" />
-
-                            <ContentPresenter x:Name="ContentPresenter"
-                                              Margin="{TemplateBinding Padding}"
-                                              VerticalAlignment="Center"
-                                              HorizontalAlignment="Left"
-                                              Content="{TemplateBinding SelectionBoxItem}"
-                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
-                                              TextElement.Foreground="{TemplateBinding Foreground}"
-                                              RecognizesAccessKey="True" />
-
-                            <ToggleButton x:Name="ToggleButton"
-                                          Grid.ColumnSpan="2"
-                                          Style="{StaticResource ComboBoxToggleButtonStyle}"
-                                          Background="Transparent"
-                                          BorderThickness="0"
-                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" />
-
-                            <Popup x:Name="PART_Popup"
-                                   Placement="Bottom"
-                                   PlacementTarget="{Binding ElementName=ToggleButton}"
-                                   IsOpen="{TemplateBinding IsDropDownOpen}"
-                                   AllowsTransparency="True"
-                                   Focusable="False"
-                                   PopupAnimation="Fade">
-                                <Border Background="{StaticResource SurfaceAltBrush}"
-                                        BorderBrush="{StaticResource SurfaceBorderBrush}"
-                                        BorderThickness="1"
-                                        CornerRadius="14"
-                                        Margin="0,6,0,0"
-                                        Padding="4"
-                                        SnapsToDevicePixels="True"
-                                        MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}">
-                                    <Border.Effect>
-                                        <DropShadowEffect Color="#000000"
-                                                          Direction="270"
-                                                          ShadowDepth="4"
-                                                          BlurRadius="16"
-                                                          Opacity="0.3" />
-                                    </Border.Effect>
-                                    <ScrollViewer CanContentScroll="True"
-                                                  VerticalScrollBarVisibility="Auto"
-                                                  HorizontalScrollBarVisibility="Disabled"
-                                                  MaxHeight="300">
-                                        <ItemsPresenter />
-                                    </ScrollViewer>
-                                </Border>
-                            </Popup>
-                        </Grid>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsDropDownOpen" Value="True">
-                                <Setter TargetName="BackgroundBorder" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
-                            </Trigger>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="BackgroundBorder" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
-                                <Setter TargetName="BackgroundBorder" Property="Opacity" Value="0.4" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- Modern Checkbox Template -->
-        <ControlTemplate x:Key="MinimalCheckBoxTemplate" TargetType="CheckBox">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <Border x:Name="Box"
-                        Width="22"
-                        Height="22"
-                        Background="Transparent"
-                        BorderBrush="{StaticResource SurfaceBorderBrush}"
-                        BorderThickness="2"
-                        CornerRadius="6" />
-                <Path x:Name="CheckMark"
-                      Grid.Column="0"
-                      Margin="5"
-                      Stroke="{StaticResource AccentForegroundBrush}"
-                      StrokeThickness="2.5"
-                      StrokeEndLineCap="Round"
-                      StrokeStartLineCap="Round"
-                      StrokeLineJoin="Round"
-                      Data="M 2 7 L 6 11 L 14 3"
-                      Visibility="Collapsed" />
-                <ContentPresenter Grid.Column="1"
-                                  Margin="14,0,0,0"
-                                  VerticalAlignment="Center"
-                                  RecognizesAccessKey="True" />
-            </Grid>
-            <ControlTemplate.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter TargetName="Box" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
-                    <Setter TargetName="Box" Property="Background" Value="#10FFFFFF" />
-                </Trigger>
-                <Trigger Property="IsPressed" Value="True">
-                    <Setter TargetName="Box" Property="Background" Value="{StaticResource SurfaceAltBrush}" />
-                </Trigger>
-                <Trigger Property="IsChecked" Value="True">
-                    <Setter TargetName="Box" Property="Background" Value="{StaticResource AccentBrush}" />
-                    <Setter TargetName="Box" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
-                    <Setter TargetName="CheckMark" Property="Visibility" Value="Visible" />
-                </Trigger>
-                <Trigger Property="IsEnabled" Value="False">
-                    <Setter TargetName="Box" Property="Opacity" Value="0.35" />
-                    <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
-                </Trigger>
-            </ControlTemplate.Triggers>
-        </ControlTemplate>
-
-        <!-- Filter Checkbox Style -->
-        <Style x:Key="FilterCheckBoxStyle" TargetType="CheckBox">
-            <Setter Property="Template" Value="{StaticResource MinimalCheckBoxTemplate}" />
-            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
-            <Setter Property="FontSize" Value="14" />
-            <Setter Property="Margin" Value="0,0,0,10" />
-            <Setter Property="Cursor" Value="Hand" />
-        </Style>
-
-        <!-- Cover Placeholder Style -->
+        <!-- View-specific: depends on named elements of this window -->
         <Style x:Key="CoverPlaceholderStyle" TargetType="StackPanel">
             <Setter Property="Visibility" Value="Collapsed" />
             <Setter Property="HorizontalAlignment" Value="Center" />
@@ -482,664 +32,577 @@
             </Style.Triggers>
         </Style>
 
-        <!-- Modern Scrollbar Style -->
-        <Style x:Key="ModernScrollBarStyle" TargetType="ScrollBar">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="Width" Value="10" />
-            <Setter Property="MinWidth" Value="10" />
-            <Setter Property="Margin" Value="4,0,0,0" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ScrollBar">
-                        <Grid>
-                            <Border Background="Transparent"
-                                    CornerRadius="5" />
-                            <Track x:Name="PART_Track"
-                                   IsDirectionReversed="True"
-                                   Margin="2">
-                                <Track.Thumb>
-                                    <Thumb>
-                                        <Thumb.Style>
-                                            <Style TargetType="Thumb">
-                                                <Setter Property="Background" Value="{StaticResource SurfaceBorderBrush}" />
-                                                <Setter Property="Template">
-                                                    <Setter.Value>
-                                                        <ControlTemplate TargetType="Thumb">
-                                                            <Border x:Name="ThumbBorder"
-                                                                    Background="{TemplateBinding Background}"
-                                                                    CornerRadius="4"
-                                                                    MinHeight="32" />
-                                                            <ControlTemplate.Triggers>
-                                                                <Trigger Property="IsMouseOver" Value="True">
-                                                                    <Setter TargetName="ThumbBorder"
-                                                                            Property="Background"
-                                                                            Value="{StaticResource TextSecondaryBrush}" />
-                                                                </Trigger>
-                                                                <Trigger Property="IsDragging" Value="True">
-                                                                    <Setter TargetName="ThumbBorder"
-                                                                            Property="Background"
-                                                                            Value="{StaticResource AccentBrush}" />
-                                                                </Trigger>
-                                                            </ControlTemplate.Triggers>
-                                                        </ControlTemplate>
-                                                    </Setter.Value>
-                                                </Setter>
-                                            </Style>
-                                        </Thumb.Style>
-                                    </Thumb>
-                                </Track.Thumb>
-                            </Track>
-                        </Grid>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
     </Window.Resources>
 
-    <Grid Margin="32">
+    <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="360" MinWidth="320" MaxWidth="400" />
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
 
-        <!-- Left Panel - Filters -->
-        <Border Grid.Row="0"
-                Style="{StaticResource CardBorderStyle}"
-                AutomationProperties.Name="{DynamicResource Filters_PanelAutomationName}">
-            <ScrollViewer VerticalScrollBarVisibility="Auto"
-                          HorizontalScrollBarVisibility="Disabled"
-                          Padding="0,0,4,0">
-                <ScrollViewer.Resources>
-                    <Style TargetType="ScrollBar" BasedOn="{StaticResource ModernScrollBarStyle}" />
-                </ScrollViewer.Resources>
-                <StackPanel>
-                    <!-- Section Title -->
-                    <TextBlock Text="{DynamicResource Filters_Title}"
-                               Style="{StaticResource SectionTitleTextStyle}"
-                               Margin="0,0,0,20" />
-
-                    <!-- Quick Filters -->
-                    <CheckBox Content="{DynamicResource Filters_RequireInstalled}"
-                              Style="{StaticResource FilterCheckBoxStyle}"
-                              IsChecked="{Binding Preferences.RequireInstalled, Mode=TwoWay}"
-                              AutomationProperties.Name="{DynamicResource Filters_RequireInstalled}" />
-
-                    <CheckBox Content="{DynamicResource Filters_ExcludeDeckUnsupported}"
-                              Style="{StaticResource FilterCheckBoxStyle}"
-                              IsChecked="{Binding Preferences.ExcludeDeckUnsupported, Mode=TwoWay}"
-                              AutomationProperties.Name="{DynamicResource Filters_ExcludeDeckUnsupported}" />
-
-                    <!-- Content Types Section -->
-                    <TextBlock Text="{DynamicResource Filters_ContentTypesLabel}"
-                               Style="{StaticResource SectionLabelTextStyle}" />
-
-                    <StackPanel Margin="0,0,0,4">
-                        <CheckBox Content="{DynamicResource Filters_IncludeGames}"
-                                  Style="{StaticResource FilterCheckBoxStyle}"
-                                  IsChecked="{Binding Preferences.IncludeGames, Mode=TwoWay}"
-                                  AutomationProperties.Name="{DynamicResource Filters_IncludeGames}" />
-                        <CheckBox Content="{DynamicResource Filters_IncludeSoundtracks}"
-                                  Style="{StaticResource FilterCheckBoxStyle}"
-                                  IsChecked="{Binding Preferences.IncludeSoundtracks, Mode=TwoWay}"
-                                  AutomationProperties.Name="{DynamicResource Filters_IncludeSoundtracks}" />
-                        <CheckBox Content="{DynamicResource Filters_IncludeSoftware}"
-                                  Style="{StaticResource FilterCheckBoxStyle}"
-                                  IsChecked="{Binding Preferences.IncludeSoftware, Mode=TwoWay}"
-                                  AutomationProperties.Name="{DynamicResource Filters_IncludeSoftware}" />
-                        <CheckBox Content="{DynamicResource Filters_IncludeTools}"
-                                  Style="{StaticResource FilterCheckBoxStyle}"
-                                  IsChecked="{Binding Preferences.IncludeTools, Mode=TwoWay}"
-                                  AutomationProperties.Name="{DynamicResource Filters_IncludeTools}" />
-                        <CheckBox Content="{DynamicResource Filters_IncludeVideos}"
-                                  Style="{StaticResource FilterCheckBoxStyle}"
-                                  IsChecked="{Binding Preferences.IncludeVideos, Mode=TwoWay}"
-                                  AutomationProperties.Name="{DynamicResource Filters_IncludeVideos}" />
-                        <CheckBox Content="{DynamicResource Filters_IncludeOther}"
-                                  Style="{StaticResource FilterCheckBoxStyle}"
-                                  IsChecked="{Binding Preferences.IncludeOther, Mode=TwoWay}"
-                                  AutomationProperties.Name="{DynamicResource Filters_IncludeOther}" />
-                    </StackPanel>
-
-                    <!-- Storefronts Section -->
-                    <TextBlock Text="{DynamicResource Filters_StorefrontsLabel}"
-                               Style="{StaticResource SectionLabelTextStyle}" />
-
-                    <StackPanel Margin="0,0,0,4">
-                        <CheckBox Content="{DynamicResource Filters_IncludeSteam}"
-                                  Style="{StaticResource FilterCheckBoxStyle}"
-                                  IsChecked="{Binding Preferences.IncludeSteam, Mode=TwoWay}"
-                                  AutomationProperties.Name="{DynamicResource Filters_IncludeSteam}" />
-                    </StackPanel>
-
-                    <!-- Collection Section -->
-                    <TextBlock Text="{DynamicResource Filters_CollectionLabel}"
-                               Style="{StaticResource SectionLabelTextStyle}" />
-
-                    <ComboBox ItemsSource="{Binding Preferences.CollectionOptions}"
-                              SelectedItem="{Binding Preferences.SelectedCollection, Mode=TwoWay}"
-                              Style="{StaticResource SurfaceComboBoxStyle}"
-                              AutomationProperties.Name="{DynamicResource Filters_SelectCollection}"
-                              AutomationProperties.HelpText="{DynamicResource Filters_SelectCollection_HelpText}" />
-
-                    <!-- Action Buttons -->
-                    <Button Content="{DynamicResource Filters_RefreshButton}"
-                            Style="{StaticResource BaseButtonStyle}"
-                            Command="{Binding RefreshCommand}"
-                            Margin="0,20,0,0"
-                            Height="48"
-                            AutomationProperties.Name="{DynamicResource Filters_RefreshButton_Automation}" />
-
-                    <Button x:Name="DrawButton"
-                            Content="{DynamicResource Filters_DrawButton}"
-                            Style="{StaticResource PrimaryButtonStyle}"
-                            Command="{Binding DrawCommand}"
-                            Margin="0,12,0,0"
-                            Height="56"
-                            AutomationProperties.Name="{DynamicResource Filters_DrawButton_Automation}"
-                            AutomationProperties.HelpText="{DynamicResource Filters_DrawButton_HelpText}" />
-
-                    <!-- Status Message -->
-                    <TextBlock Text="{Binding StatusMessage}"
-                               Margin="0,20,0,0"
-                               FontSize="13"
-                               Foreground="{StaticResource TextSecondaryBrush}"
-                               TextWrapping="Wrap"
-                               LineHeight="20"
-                               AutomationProperties.LiveSetting="Assertive" />
-                </StackPanel>
-            </ScrollViewer>
-        </Border>
-
-        <!-- Right Panel - Game Details -->
-        <Border Grid.Row="0"
-                Grid.Column="1"
-                Margin="28,0,0,0"
-                Style="{StaticResource CardBorderStyle}"
-                Background="{StaticResource SurfaceAltBrush}"
-                AutomationProperties.Name="{DynamicResource GameDetails_PanelAutomationName}">
-            <Border.Resources>
-                <Storyboard x:Key="CoverRevealStoryboard">
-                    <DoubleAnimation Storyboard.TargetName="CoverVisualRoot"
-                                     Storyboard.TargetProperty="Opacity"
-                                     From="0"
-                                     To="1"
-                                     Duration="0:0:0.4">
-                        <DoubleAnimation.EasingFunction>
-                            <CubicEase EasingMode="EaseOut" />
-                        </DoubleAnimation.EasingFunction>
-                    </DoubleAnimation>
-                    <DoubleAnimation Storyboard.TargetName="CoverRevealScale"
-                                     Storyboard.TargetProperty="ScaleX"
-                                     From="0.96"
-                                     To="1"
-                                     Duration="0:0:0.4">
-                        <DoubleAnimation.EasingFunction>
-                            <CubicEase EasingMode="EaseOut" />
-                        </DoubleAnimation.EasingFunction>
-                    </DoubleAnimation>
-                    <DoubleAnimation Storyboard.TargetName="CoverRevealScale"
-                                     Storyboard.TargetProperty="ScaleY"
-                                     From="0.96"
-                                     To="1"
-                                     Duration="0:0:0.4">
-                        <DoubleAnimation.EasingFunction>
-                            <CubicEase EasingMode="EaseOut" />
-                        </DoubleAnimation.EasingFunction>
-                    </DoubleAnimation>
-                </Storyboard>
-            </Border.Resources>
+        <!-- ============ Header bar ============ -->
+        <Border Grid.Row="0" Style="{StaticResource HeaderBarStyle}">
             <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="*" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
 
-                <!-- Header Section -->
-                <StackPanel>
-                    <TextBlock Text="{DynamicResource GameDetails_NextGameTitle}"
-                               Style="{StaticResource SectionTitleTextStyle}" />
-                    <TextBlock Text="{Binding SelectedGame.Title}"
-                               FontSize="18"
-                               FontWeight="Medium"
-                               Foreground="{StaticResource TextSecondaryBrush}"
-                               Margin="0,8,0,0"
-                               TextWrapping="Wrap"
-                               AutomationProperties.Name="{DynamicResource GameDetails_SelectedTitleAutomation}" />
-
-                    <!-- Storefront Badge -->
-                    <Border Margin="0,12,0,0"
-                            Background="{StaticResource TagBrush}"
-                            BorderBrush="{StaticResource TagBorderBrush}"
-                            BorderThickness="1"
-                            CornerRadius="8"
-                            Padding="12,6"
-                            HorizontalAlignment="Left"
-                            Visibility="{Binding SelectedGame.HasStorefront, Converter={StaticResource BooleanToVisibilityConverter}}">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding SelectedGame.StorefrontGlyph}"
-                                       FontSize="12"
-                                       Margin="0,0,8,0"
-                                       Foreground="{StaticResource TextSecondaryBrush}" />
-                            <TextBlock Text="{Binding SelectedGame.StorefrontDisplayName}"
-                                       FontSize="12"
-                                       FontWeight="Medium"
-                                       Foreground="{StaticResource TextSecondaryBrush}" />
-                        </StackPanel>
+                <!-- Brand -->
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Width="42"
+                            Height="42"
+                            CornerRadius="11"
+                            Background="{StaticResource AccentGradientBrush}">
+                        <!-- Die face (three pips) -->
+                        <Grid>
+                            <Ellipse Width="6.5" Height="6.5" Fill="White"
+                                     HorizontalAlignment="Left" VerticalAlignment="Top"
+                                     Margin="10,10,0,0" />
+                            <Ellipse Width="6.5" Height="6.5" Fill="White"
+                                     HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <Ellipse Width="6.5" Height="6.5" Fill="White"
+                                     HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                     Margin="0,0,10,10" />
+                        </Grid>
                     </Border>
+                    <StackPanel Margin="16,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="Steam Backlog Picker"
+                                   Style="{StaticResource AppTitleTextStyle}" />
+                        <TextBlock Text="{DynamicResource Header_Tagline}"
+                                   Style="{StaticResource AppSubtitleTextStyle}"
+                                   Margin="0,2,0,0" />
+                    </StackPanel>
                 </StackPanel>
 
-                <!-- Cover Image Section -->
-                <Border Grid.Row="1"
-                        MinHeight="280"
-                        MaxHeight="420"
-                        Margin="0,20,0,20"
-                        CornerRadius="16"
-                        Background="{StaticResource SurfaceBrush}"
-                        BorderBrush="{StaticResource SurfaceBorderBrush}"
-                        BorderThickness="1"
-                        SnapsToDevicePixels="True"
-                        ClipToBounds="True">
-                    <Grid x:Name="CoverVisualRoot"
-                          Opacity="0"
-                          Tag="{Binding SelectedGame.SteamAppId, NotifyOnTargetUpdated=True}">
-                        <Grid.RenderTransform>
-                            <ScaleTransform x:Name="CoverRevealScale" ScaleX="1" ScaleY="1" />
-                        </Grid.RenderTransform>
-                        <Grid.Style>
-                            <Style TargetType="Grid">
-                                <Setter Property="Opacity" Value="0" />
+                <!-- Language selector -->
+                <StackPanel Grid.Column="2"
+                            Orientation="Horizontal"
+                            VerticalAlignment="Center">
+                    <Button Command="{Binding ChangeLanguageCommand}"
+                            CommandParameter="pt-BR"
+                            ToolTip="{DynamicResource Language_Portuguese}"
+                            AutomationProperties.Name="{DynamicResource Language_Portuguese}">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource LanguageButtonStyle}">
+                                <Setter Property="Margin" Value="0" />
                                 <Style.Triggers>
-                                    <DataTrigger Binding="{Binding HasSelection}" Value="False">
-                                        <Setter Property="Opacity" Value="0" />
+                                    <DataTrigger Binding="{Binding CurrentLanguage}" Value="pt-BR">
+                                        <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                                        <Setter Property="Background" Value="{StaticResource SurfaceHoverBrush}" />
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
-                        </Grid.Style>
-                        <Grid.Triggers>
-                            <EventTrigger RoutedEvent="Binding.TargetUpdated">
-                                <BeginStoryboard Storyboard="{StaticResource CoverRevealStoryboard}" />
-                            </EventTrigger>
-                        </Grid.Triggers>
+                        </Button.Style>
+                        <Image Source="{StaticResource FlagBrazilImage}"
+                               Width="28"
+                               Height="20"
+                               Stretch="Uniform"
+                               RenderOptions.BitmapScalingMode="HighQuality" />
+                    </Button>
+                    <Button Command="{Binding ChangeLanguageCommand}"
+                            CommandParameter="en-US"
+                            ToolTip="{DynamicResource Language_English}"
+                            AutomationProperties.Name="{DynamicResource Language_English}">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource LanguageButtonStyle}">
+                                <Setter Property="Margin" Value="10,0,0,0" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding CurrentLanguage}" Value="en-US">
+                                        <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                                        <Setter Property="Background" Value="{StaticResource SurfaceHoverBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                        <Image Source="{StaticResource FlagUnitedStatesImage}"
+                               Width="28"
+                               Height="20"
+                               Stretch="Uniform"
+                               RenderOptions.BitmapScalingMode="HighQuality" />
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
 
-                        <!-- Cover Image Container -->
-                        <Border x:Name="CoverImageContainer"
-                                Margin="2"
-                                CornerRadius="14"
-                                Background="#0A0C10"
-                                SnapsToDevicePixels="True"
-                                SizeChanged="OnCoverContainerSizeChanged">
-                            <Image x:Name="CoverImage"
-                                   Source="{Binding SelectedGame.CoverImagePath, NotifyOnTargetUpdated=True}"
-                                   Stretch="UniformToFill"
-                                   HorizontalAlignment="Center"
-                                   VerticalAlignment="Center"
-                                   SnapsToDevicePixels="True"
-                                   RenderOptions.BitmapScalingMode="HighQuality"
-                                   TargetUpdated="OnCoverImageTargetUpdated"
-                                   ImageFailed="OnCoverImageFailed" />
+        <!-- ============ Content ============ -->
+        <Grid Grid.Row="1" Margin="20,16,20,20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="320" MinWidth="300" MaxWidth="360" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Sidebar: filters and actions -->
+            <Border Grid.Column="0"
+                    Style="{StaticResource CardBorderStyle}"
+                    AutomationProperties.Name="{DynamicResource Filters_PanelAutomationName}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Text="{DynamicResource Filters_Title}"
+                               Style="{StaticResource SectionTitleTextStyle}"
+                               Margin="0,0,0,16" />
+
+                    <ScrollViewer Grid.Row="1"
+                                  VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  Padding="0,0,4,0">
+                        <ScrollViewer.Resources>
+                            <Style TargetType="ScrollBar" BasedOn="{StaticResource ModernScrollBarStyle}" />
+                        </ScrollViewer.Resources>
+                        <StackPanel>
+                            <CheckBox Content="{DynamicResource Filters_RequireInstalled}"
+                                      Style="{StaticResource FilterCheckBoxStyle}"
+                                      IsChecked="{Binding Preferences.RequireInstalled, Mode=TwoWay}"
+                                      AutomationProperties.Name="{DynamicResource Filters_RequireInstalled}" />
+
+                            <CheckBox Content="{DynamicResource Filters_ExcludeDeckUnsupported}"
+                                      Style="{StaticResource FilterCheckBoxStyle}"
+                                      IsChecked="{Binding Preferences.ExcludeDeckUnsupported, Mode=TwoWay}"
+                                      AutomationProperties.Name="{DynamicResource Filters_ExcludeDeckUnsupported}" />
+
+                            <TextBlock Text="{DynamicResource Filters_ContentTypesLabel}"
+                                       Style="{StaticResource SectionLabelTextStyle}" />
+
+                            <StackPanel Margin="0,0,0,4">
+                                <CheckBox Content="{DynamicResource Filters_IncludeGames}"
+                                          Style="{StaticResource FilterCheckBoxStyle}"
+                                          IsChecked="{Binding Preferences.IncludeGames, Mode=TwoWay}"
+                                          AutomationProperties.Name="{DynamicResource Filters_IncludeGames}" />
+                                <CheckBox Content="{DynamicResource Filters_IncludeSoundtracks}"
+                                          Style="{StaticResource FilterCheckBoxStyle}"
+                                          IsChecked="{Binding Preferences.IncludeSoundtracks, Mode=TwoWay}"
+                                          AutomationProperties.Name="{DynamicResource Filters_IncludeSoundtracks}" />
+                                <CheckBox Content="{DynamicResource Filters_IncludeSoftware}"
+                                          Style="{StaticResource FilterCheckBoxStyle}"
+                                          IsChecked="{Binding Preferences.IncludeSoftware, Mode=TwoWay}"
+                                          AutomationProperties.Name="{DynamicResource Filters_IncludeSoftware}" />
+                                <CheckBox Content="{DynamicResource Filters_IncludeTools}"
+                                          Style="{StaticResource FilterCheckBoxStyle}"
+                                          IsChecked="{Binding Preferences.IncludeTools, Mode=TwoWay}"
+                                          AutomationProperties.Name="{DynamicResource Filters_IncludeTools}" />
+                                <CheckBox Content="{DynamicResource Filters_IncludeVideos}"
+                                          Style="{StaticResource FilterCheckBoxStyle}"
+                                          IsChecked="{Binding Preferences.IncludeVideos, Mode=TwoWay}"
+                                          AutomationProperties.Name="{DynamicResource Filters_IncludeVideos}" />
+                                <CheckBox Content="{DynamicResource Filters_IncludeOther}"
+                                          Style="{StaticResource FilterCheckBoxStyle}"
+                                          IsChecked="{Binding Preferences.IncludeOther, Mode=TwoWay}"
+                                          AutomationProperties.Name="{DynamicResource Filters_IncludeOther}" />
+                            </StackPanel>
+
+                            <TextBlock Text="{DynamicResource Filters_StorefrontsLabel}"
+                                       Style="{StaticResource SectionLabelTextStyle}" />
+
+                            <StackPanel Margin="0,0,0,4">
+                                <CheckBox Content="{DynamicResource Filters_IncludeSteam}"
+                                          Style="{StaticResource FilterCheckBoxStyle}"
+                                          IsChecked="{Binding Preferences.IncludeSteam, Mode=TwoWay}"
+                                          AutomationProperties.Name="{DynamicResource Filters_IncludeSteam}" />
+                            </StackPanel>
+
+                            <TextBlock Text="{DynamicResource Filters_CollectionLabel}"
+                                       Style="{StaticResource SectionLabelTextStyle}" />
+
+                            <ComboBox ItemsSource="{Binding Preferences.CollectionOptions}"
+                                      SelectedItem="{Binding Preferences.SelectedCollection, Mode=TwoWay}"
+                                      Style="{StaticResource SurfaceComboBoxStyle}"
+                                      AutomationProperties.Name="{DynamicResource Filters_SelectCollection}"
+                                      AutomationProperties.HelpText="{DynamicResource Filters_SelectCollection_HelpText}" />
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <!-- Actions + status -->
+                    <StackPanel Grid.Row="2">
+                        <Border Height="1"
+                                Background="{StaticResource SurfaceBorderBrush}"
+                                Margin="0,14,0,14" />
+
+                        <Button Style="{StaticResource SecondaryButtonStyle}"
+                                Command="{Binding RefreshCommand}"
+                                Height="44"
+                                AutomationProperties.Name="{DynamicResource Filters_RefreshButton_Automation}">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Viewbox Width="16" Height="16">
+                                    <Canvas Width="24" Height="24">
+                                        <Path Data="{StaticResource IconRefreshGeometry}"
+                                              Fill="{StaticResource TextPrimaryBrush}" />
+                                    </Canvas>
+                                </Viewbox>
+                                <TextBlock Text="{DynamicResource Filters_RefreshButton}"
+                                           Margin="9,0,0,0"
+                                           VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button x:Name="DrawButton"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                Command="{Binding DrawCommand}"
+                                Margin="0,10,0,0"
+                                Height="52"
+                                AutomationProperties.Name="{DynamicResource Filters_DrawButton_Automation}"
+                                AutomationProperties.HelpText="{DynamicResource Filters_DrawButton_HelpText}">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Viewbox Width="17" Height="17">
+                                    <Canvas Width="24" Height="24">
+                                        <Path Data="{StaticResource IconShuffleGeometry}"
+                                              Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                                    </Canvas>
+                                </Viewbox>
+                                    <TextBlock Text="{DynamicResource Filters_DrawButton}"
+                                               Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                               Margin="9,0,0,0"
+                                               VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+
+                        <Border Background="{StaticResource SurfaceBrush}"
+                                BorderBrush="{StaticResource SurfaceBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="12"
+                                Padding="12,10"
+                                Margin="0,14,0,0">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Ellipse Width="8"
+                                         Height="8"
+                                         Fill="{StaticResource SuccessBrush}"
+                                         VerticalAlignment="Top"
+                                         Margin="0,5,10,0" />
+                                <TextBlock Grid.Column="1"
+                                           Text="{Binding StatusMessage}"
+                                           Style="{StaticResource BodyTextStyle}"
+                                           LineHeight="19"
+                                           AutomationProperties.LiveSetting="Assertive" />
+                            </Grid>
                         </Border>
+                    </StackPanel>
+                </Grid>
+            </Border>
 
-                        <!-- Gradient Overlay -->
-                        <Rectangle Margin="2"
-                                   RadiusX="14"
-                                   RadiusY="14"
-                                   IsHitTestVisible="False">
-                            <Rectangle.Fill>
-                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                    <GradientStop Color="#00000000" Offset="0.5" />
-                                    <GradientStop Color="#B0080A0F" Offset="1" />
-                                </LinearGradientBrush>
-                            </Rectangle.Fill>
-                        </Rectangle>
+            <!-- Showcase: drawn game -->
+            <Border Grid.Column="1"
+                    Margin="26,0,0,0"
+                    Style="{StaticResource CardBorderStyle}"
+                    AutomationProperties.Name="{DynamicResource GameDetails_PanelAutomationName}">
+                <Border.Resources>
+                    <Storyboard x:Key="CoverRevealStoryboard">
+                        <DoubleAnimation Storyboard.TargetName="CoverVisualRoot"
+                                         Storyboard.TargetProperty="Opacity"
+                                         From="0"
+                                         To="1"
+                                         Duration="0:0:0.4">
+                            <DoubleAnimation.EasingFunction>
+                                <CubicEase EasingMode="EaseOut" />
+                            </DoubleAnimation.EasingFunction>
+                        </DoubleAnimation>
+                        <DoubleAnimation Storyboard.TargetName="CoverRevealScale"
+                                         Storyboard.TargetProperty="ScaleX"
+                                         From="0.96"
+                                         To="1"
+                                         Duration="0:0:0.4">
+                            <DoubleAnimation.EasingFunction>
+                                <CubicEase EasingMode="EaseOut" />
+                            </DoubleAnimation.EasingFunction>
+                        </DoubleAnimation>
+                        <DoubleAnimation Storyboard.TargetName="CoverRevealScale"
+                                         Storyboard.TargetProperty="ScaleY"
+                                         From="0.96"
+                                         To="1"
+                                         Duration="0:0:0.4">
+                            <DoubleAnimation.EasingFunction>
+                                <CubicEase EasingMode="EaseOut" />
+                            </DoubleAnimation.EasingFunction>
+                        </DoubleAnimation>
+                    </Storyboard>
+                </Border.Resources>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
 
-                        <!-- Game Info Overlay -->
-                        <Border Margin="2"
-                                Background="#80080A0F"
-                                Padding="20,16"
-                                VerticalAlignment="Bottom"
-                                CornerRadius="0,0,14,14">
-                            <Border.Style>
-                                <Style TargetType="Border">
+                    <!-- Featured game header -->
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="{DynamicResource GameDetails_NextGameTitle}"
+                                       Style="{StaticResource SectionLabelTextStyle}"
+                                       Margin="0,0,0,6" />
+                            <TextBlock Text="{Binding SelectedGame.Title}"
+                                       Style="{StaticResource GameTitleTextStyle}"
+                                       AutomationProperties.Name="{DynamicResource GameDetails_SelectedTitleAutomation}" />
+                        </StackPanel>
+
+                        <!-- Storefront badge -->
+                        <Border Grid.Column="1"
+                                Style="{StaticResource TagChipStyle}"
+                                Margin="16,4,0,0"
+                                VerticalAlignment="Top"
+                                Visibility="{Binding SelectedGame.HasStorefront, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Viewbox Width="14" Height="14" Margin="0,0,7,0">
+                                    <Canvas Width="24" Height="24">
+                                        <Path Data="{StaticResource IconSteamGeometry}"
+                                              Fill="{StaticResource TextPrimaryBrush}" />
+                                    </Canvas>
+                                </Viewbox>
+                                <TextBlock Text="{Binding SelectedGame.StorefrontDisplayName}"
+                                           FontSize="12"
+                                           FontWeight="Medium"
+                                           Foreground="{StaticResource TextPrimaryBrush}" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <!-- Cover -->
+                    <Border Grid.Row="1"
+                            Height="410"
+                            Margin="0,18,0,0"
+                            CornerRadius="18"
+                            Background="{StaticResource BackgroundDeepBrush}"
+                            BorderBrush="{StaticResource SurfaceBorderBrush}"
+                            BorderThickness="1"
+                            SnapsToDevicePixels="True"
+                            ClipToBounds="True">
+                        <Grid x:Name="CoverVisualRoot"
+                              Opacity="0"
+                              Tag="{Binding SelectedGame.SteamAppId, NotifyOnTargetUpdated=True}">
+                            <Grid.RenderTransform>
+                                <ScaleTransform x:Name="CoverRevealScale" ScaleX="1" ScaleY="1" />
+                            </Grid.RenderTransform>
+                            <Grid.Style>
+                                <Style TargetType="Grid">
+                                    <Setter Property="Opacity" Value="0" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding HasSelection}" Value="False">
+                                            <Setter Property="Opacity" Value="0" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Grid.Style>
+                            <Grid.Triggers>
+                                <EventTrigger RoutedEvent="Binding.TargetUpdated">
+                                    <BeginStoryboard Storyboard="{StaticResource CoverRevealStoryboard}" />
+                                </EventTrigger>
+                            </Grid.Triggers>
+
+                            <Border x:Name="CoverImageContainer"
+                                    Margin="2"
+                                    CornerRadius="16"
+                                    Background="{StaticResource BackgroundDeepBrush}"
+                                    SnapsToDevicePixels="True"
+                                    SizeChanged="OnCoverContainerSizeChanged">
+                                <Image x:Name="CoverImage"
+                                       Source="{Binding SelectedGame.CoverImagePath, NotifyOnTargetUpdated=True}"
+                                       Stretch="UniformToFill"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       SnapsToDevicePixels="True"
+                                       RenderOptions.BitmapScalingMode="HighQuality"
+                                       TargetUpdated="OnCoverImageTargetUpdated"
+                                       ImageFailed="OnCoverImageFailed" />
+                            </Border>
+
+                            <!-- Bottom gradient for depth -->
+                            <Rectangle Margin="2"
+                                       RadiusX="16"
+                                       RadiusY="16"
+                                       IsHitTestVisible="False">
+                                <Rectangle.Fill>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                        <GradientStop Color="#00000000" Offset="0.6" />
+                                        <GradientStop Color="#90070A0E" Offset="1" />
+                                    </LinearGradientBrush>
+                                </Rectangle.Fill>
+                            </Rectangle>
+                        </Grid>
+                    </Border>
+
+                    <!-- Empty / no-cover placeholder -->
+                    <StackPanel x:Name="CoverPlaceholder"
+                                Grid.Row="1"
+                                Style="{StaticResource CoverPlaceholderStyle}">
+                        <TextBlock x:Name="PlaceholderPrimaryText"
+                                   Text="{DynamicResource GameDetails_NoSelectionTitle}"
+                                   FontSize="19"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   TextAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
                                     <Setter Property="Visibility" Value="Collapsed" />
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding HasSelection}" Value="True">
+                                        <DataTrigger Binding="{Binding HasSelection}" Value="False">
                                             <Setter Property="Visibility" Value="Visible" />
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
-                            </Border.Style>
-                            <StackPanel>
-                                <TextBlock Text="{Binding SelectedGame.Title}"
-                                           FontSize="16"
-                                           FontWeight="SemiBold"
-                                           Foreground="{StaticResource TextPrimaryBrush}"
-                                           TextWrapping="WrapWithOverflow" />
-                                <TextBlock Text="{Binding SelectedGame.InstallationStatus}"
-                                           FontSize="13"
-                                           Foreground="{StaticResource TextSecondaryBrush}"
-                                           Margin="0,6,0,0" />
-                            </StackPanel>
-                        </Border>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock x:Name="PlaceholderSecondaryText"
+                                   Text="{DynamicResource GameDetails_NoCoverSubtitle}"
+                                   FontSize="19"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   TextAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding HasSelection}" Value="True" />
+                                                <Condition Binding="{Binding ElementName=CoverImage, Path=Source}" Value="{x:Null}" />
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock Text="{DynamicResource GameDetails_DrawPrompt}"
+                                   Style="{StaticResource BodyTextStyle}"
+                                   FontSize="14"
+                                   Foreground="{StaticResource TextMutedBrush}"
+                                   TextAlignment="Center"
+                                   Margin="0,12,0,0"
+                                   LineHeight="22"
+                                   MaxWidth="320" />
+                    </StackPanel>
 
-                        <!-- Placeholder State -->
-                        <StackPanel x:Name="CoverPlaceholder"
-                                    Style="{StaticResource CoverPlaceholderStyle}">
-                            <TextBlock x:Name="PlaceholderPrimaryText"
-                                       Text="{DynamicResource GameDetails_NoSelectionTitle}"
-                                       FontSize="20"
-                                       FontWeight="SemiBold"
+                    <!-- Drawing overlay -->
+                    <Grid x:Name="DrawOverlay"
+                          Grid.Row="1"
+                          Margin="0,20,0,0"
+                          IsHitTestVisible="False"
+                          Visibility="{Binding IsDrawing, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <Grid.Triggers>
+                            <EventTrigger RoutedEvent="Grid.Loaded">
+                                <BeginStoryboard>
+                                    <Storyboard RepeatBehavior="Forever">
+                                        <DoubleAnimation Storyboard.TargetName="SpinnerArc"
+                                                         Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)"
+                                                         Duration="0:0:0.9"
+                                                         To="360">
+                                            <DoubleAnimation.EasingFunction>
+                                                <QuadraticEase EasingMode="EaseInOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                        </Grid.Triggers>
+                        <Border CornerRadius="18" Background="#E0070A0E" />
+                        <StackPanel HorizontalAlignment="Center"
+                                    VerticalAlignment="Center">
+                            <Grid Width="64" Height="64">
+                                <Ellipse Width="64"
+                                         Height="64"
+                                         StrokeThickness="3"
+                                         Stroke="#20FFFFFF" />
+                                <Path x:Name="SpinnerArc"
+                                      Stroke="{StaticResource AccentBrush}"
+                                      StrokeThickness="3"
+                                      StrokeStartLineCap="Round"
+                                      StrokeEndLineCap="Round"
+                                      Data="M 32 5 A 27 27 0 1 1 31.99 5"
+                                      RenderTransformOrigin="0.5,0.5">
+                                    <Path.RenderTransform>
+                                        <RotateTransform />
+                                    </Path.RenderTransform>
+                                </Path>
+                            </Grid>
+                            <TextBlock Text="{DynamicResource Status_Drawing}"
+                                       FontSize="15"
+                                       FontWeight="Medium"
                                        Foreground="{StaticResource TextSecondaryBrush}"
-                                       TextAlignment="Center">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Visibility" Value="Collapsed" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding HasSelection}" Value="False">
-                                                <Setter Property="Visibility" Value="Visible" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
-                            <TextBlock x:Name="PlaceholderSecondaryText"
-                                       Text="{DynamicResource GameDetails_NoCoverSubtitle}"
-                                       FontSize="20"
-                                       FontWeight="SemiBold"
-                                       Foreground="{StaticResource TextSecondaryBrush}"
-                                       TextAlignment="Center">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Visibility" Value="Collapsed" />
-                                        <Style.Triggers>
-                                            <MultiDataTrigger>
-                                                <MultiDataTrigger.Conditions>
-                                                    <Condition Binding="{Binding HasSelection}" Value="True" />
-                                                    <Condition Binding="{Binding ElementName=CoverImage, Path=Source}" Value="{x:Null}" />
-                                                </MultiDataTrigger.Conditions>
-                                                <Setter Property="Visibility" Value="Visible" />
-                                            </MultiDataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
-                            <TextBlock Text="{DynamicResource GameDetails_DrawPrompt}"
-                                       FontSize="14"
-                                       Foreground="{StaticResource TextMutedBrush}"
-                                       TextAlignment="Center"
-                                       Margin="0,12,0,0"
-                                       TextWrapping="Wrap"
-                                       LineHeight="22"
-                                       MaxWidth="300" />
+                                       Margin="0,16,0,0"
+                                       HorizontalAlignment="Center" />
                         </StackPanel>
-
-                        <!-- Loading Overlay -->
-                        <Grid x:Name="DrawOverlay"
-                              Background="#E0080A0F"
-                              IsHitTestVisible="False"
-                              Visibility="{Binding IsDrawing, Converter={StaticResource BooleanToVisibilityConverter}}">
-                            <Grid.Triggers>
-                                <EventTrigger RoutedEvent="Grid.Loaded">
-                                    <BeginStoryboard>
-                                        <Storyboard RepeatBehavior="Forever">
-                                            <DoubleAnimation Storyboard.TargetName="SpinnerArc"
-                                                             Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)"
-                                                             Duration="0:0:0.9"
-                                                             To="360">
-                                                <DoubleAnimation.EasingFunction>
-                                                    <QuadraticEase EasingMode="EaseInOut" />
-                                                </DoubleAnimation.EasingFunction>
-                                            </DoubleAnimation>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </EventTrigger>
-                            </Grid.Triggers>
-                            <StackPanel HorizontalAlignment="Center"
-                                        VerticalAlignment="Center">
-                                <Grid Width="64" Height="64">
-                                    <Ellipse Width="64"
-                                             Height="64"
-                                             StrokeThickness="3"
-                                             Stroke="#20FFFFFF" />
-                                    <Path x:Name="SpinnerArc"
-                                          Stroke="{StaticResource AccentBrush}"
-                                          StrokeThickness="3"
-                                          StrokeStartLineCap="Round"
-                                          StrokeEndLineCap="Round"
-                                          Data="M 32 5 A 27 27 0 1 1 31.99 5"
-                                          RenderTransformOrigin="0.5,0.5">
-                                        <Path.RenderTransform>
-                                            <RotateTransform />
-                                        </Path.RenderTransform>
-                                    </Path>
-                                </Grid>
-                                <TextBlock Text="{DynamicResource Status_Drawing}"
-                                           FontSize="15"
-                                           FontWeight="Medium"
-                                           Foreground="{StaticResource TextSecondaryBrush}"
-                                           Margin="0,16,0,0"
-                                           HorizontalAlignment="Center" />
-                            </StackPanel>
-                        </Grid>
                     </Grid>
-                </Border>
 
-                <!-- Action Buttons Section -->
-                <StackPanel Grid.Row="2">
-                    <TextBlock Text="{Binding SelectedGame.InstallationStatus}"
-                               FontSize="14"
-                               FontWeight="SemiBold"
-                               Foreground="{StaticResource TextSecondaryBrush}"
-                               AutomationProperties.Name="{DynamicResource GameDetails_InstallationAutomation}" />
-
-                    <Grid Margin="0,14,0,20">
+                    <!-- Footer: status, tags, actions -->
+                    <Grid Grid.Row="2" Margin="0,18,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
 
-                        <Button Grid.Column="0"
-                                Content="{DynamicResource GameDetails_PlayButton}"
-                                MinHeight="50"
-                                Margin="0,0,8,0"
-                                HorizontalAlignment="Stretch"
-                                Style="{StaticResource BaseButtonStyle}"
-                                Command="{Binding LaunchCommand}"
-                                IsEnabled="{Binding SelectedGame.CanLaunch}"
-                                AutomationProperties.Name="{DynamicResource GameDetails_PlayButton_Automation}" />
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="{Binding SelectedGame.InstallationStatus}"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                       AutomationProperties.Name="{DynamicResource GameDetails_InstallationAutomation}" />
 
-                        <Button Grid.Column="1"
-                                Content="{DynamicResource GameDetails_InstallButton}"
-                                MinHeight="50"
-                                Margin="8,0,0,0"
-                                HorizontalAlignment="Stretch"
-                                Style="{StaticResource BaseButtonStyle}"
-                                Command="{Binding InstallCommand}"
-                                IsEnabled="{Binding SelectedGame.CanInstall}"
-                                AutomationProperties.Name="{DynamicResource GameDetails_InstallButton_Automation}" />
-                    </Grid>
-                </StackPanel>
+                            <ItemsControl ItemsSource="{Binding SelectedGame.Tags}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Style="{StaticResource TagChipStyle}">
+                                            <TextBlock Text="{Binding}"
+                                                       FontSize="12"
+                                                       FontWeight="Medium"
+                                                       Foreground="{StaticResource TextPrimaryBrush}" />
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
 
-                <!-- Tags Section -->
-                <ItemsControl Grid.Row="3"
-                              ItemsSource="{Binding SelectedGame.Tags}"
-                              Margin="0,0,0,4">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel Margin="0,-4,0,0" />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Border Background="{StaticResource TagBrush}"
-                                    BorderBrush="{StaticResource TagBorderBrush}"
-                                    BorderThickness="1"
-                                    Padding="12,6"
-                                    CornerRadius="8"
-                                    Margin="0,4,8,0">
-                                <TextBlock Text="{Binding}"
-                                           FontSize="12"
-                                           FontWeight="Medium"
-                                           Foreground="{StaticResource TextSecondaryBrush}" />
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </Grid>
-        </Border>
-
-        <!-- Language Selector -->
-        <StackPanel Grid.Row="1"
-                    Grid.ColumnSpan="2"
-                    Orientation="Horizontal"
-                    HorizontalAlignment="Right"
-                    Margin="0,20,0,0">
-            <Button Command="{Binding ChangeLanguageCommand}"
-                    CommandParameter="pt-BR"
-                    ToolTip="{DynamicResource Language_Portuguese}"
-                    AutomationProperties.Name="{DynamicResource Language_Portuguese}">
-                <Button.Style>
-                    <Style TargetType="Button" BasedOn="{StaticResource LanguageButtonStyle}">
-                        <Setter Property="Margin" Value="0" />
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding CurrentLanguage}" Value="pt-BR">
-                                <Setter Property="Background" Value="{StaticResource AccentBrush}" />
-                                <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Button.Style>
-                <Viewbox Width="28"
-                         Height="20"
-                         Stretch="Uniform">
-                    <Grid Width="28"
-                          Height="20"
-                          ClipToBounds="True">
-                        <Rectangle Fill="#009B3A"
-                                   RadiusX="2"
-                                   RadiusY="2" />
-                        <Polygon Points="14,2 24,10 14,18 4,10"
-                                 Fill="#FFDF00" />
-                        <Ellipse Width="10"
-                                 Height="10"
-                                 Fill="#002776"
-                                 HorizontalAlignment="Center"
-                                 VerticalAlignment="Center" />
-                        <Path Data="M 8 11 A 5 5 0 0 1 20 9"
-                              Stroke="White"
-                              StrokeThickness="0.8"
-                              StrokeStartLineCap="Round"
-                              StrokeEndLineCap="Round"
-                              HorizontalAlignment="Center"
-                              VerticalAlignment="Center"
-                              Stretch="None" />
+                        <StackPanel Grid.Column="1"
+                                    Orientation="Horizontal"
+                                    VerticalAlignment="Bottom"
+                                    Margin="16,0,0,0">
+                            <Button Content="{DynamicResource GameDetails_InstallButton}"
+                                    MinHeight="46"
+                                    MinWidth="124"
+                                    Style="{StaticResource SecondaryButtonStyle}"
+                                    Command="{Binding InstallCommand}"
+                                    IsEnabled="{Binding SelectedGame.CanInstall}"
+                                    AutomationProperties.Name="{DynamicResource GameDetails_InstallButton_Automation}" />
+                            <Button MinHeight="46"
+                                    MinWidth="134"
+                                    Margin="10,0,0,0"
+                                    Style="{StaticResource PrimaryButtonStyle}"
+                                    Command="{Binding LaunchCommand}"
+                                    IsEnabled="{Binding SelectedGame.CanLaunch}"
+                                    AutomationProperties.Name="{DynamicResource GameDetails_PlayButton_Automation}">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Viewbox Width="16" Height="16">
+                                        <Canvas Width="24" Height="24">
+                                            <Path Data="{StaticResource IconPlayGeometry}"
+                                                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                                        </Canvas>
+                                    </Viewbox>
+                                    <TextBlock Text="{DynamicResource GameDetails_PlayButton}"
+                                               Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                               Margin="8,0,0,0"
+                                               VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
                     </Grid>
-                </Viewbox>
-            </Button>
-            <Button Command="{Binding ChangeLanguageCommand}"
-                    CommandParameter="en-US"
-                    ToolTip="{DynamicResource Language_English}"
-                    AutomationProperties.Name="{DynamicResource Language_English}">
-                <Button.Style>
-                    <Style TargetType="Button" BasedOn="{StaticResource LanguageButtonStyle}">
-                        <Setter Property="Margin" Value="12,0,0,0" />
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding CurrentLanguage}" Value="en-US">
-                                <Setter Property="Background" Value="{StaticResource AccentBrush}" />
-                                <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Button.Style>
-                <Viewbox Width="28"
-                         Height="20"
-                         Stretch="Uniform">
-                    <Grid Width="28"
-                          Height="20"
-                          ClipToBounds="True">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="*" />
-                            <RowDefinition Height="*" />
-                            <RowDefinition Height="*" />
-                            <RowDefinition Height="*" />
-                            <RowDefinition Height="*" />
-                            <RowDefinition Height="*" />
-                            <RowDefinition Height="*" />
-                            <RowDefinition Height="*" />
-                            <RowDefinition Height="*" />
-                            <RowDefinition Height="*" />
-                            <RowDefinition Height="*" />
-                            <RowDefinition Height="*" />
-                            <RowDefinition Height="*" />
-                        </Grid.RowDefinitions>
-                        <Rectangle Grid.Row="0" Fill="#B22234" />
-                        <Rectangle Grid.Row="1" Fill="White" />
-                        <Rectangle Grid.Row="2" Fill="#B22234" />
-                        <Rectangle Grid.Row="3" Fill="White" />
-                        <Rectangle Grid.Row="4" Fill="#B22234" />
-                        <Rectangle Grid.Row="5" Fill="White" />
-                        <Rectangle Grid.Row="6" Fill="#B22234" />
-                        <Rectangle Grid.Row="7" Fill="White" />
-                        <Rectangle Grid.Row="8" Fill="#B22234" />
-                        <Rectangle Grid.Row="9" Fill="White" />
-                        <Rectangle Grid.Row="10" Fill="#B22234" />
-                        <Rectangle Grid.Row="11" Fill="White" />
-                        <Rectangle Grid.Row="12" Fill="#B22234" />
-                        <Rectangle Grid.Row="0"
-                                   Grid.RowSpan="7"
-                                   Fill="#3C3B6E"
-                                   HorizontalAlignment="Left"
-                                   Width="12" />
-                        <UniformGrid Grid.Row="0"
-                                     Grid.RowSpan="7"
-                                     Columns="6"
-                                     Rows="5"
-                                     Width="10"
-                                     Height="8"
-                                     HorizontalAlignment="Left"
-                                     VerticalAlignment="Top"
-                                     Margin="1.2,1.2,0,0">
-                            <Ellipse Fill="White" Margin="0.2" />
-                            <Ellipse Fill="White" Margin="0.2" />
-                            <Ellipse Fill="White" Margin="0.2" />
-                            <Ellipse Fill="White" Margin="0.2" />
-                            <Ellipse Fill="White" Margin="0.2" />
-                            <Ellipse Fill="White" Margin="0.2" />
-                            <Ellipse Fill="White" Margin="0.2" />
-                            <Ellipse Fill="White" Margin="0.2" />
-                            <Ellipse Fill="White" Margin="0.2" />
-                            <Ellipse Fill="White" Margin="0.2" />
-                            <Ellipse Fill="White" Margin="0.2" />
-                            <Ellipse Fill="White" Margin="0.2" />
-                            <Ellipse Fill="White" Margin="0.2" />
-                            <Ellipse Fill="White" Margin="0.2" />
-                            <Ellipse Fill="White" Margin="0.2" />
-                            <Ellipse Fill="White" Margin="0.2" />
-                            <Ellipse Fill="White" Margin="0.2" />
-                            <Ellipse Fill="White" Margin="0.2" />
-                            <Ellipse Fill="White" Margin="0.2" />
-                            <Ellipse Fill="White" Margin="0.2" />
-                            <Ellipse Fill="White" Margin="0.2" />
-                            <Ellipse Fill="White" Margin="0.2" />
-                            <Ellipse Fill="White" Margin="0.2" />
-                            <Ellipse Fill="White" Margin="0.2" />
-                            <Ellipse Fill="White" Margin="0.2" />
-                            <Ellipse Fill="White" Margin="0.2" />
-                            <Ellipse Fill="White" Margin="0.2" />
-                            <Ellipse Fill="White" Margin="0.2" />
-                            <Ellipse Fill="White" Margin="0.2" />
-                            <Ellipse Fill="White" Margin="0.2" />
-                        </UniformGrid>
-                    </Grid>
-                </Viewbox>
-            </Button>
-        </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
     </Grid>
 </Window>
