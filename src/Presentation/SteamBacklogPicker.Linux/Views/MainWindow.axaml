@@ -2,131 +2,307 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:conv="using:SteamBacklogPicker.Linux.Converters"
         x:Class="SteamBacklogPicker.Linux.Views.MainWindow"
-        Width="1200"
-        Height="760"
-        MinWidth="960"
-        MinHeight="640"
+        Width="1280"
+        Height="800"
+        MinWidth="900"
+        MinHeight="650"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource AppBackgroundBrush}"
+        Foreground="{DynamicResource TextPrimaryBrush}"
         Title="Steam Backlog Picker"
         mc:Ignorable="d">
-  <Grid Margin="20" RowDefinitions="*,Auto" ColumnDefinitions="360,*">
-    <Border Grid.Row="0" Grid.Column="0" Padding="16" Margin="0,0,8,0" BorderBrush="#303741" BorderThickness="1" CornerRadius="12">
-      <ScrollViewer>
-        <StackPanel Spacing="12">
-          <TextBlock FontSize="22" FontWeight="SemiBold" Text="{DynamicResource Filters_Title}" />
+  <Grid RowDefinitions="Auto,*">
 
-          <CheckBox Content="{DynamicResource Filters_RequireInstalled}"
-                    IsChecked="{Binding Preferences.RequireInstalled, Mode=TwoWay}" />
-          <CheckBox Content="{DynamicResource Filters_ExcludeDeckUnsupported}"
-                    IsChecked="{Binding Preferences.ExcludeDeckUnsupported, Mode=TwoWay}" />
-
-          <TextBlock Margin="0,8,0,0" FontSize="12" FontWeight="Bold" Text="{DynamicResource Filters_ContentTypesLabel}" />
-          <CheckBox Content="{DynamicResource Filters_IncludeGames}" IsChecked="{Binding Preferences.IncludeGames, Mode=TwoWay}" />
-          <CheckBox Content="{DynamicResource Filters_IncludeSoundtracks}" IsChecked="{Binding Preferences.IncludeSoundtracks, Mode=TwoWay}" />
-          <CheckBox Content="{DynamicResource Filters_IncludeSoftware}" IsChecked="{Binding Preferences.IncludeSoftware, Mode=TwoWay}" />
-          <CheckBox Content="{DynamicResource Filters_IncludeTools}" IsChecked="{Binding Preferences.IncludeTools, Mode=TwoWay}" />
-          <CheckBox Content="{DynamicResource Filters_IncludeVideos}" IsChecked="{Binding Preferences.IncludeVideos, Mode=TwoWay}" />
-          <CheckBox Content="{DynamicResource Filters_IncludeOther}" IsChecked="{Binding Preferences.IncludeOther, Mode=TwoWay}" />
-
-          <TextBlock Margin="0,8,0,0" FontSize="12" FontWeight="Bold" Text="{DynamicResource Filters_StorefrontsLabel}" />
-          <CheckBox Content="{DynamicResource Filters_IncludeSteam}" IsChecked="{Binding Preferences.IncludeSteam, Mode=TwoWay}" />
-
-          <TextBlock Margin="0,8,0,0" FontSize="12" FontWeight="Bold" Text="{DynamicResource Filters_CollectionLabel}" />
-          <ComboBox ItemsSource="{Binding Preferences.CollectionOptions}"
-                    SelectedItem="{Binding Preferences.SelectedCollection, Mode=TwoWay}" />
-
-          <Grid Margin="0,8,0,0" ColumnDefinitions="*,*">
-            <Button Grid.Column="0"
-                    Margin="0,0,4,0"
-                    Content="{DynamicResource Filters_RefreshButton}"
-                    Command="{Binding RefreshCommand}" />
-            <Button Grid.Column="1"
-                    Margin="4,0,0,0"
-                    Content="{DynamicResource Filters_DrawButton}"
-                    Command="{Binding DrawCommand}" />
-          </Grid>
-
-          <StackPanel Margin="0,8,0,0" Spacing="4">
-            <TextBlock FontWeight="SemiBold" Text="{DynamicResource Status_Title}" />
-            <TextBlock TextWrapping="Wrap" Text="{Binding StatusMessage}" />
+    <!-- ============ Header bar ============ -->
+    <Border Grid.Row="0" Classes="headerBar">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <!-- Brand -->
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="14">
+          <Border Width="42"
+                  Height="42"
+                  CornerRadius="11"
+                  Background="{DynamicResource AccentGradientBrush}">
+            <!-- Die face (three pips) -->
+            <Grid>
+              <Ellipse Width="6.5" Height="6.5" Fill="White"
+                       HorizontalAlignment="Left" VerticalAlignment="Top"
+                       Margin="10,10,0,0" />
+              <Ellipse Width="6.5" Height="6.5" Fill="White"
+                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+              <Ellipse Width="6.5" Height="6.5" Fill="White"
+                       HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                       Margin="0,0,10,10" />
+            </Grid>
+          </Border>
+          <StackPanel VerticalAlignment="Center" Spacing="2">
+            <TextBlock Classes="appTitle" Text="Steam Backlog Picker" />
+            <TextBlock Classes="appSubtitle" Text="{DynamicResource Header_Tagline}" />
           </StackPanel>
         </StackPanel>
-      </ScrollViewer>
+
+        <!-- Language selector -->
+        <StackPanel Grid.Column="2"
+                    Orientation="Horizontal"
+                    VerticalAlignment="Center"
+                    Spacing="10">
+          <Button Classes="lang"
+                  Classes.activeLanguage="{Binding CurrentLanguage, Converter={x:Static conv:StringEqualsConverter.Instance}, ConverterParameter=pt-BR}"
+                  Command="{Binding ChangeLanguageCommand}"
+                  CommandParameter="pt-BR"
+                  ToolTip.Tip="{DynamicResource Language_Portuguese}">
+            <Image Source="{DynamicResource FlagBrazilImage}" Width="28" Height="20" />
+          </Button>
+          <Button Classes="lang"
+                  Classes.activeLanguage="{Binding CurrentLanguage, Converter={x:Static conv:StringEqualsConverter.Instance}, ConverterParameter=en-US}"
+                  Command="{Binding ChangeLanguageCommand}"
+                  CommandParameter="en-US"
+                  ToolTip.Tip="{DynamicResource Language_English}">
+            <Image Source="{DynamicResource FlagUnitedStatesImage}" Width="28" Height="20" />
+          </Button>
+        </StackPanel>
+      </Grid>
     </Border>
 
-    <Border Grid.Row="0" Grid.Column="1" Padding="16" Margin="8,0,0,0" BorderBrush="#303741" BorderThickness="1" CornerRadius="12">
-      <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
-        <TextBlock FontSize="22" FontWeight="SemiBold" Text="{DynamicResource GameDetails_NextGameTitle}" />
-        <TextBlock Grid.Row="1" Margin="0,10,0,0" FontSize="30" FontWeight="Bold" TextWrapping="Wrap" Text="{Binding SelectedGame.Title}" />
+    <!-- ============ Content ============ -->
+    <Grid Grid.Row="1" Margin="20,16,20,20" ColumnDefinitions="320,26,*">
 
-        <StackPanel Grid.Row="2" Margin="0,10,0,0" Orientation="Horizontal" Spacing="10">
-          <TextBlock FontWeight="SemiBold" Text="{DynamicResource GameDetails_StorefrontLabel}" />
-          <TextBlock Text="{Binding SelectedGame.StorefrontGlyph}" />
-          <TextBlock Text="{Binding SelectedGame.StorefrontDisplayName}" />
-        </StackPanel>
+      <!-- Sidebar: filters and actions -->
+      <Border Grid.Column="0" Classes="card">
+        <Grid RowDefinitions="Auto,*,Auto">
+          <TextBlock Classes="sectionTitle"
+                     Margin="0,0,0,16"
+                     Text="{DynamicResource Filters_Title}" />
 
-        <Grid Grid.Row="3" RowDefinitions="Auto,*,Auto" Margin="0,10,0,10">
-          <TextBlock Text="{DynamicResource GameDetails_ArtworkLabel}" FontWeight="SemiBold" />
-          <Border Grid.Row="1" BorderBrush="#303741" BorderThickness="1" CornerRadius="8" MinHeight="260" Padding="8">
+          <ScrollViewer Grid.Row="1">
+            <StackPanel Spacing="10">
+              <CheckBox Content="{DynamicResource Filters_RequireInstalled}"
+                        IsChecked="{Binding Preferences.RequireInstalled, Mode=TwoWay}" />
+              <CheckBox Content="{DynamicResource Filters_ExcludeDeckUnsupported}"
+                        IsChecked="{Binding Preferences.ExcludeDeckUnsupported, Mode=TwoWay}" />
+
+              <TextBlock Classes="sectionLabel" Text="{DynamicResource Filters_ContentTypesLabel}" />
+              <CheckBox Content="{DynamicResource Filters_IncludeGames}"
+                        IsChecked="{Binding Preferences.IncludeGames, Mode=TwoWay}" />
+              <CheckBox Content="{DynamicResource Filters_IncludeSoundtracks}"
+                        IsChecked="{Binding Preferences.IncludeSoundtracks, Mode=TwoWay}" />
+              <CheckBox Content="{DynamicResource Filters_IncludeSoftware}"
+                        IsChecked="{Binding Preferences.IncludeSoftware, Mode=TwoWay}" />
+              <CheckBox Content="{DynamicResource Filters_IncludeTools}"
+                        IsChecked="{Binding Preferences.IncludeTools, Mode=TwoWay}" />
+              <CheckBox Content="{DynamicResource Filters_IncludeVideos}"
+                        IsChecked="{Binding Preferences.IncludeVideos, Mode=TwoWay}" />
+              <CheckBox Content="{DynamicResource Filters_IncludeOther}"
+                        IsChecked="{Binding Preferences.IncludeOther, Mode=TwoWay}" />
+
+              <TextBlock Classes="sectionLabel" Text="{DynamicResource Filters_StorefrontsLabel}" />
+              <CheckBox Content="{DynamicResource Filters_IncludeSteam}"
+                        IsChecked="{Binding Preferences.IncludeSteam, Mode=TwoWay}" />
+
+              <TextBlock Classes="sectionLabel" Text="{DynamicResource Filters_CollectionLabel}" />
+              <ComboBox ItemsSource="{Binding Preferences.CollectionOptions}"
+                        SelectedItem="{Binding Preferences.SelectedCollection, Mode=TwoWay}" />
+            </StackPanel>
+          </ScrollViewer>
+
+          <!-- Actions + status -->
+          <StackPanel Grid.Row="2" Spacing="10">
+            <Border Height="1"
+                    Background="{DynamicResource SurfaceBorderBrush}"
+                    Margin="0,14,0,4" />
+
+            <Button Classes="secondary"
+                    HorizontalAlignment="Stretch"
+                    Height="44"
+                    Command="{Binding RefreshCommand}">
+              <StackPanel Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
+                <Viewbox Width="16" Height="16">
+                  <Canvas Width="24" Height="24">
+                    <Path Data="{StaticResource IconRefreshGeometry}"
+                          Fill="{DynamicResource TextPrimaryBrush}" />
+                  </Canvas>
+                </Viewbox>
+                <TextBlock VerticalAlignment="Center"
+                           Text="{DynamicResource Filters_RefreshButton}" />
+              </StackPanel>
+            </Button>
+            <Button Classes="primary"
+                    HorizontalAlignment="Stretch"
+                    Height="52"
+                    Command="{Binding DrawCommand}">
+              <StackPanel Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
+                <Viewbox Width="17" Height="17">
+                  <Canvas Width="24" Height="24">
+                    <Path Data="{StaticResource IconShuffleGeometry}"
+                          Fill="White" />
+                  </Canvas>
+                </Viewbox>
+                <TextBlock VerticalAlignment="Center"
+                           Text="{DynamicResource Filters_DrawButton}" />
+              </StackPanel>
+            </Button>
+
+            <Border Classes="statusBox" Margin="0,4,0,0">
+              <Grid ColumnDefinitions="Auto,*">
+                <Ellipse Width="8"
+                         Height="8"
+                         Fill="{DynamicResource SuccessBrush}"
+                         VerticalAlignment="Top"
+                         Margin="0,5,10,0" />
+                <TextBlock Grid.Column="1"
+                           Classes="body"
+                           Text="{Binding StatusMessage}" />
+              </Grid>
+            </Border>
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <!-- Showcase: drawn game -->
+      <Border Grid.Column="2" Classes="card">
+        <Grid RowDefinitions="Auto,*,Auto">
+
+          <!-- Featured game header -->
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Spacing="6">
+              <TextBlock Classes="sectionLabel"
+                         Margin="0"
+                         Text="{DynamicResource GameDetails_NextGameTitle}" />
+              <TextBlock Classes="gameTitle" Text="{Binding SelectedGame.Title}" />
+            </StackPanel>
+
+            <!-- Storefront badge -->
+            <Border Grid.Column="1"
+                    Classes="tagChip"
+                    Margin="16,4,0,0"
+                    VerticalAlignment="Top"
+                    IsVisible="{Binding SelectedGame.HasStorefront}">
+              <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                <Viewbox Width="14" Height="14">
+                  <Canvas Width="24" Height="24">
+                    <Path Data="{StaticResource IconSteamGeometry}"
+                          Fill="{DynamicResource TextPrimaryBrush}" />
+                  </Canvas>
+                </Viewbox>
+                <TextBlock FontSize="12"
+                           FontWeight="Medium"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           Text="{Binding SelectedGame.StorefrontDisplayName}" />
+              </StackPanel>
+            </Border>
+          </Grid>
+
+          <!-- Cover -->
+          <Border Grid.Row="1"
+                  Margin="0,18,0,0"
+                  Height="410"
+                  CornerRadius="18"
+                  Background="{DynamicResource AppBackgroundDeepBrush}"
+                  BorderBrush="{DynamicResource SurfaceBorderBrush}"
+                  BorderThickness="1"
+                  ClipToBounds="True">
             <Grid>
-              <Image Stretch="Uniform"
+              <Image Margin="2"
+                     Stretch="Uniform"
                      Source="{Binding SelectedGame.CoverImagePath}"
                      IsVisible="{Binding SelectedGame.HasCoverImage}" />
+
+              <!-- Empty / no-cover placeholder -->
               <StackPanel HorizontalAlignment="Center"
                           VerticalAlignment="Center"
-                          Spacing="8"
+                          Spacing="10"
                           IsVisible="{Binding SelectedGame.ShowArtworkPlaceholder}">
                 <TextBlock HorizontalAlignment="Center"
-                           FontSize="18"
-                           FontWeight="Bold"
-                           Text="ART" />
-                <TextBlock HorizontalAlignment="Center"
+                           FontSize="19"
                            FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
                            Text="{Binding SelectedGame.ArtworkPlaceholderTitle}" />
                 <TextBlock HorizontalAlignment="Center"
                            MaxWidth="360"
                            TextAlignment="Center"
                            TextWrapping="Wrap"
+                           FontSize="14"
+                           Foreground="{DynamicResource TextMutedBrush}"
                            Text="{Binding SelectedGame.ArtworkPlaceholderSubtitle}" />
               </StackPanel>
+
+              <!-- Drawing overlay -->
+              <Border Background="#E0070A0E"
+                      IsVisible="{Binding IsDrawing}">
+                <StackPanel HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Spacing="16">
+                  <ProgressBar IsIndeterminate="True"
+                               Width="180"
+                               Foreground="{DynamicResource AccentBrush}" />
+                  <TextBlock HorizontalAlignment="Center"
+                             FontSize="15"
+                             FontWeight="Medium"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             Text="{DynamicResource Status_Drawing}" />
+                </StackPanel>
+              </Border>
             </Grid>
           </Border>
 
-          <StackPanel Grid.Row="2" Spacing="8">
-            <TextBlock FontWeight="SemiBold" Text="{DynamicResource GameDetails_MetadataLabel}" />
-            <TextBlock Text="{Binding SelectedGame.InstallationStatus}" />
-            <ItemsControl ItemsSource="{Binding SelectedGame.Tags}">
-              <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                  <WrapPanel Orientation="Horizontal" />
-                </ItemsPanelTemplate>
-              </ItemsControl.ItemsPanel>
-            </ItemsControl>
-          </StackPanel>
-        </Grid>
+          <!-- Footer: status, tags, actions -->
+          <Grid Grid.Row="2" Margin="0,18,0,0" ColumnDefinitions="*,Auto">
+            <StackPanel VerticalAlignment="Center" Spacing="2">
+              <TextBlock FontSize="14"
+                         FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         Text="{Binding SelectedGame.InstallationStatus}" />
+              <ItemsControl ItemsSource="{Binding SelectedGame.Tags}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <WrapPanel Orientation="Horizontal" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Border Classes="tagChip">
+                      <TextBlock FontSize="12"
+                                 FontWeight="Medium"
+                                 Foreground="{DynamicResource TextPrimaryBrush}"
+                                 Text="{Binding}" />
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
 
-        <Grid Grid.Row="4" ColumnDefinitions="*,*">
-          <Button Grid.Column="0"
-                  Margin="0,0,4,0"
-                  Content="{DynamicResource GameDetails_PlayButton}"
-                  Command="{Binding LaunchCommand}"
-                  IsEnabled="{Binding SelectedGame.CanLaunch}" />
-          <Button Grid.Column="1"
-                  Margin="4,0,0,0"
-                  Content="{DynamicResource GameDetails_InstallButton}"
-                  Command="{Binding InstallCommand}"
-                  IsEnabled="{Binding SelectedGame.CanInstall}" />
+            <StackPanel Grid.Column="1"
+                        Orientation="Horizontal"
+                        VerticalAlignment="Bottom"
+                        Margin="16,0,0,0"
+                        Spacing="10">
+              <Button Classes="secondary"
+                      MinHeight="46"
+                      MinWidth="124"
+                      Content="{DynamicResource GameDetails_InstallButton}"
+                      Command="{Binding InstallCommand}"
+                      IsEnabled="{Binding SelectedGame.CanInstall}" />
+              <Button Classes="primary"
+                      MinHeight="46"
+                      MinWidth="134"
+                      Command="{Binding LaunchCommand}"
+                      IsEnabled="{Binding SelectedGame.CanLaunch}">
+                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                  <Viewbox Width="16" Height="16">
+                    <Canvas Width="24" Height="24">
+                      <Path Data="{StaticResource IconPlayGeometry}"
+                            Fill="White" />
+                    </Canvas>
+                  </Viewbox>
+                  <TextBlock VerticalAlignment="Center"
+                             Text="{DynamicResource GameDetails_PlayButton}" />
+                </StackPanel>
+              </Button>
+            </StackPanel>
+          </Grid>
         </Grid>
-      </Grid>
-    </Border>
-
-    <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
-      <Button Content="{DynamicResource Language_Portuguese}"
-              Command="{Binding ChangeLanguageCommand}"
-              CommandParameter="pt-BR" />
-      <Button Content="{DynamicResource Language_English}"
-              Command="{Binding ChangeLanguageCommand}"
-              CommandParameter="en-US" />
-    </StackPanel>
+      </Border>
+    </Grid>
   </Grid>
 </Window>

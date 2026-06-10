@@ -1,5 +1,8 @@
 # CHANGES
 
+- Redesenhei a tela principal Windows e Linux para aproximar o app do mock escuro de referencia: header com marca/idiomas, sidebar de filtros, card principal com arte ampla, badges de loja, acoes e status unificados.
+- Extrai paleta, tipografia, controles, icones e bandeiras do WPF para dicionarios de tema e espelhei os recursos equivalentes no Avalonia, mantendo chips de metadata retangulares e estados desabilitados legiveis.
+
 - Endureci o auto-update Linux exigindo SHA-256 obrigatório e válido no feed, além de restringir URLs de feed/download para HTTPS (com exceção de loopback para testes locais), bloqueando staging de binários sem integridade mínima.
 
 - Adicionei CI/release Linux com build/test/publish do projeto `SteamBacklogPicker.Linux`, geração de pacote `.AppImage` compatível, publicação do feed JSON de update e validação automatizada de checksum + atualização pendente em ambiente Linux.

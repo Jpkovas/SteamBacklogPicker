@@ -1,8 +1,10 @@
 using System;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using SteamBacklogPicker.UI.ViewModels;
@@ -11,6 +13,8 @@ namespace SteamBacklogPicker.UI;
 
 public partial class MainWindow : Window
 {
+    private const int DwmwaUseImmersiveDarkMode = 20;
+
     private readonly MainViewModel _viewModel;
 
     public MainWindow(MainViewModel viewModel)
@@ -20,6 +24,22 @@ public partial class MainWindow : Window
         DataContext = _viewModel;
         Loaded += OnLoaded;
     }
+
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+
+        // Unsupported before Windows 10 20H1; failure leaves the default light title bar.
+        var enabled = 1;
+        _ = DwmSetWindowAttribute(
+            new WindowInteropHelper(this).Handle,
+            DwmwaUseImmersiveDarkMode,
+            ref enabled,
+            sizeof(int));
+    }
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
