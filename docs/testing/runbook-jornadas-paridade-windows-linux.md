@@ -1,10 +1,10 @@
-# Runbook manual – Jornadas equivalentes (Windows/Linux)
+# Runbook manual – Jornadas equivalentes (Windows/Linux/macOS)
 
 Objetivo: executar jornadas de usuário críticas e validar paridade funcional entre clientes.
 
 ## Jornadas e critérios de aceite
 
-| Jornada | Passos (ambas plataformas) | Resultado esperado |
+| Jornada | Passos (todas as plataformas) | Resultado esperado |
 | --- | --- | --- |
 | Filtrar biblioteca | Abrir filtros, aplicar tags + instalado, confirmar contagem de resultados | Contagem e comportamento coerentes com os filtros aplicados |
 | Sortear jogo | Acionar sorteio, repetir 3 vezes | Cada sorteio retorna título válido sem travar a UI |
@@ -16,7 +16,8 @@ Objetivo: executar jornadas de usuário críticas e validar paridade funcional e
 
 1. Executar todas as jornadas no Windows.
 2. Repetir os mesmos passos no Linux.
-3. Comparar saídas e classificar cada jornada como:
+3. Repetir os mesmos passos no macOS usando o cliente SwiftUI.
+4. Comparar saídas e classificar cada jornada como:
    - **Paridade total**
    - **Paridade com diferença temporária**
    - **Sem paridade**
@@ -30,3 +31,4 @@ Quando houver "Paridade com diferença temporária", abrir item em `CHANGES.md` 
 - Tabela preenchida com status por jornada.
 - Captura/log para qualquer diferença encontrada.
 - Link para item de portabilidade no changelog quando aplicável.
+- Para macOS, anexar também o resultado de `docs/testing/macos-port-checklist.md`.

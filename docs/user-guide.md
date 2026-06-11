@@ -6,7 +6,7 @@
 2. Abra o SteamBacklogPicker.
 3. No primeiro uso, permita a leitura da biblioteca Steam local e escolha se deseja ativar telemetria anônima.
 
-> Experiência de uso (UX), fluxos de filtros e sorteio são os mesmos em Windows e Linux. A diferença entre plataformas fica restrita ao método de instalação/empacotamento.
+> Experiência de uso (UX), fluxos de filtros e sorteio são os mesmos em Windows, Linux e macOS. A diferença entre plataformas fica restrita ao método de instalação/empacotamento e às APIs nativas de cada SO.
 
 ## Navegando na interface
 
@@ -25,7 +25,7 @@
 ## Atualização do aplicativo
 
 - O comportamento funcional do app não muda por plataforma; apenas o mecanismo de entrega pode variar por pacote.
-- Consulte o [README](../README.md) para o fluxo de instalação/execução vigente em Windows e Linux.
+- Consulte o [README](../README.md) para o fluxo de instalação/execução vigente em Windows, Linux e macOS.
 
 ## Solução de problemas
 
@@ -40,4 +40,4 @@
 
 ## Suporte
 
-Para bugs ou sugestões, abra uma issue no repositório com versão do app, plataforma (Windows/Linux) e evidências de log.
+Para bugs ou sugestões, abra uma issue no repositório com versão do app, plataforma (Windows/Linux/macOS) e evidências de log.

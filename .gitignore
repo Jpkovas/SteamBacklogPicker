@@ -5,6 +5,8 @@
 [Dd]ebug/
 [Pp]ublish/
 [Aa]rtifacts/
+.build/
+dist/
 TestResults/
 
 # IDE caches and user-specific settings

@@ -1,0 +1,201 @@
+# macOS Port Checklist
+
+## Automated checks
+
+- `swift test`
+- `swift build --product SteamBacklogPickerMac`
+- `dotnet test tests/Domain/Domain.Tests/Domain.Tests.csproj`
+- `dotnet test tests/Infrastructure/SteamDiscovery.Tests/SteamDiscovery.Tests.csproj`
+- `dotnet test tests/Integration/SteamClientAdapter.Tests/SteamClientAdapter.Tests.csproj`
+- `dotnet test tests/Integration/SteamHooks.Tests/SteamHooks.Tests.csproj`
+- `dotnet test tests/Presentation/SteamBacklogPicker.Linux.Tests/SteamBacklogPicker.Linux.Tests.csproj`
+- Optional local bundle smoke test with ignored helper scripts under `codex-scripts/`.
+- Optional local Steam-cache probe with ignored helper scripts under `codex-scripts/`.
+
+## Manual checks
+
+- App opens as `SteamBacklogPicker.app`, not as a raw SwiftPM executable.
+- Header, language selector, filter sidebar, status box, artwork panel, install button, and play button are visible at the default 900x650 minimum size.
+- Empty game details match the shared placeholder behavior: artwork shows the draw prompt, while metadata shows the unknown installation state.
+- Core controls expose stable macOS accessibility identifiers and localized labels for parity with WPF automation names and Computer Use validation.
+- Steam library is loaded from `~/Library/Application Support/Steam` or `STEAM_PATH`.
+- Available games without `appmanifest_*.acf` are loaded from Steam profile metadata such as `localconfig.vdf` and `librarycache`.
+- Official names and content types are hydrated from `appcache/appinfo.vdf` so local profile labels do not replace game titles.
+- Content type checkboxes in the macOS UI bind directly to the matching selection categories: games, soundtracks, software, tools, videos, and other content.
+- The Steam storefront checkbox activates storefront filtering and adds/removes Steam from the included storefront set, matching the shared preferences ViewModel behavior.
+- Installed manifests are also enriched by official `appinfo.vdf` names when available, while appinfo-only entries are not imported unless the user profile/cache references them.
+- Library entries are sorted by title and then by storefront/app identifier, matching the shared provider's deterministic ordering for duplicate titles.
+- Titles missing from local Steam metadata can be resolved through the public Steam Store `appdetails` endpoint and cached locally by the app.
+- Local Steam artwork paths render through native macOS image loading; remote CDN fallback artwork remains async.
+- Remote artwork fallback order matches WPF: Steam header, Steam capsule, SteamDB header, then Steam portrait `library_600x900.jpg`.
+- "Only installed" is based on real `appmanifest_*.acf` files, not the broader Steam profile cache.
+- Steam profile cache flags such as `Installed=1` do not inflate the installed count when no `appmanifest_*.acf` exists for that app.
+- Collection picker is populated from local Steam collection/tag data from `sharedconfig.vdf` and Steam cloud storage cache entries in `cloudstorage/cloud-storage-namespace-1.json`.
+- Dynamic collection filter groups with no options are ignored, matching the shared provider behavior and allowing later non-empty groups to decide membership.
+- Dynamic collections whose filter spec contains only empty groups are discarded, matching the shared fallback parser behavior.
+- Cloud collection `added` members and `rgOptions` are parsed only from JSON numbers, not numeric strings or booleans, matching the shared fallback parser behavior.
+- Collection picker trims collection names and deduplicates them case-insensitively, matching the shared ViewModel behavior.
+- Persisted collection selections remain visible before refresh and are canonicalized to the collection name/casing returned by Steam after refresh.
+- Refresh failures clear a selected collection alongside the empty library while preserving the localized/error status message.
+- Partial/legacy persisted preference JSON is decoded with per-field defaults before normalization, preserving valid old settings instead of falling back to all defaults.
+- Dynamic Steam collections are applied after the final install state is known, so profile cache flags do not inflate the installed count.
+- Family-shared Steam entries preserve `shared` install state and family-sharing ownership for both manifest-backed and metadata-only games.
+- Draw selects an eligible game without freezing.
+- Changing filters clears the current selected game when that game no longer matches the eligible set, matching the shared ViewModel behavior.
+- Draw is disabled and ignored while a library refresh is running, so stale pre-refresh entries cannot be selected.
+- Reducing the stored history limit trims recent-draw history immediately, so recent-exclusion filtering reflects the new limit without waiting for another draw.
+- Persisted history is trimmed to the stored history limit during AppStore initialization before eligibility is calculated.
+- Draw availability is recalculated from current candidates after a draw, including when recent-history exclusion removes the only eligible game.
+- Menu Refresh and Draw actions target the app shell explicitly and are validated through the same `canRefresh`/`canDraw` state as the visible buttons.
+- Play opens `steam://run/<appid>` for installed games.
+- Install opens `steam://install/<appid>` for available, shared, or unknown Steam install states.
+- Install is disabled for installed games; Play is disabled unless the selected game is installed.
+- Play/Install failure messages match the shared launch service for unsupported storefronts, missing Steam app ids, non-installed launch attempts, and already-installed install attempts.
+- If macOS cannot open a `steam://run` or `steam://install` URL, the status area shows a localized failure message and the diagnostic logger records the failed URL.
+- Refresh, launch, install, and blocked launch/install paths emit local macOS unified-log diagnostics under the `com.steambacklogpicker.mac` subsystem.
+- Installation status text matches the shared view model, including `Available` games owned through family sharing.
+- Game detail tag chips use the same presentation cleanup as the shared `GameDetailsViewModel`: empty tags are hidden and case-insensitive duplicates are collapsed.
+- Draw sends the same optional drawn-game notification journey as Windows/Linux when macOS notifications are already allowed.
+- Startup runs the same update-check journey hook through an injected macOS update checker; current macOS implementation is no-op until release packaging/feed work exists.
+
+## Current local verification
+
+- Parity recheck on 2026-06-10: `swift test` passed 50/50, `swift build --product SteamBacklogPickerMac` passed, and portable .NET suites passed outside the managed sandbox: Domain 14/14, SteamDiscovery net8.0 39/39, SteamDiscovery Windows-targeted TFM 41/41, SteamClientAdapter 21/21, SteamHooks 4/4, and Linux presentation 25/25. The initial sandboxed .NET attempts failed with local IPC permission errors and were replaced by the unrestricted `-m:1 /nodeReuse:false` runs.
+- `swift test`: 17 tests passed.
+- `swift test` after adding SwiftUI render smoke coverage: 18 tests passed.
+- `swift test` after menu localization callback coverage: 19 tests passed.
+- `swift test` after persisted preference normalization and missing collection reset coverage: 21 tests passed.
+- `swift test` after .NET-compatible seeded draw coverage: 24 tests passed.
+- `swift test` after duplicate-refresh guard coverage: 25 tests passed.
+- `swift test` after macOS update-check contract coverage: 26 tests passed.
+- `swift test` after macOS accessibility identifier coverage: 27 tests passed.
+- `swift test` after launch/install failure-message parity coverage: 28 tests passed.
+- `swift test` after empty-selection metadata parity coverage: 29 tests passed.
+- `swift test` after shared desktop localization-key coverage: 30 tests passed.
+- `swift test` after installation-status text parity coverage: 31 tests passed.
+- `swift test` after persisted content-filter/language/history restore coverage: 32 tests passed.
+- `swift test` after macOS diagnostic logging coverage: 33 tests passed.
+- `swift test` after persisted collection canonicalization coverage: 34 tests passed.
+- `swift test` after Steam URL open-failure coverage: 35 tests passed.
+- `swift test` after case-insensitive collection-option deduplication coverage: 36 tests passed.
+- `swift test` after displayed game-tag normalization coverage: 37 tests passed.
+- `swift test` after disabling stale draws during refresh coverage: 38 tests passed.
+- `swift test` after immediate history-limit trimming coverage: 39 tests passed.
+- `swift test` after initial persisted-history trimming coverage: 40 tests passed.
+- `swift test` after partial persisted-preference decoding coverage: 41 tests passed.
+- `swift test` after legacy empty-storefront decoding and content-type filter recheck: 41 tests passed.
+- `swift test` after exact shared launch-failure localization coverage: 42 tests passed.
+- `swift test` after exact shared Play/Install failure localization expansion: 43 tests passed.
+- `swift test` after recent-history single-candidate draw availability coverage: 43 tests passed.
+- `swift test` after shared AppCore localization-key coverage guard: 44 tests passed.
+- `swift test` after explicit macOS menu-command target coverage: 45 tests passed.
+- `swift test` after dynamic collection empty-filter-group parity coverage: 45 tests passed.
+- `swift test --filter ContentViewRenderingTests/testContentTypeTogglesBindToMatchingSelectionCategories`: passed after content-type UI binding coverage.
+- `swift test` after content-type UI binding coverage: 46 tests passed.
+- `swift test --filter SelectionFilterTests/testChangingFiltersClearsSelectedGameWhenItIsNoLongerEligible`: passed after selected-game filter invalidation coverage.
+- `swift test` after selected-game filter invalidation coverage: 47 tests passed.
+- `swift test --filter ContentViewRenderingTests/testSteamStorefrontToggleActivatesStorefrontFiltering`: passed after Steam storefront UI binding coverage.
+- `swift test` after Steam storefront UI binding coverage: 48 tests passed.
+- `swift test --filter SteamLibraryServiceTests/testLoadLibraryIncludesInstalledAvailableLibraryCacheAndCollectionOnlyApps`: passed after all-empty dynamic collection filterSpec discard coverage.
+- `swift test` after all-empty dynamic collection filterSpec discard coverage: 48 tests passed.
+- `swift test --filter SteamLibraryServiceTests/testLoadLibraryIncludesInstalledAvailableLibraryCacheAndCollectionOnlyApps`: passed after localconfig-installed flag guard coverage.
+- `swift test` after localconfig-installed flag guard coverage: 48 tests passed.
+- `swift test --filter SteamLibraryServiceTests/testLoadLibraryIncludesInstalledAvailableLibraryCacheAndCollectionOnlyApps`: passed after confirming all-empty dynamic filter specs are discarded like AppCore.
+- `swift test` after confirming all-empty dynamic filter specs are discarded like AppCore: 48 tests passed.
+- `swift test --filter SteamLibraryServiceTests/testLoadLibraryIncludesInstalledAvailableLibraryCacheAndCollectionOnlyApps`: passed after numeric-only cloud collection parsing parity coverage.
+- `swift test` after numeric-only cloud collection parsing parity coverage: 48 tests passed.
+- `swift test --filter SteamLibraryServiceTests/testLoadLibraryIncludesInstalledAvailableLibraryCacheAndCollectionOnlyApps`: passed after remote artwork fallback parity coverage.
+- `swift test` after remote artwork fallback parity coverage: 48 tests passed.
+- `swift build --product SteamBacklogPickerMac`: passed after the final content-type changes.
+- `codex-scripts/build-macos-app.sh --debug --no-open`: passed after directing Swift caches to `/private/tmp` and disabling SwiftPM's nested sandbox for the local bundle build.
+- `codex-scripts/build-macos-app.sh --debug --no-open`: passed after the persisted preference injection change; bundle Info.plist verified and debug `.app` ad hoc signature remained valid.
+- `codex-scripts/build-macos-app.sh --debug --no-open`: passed after adding macOS diagnostic logging; bundle Info.plist verified and debug `.app` ad hoc signature remained valid.
+- `codex-scripts/build-macos-app.sh --debug --no-open`: passed after the legacy empty-storefront decoding adjustment; bundle Info.plist verified and debug `.app` ad hoc signature remained valid.
+- `codex-scripts/build-macos-app.sh --debug --no-open`: passed after the shared launch-failure localization alignment; bundle Info.plist verified and debug `.app` ad hoc signature remained valid.
+- `codex-scripts/build-macos-app.sh --debug --no-open`: passed after expanding shared Play/Install failure localization coverage; bundle Info.plist verified and debug `.app` ad hoc signature remained valid.
+- `codex-scripts/build-macos-app.sh --debug --no-open`: passed after recent-history draw availability coverage; bundle Info.plist verified and debug `.app` ad hoc signature remained valid.
+- `codex-scripts/build-macos-app.sh --debug --no-open`: passed after adding the shared AppCore localization-key coverage guard; bundle Info.plist verified and debug `.app` ad hoc signature remained valid.
+- `codex-scripts/build-macos-app.sh --debug --no-open`: passed after explicit macOS menu-command target coverage; bundle Info.plist verified and debug `.app` ad hoc signature remained valid.
+- `codex-scripts/build-macos-app.sh --debug --no-open`: passed after dynamic collection empty-filter-group parity coverage; bundle Info.plist verified and debug `.app` ad hoc signature remained valid.
+- `codex-scripts/build-macos-app.sh --debug --verify`: passed; debug `.app` built, ad hoc signed, launched, and process verified.
+- WindowServer probe: debug `.app` exposed 1 `Steam Backlog Picker` window at 900x682 for the running process.
+- Steam probe: 658 total entries, 3 installed entries, 8 collection options.
+- Steam probe content type counts: Games 618/658, Soundtracks 1/658, Software 10/658, Tools 5/658, Videos 1/658, Other content 23/658.
+- AppStore functional probe: content filters returned Games 618, Soundtracks 1, Software 10, Tools 5, Videos 1, Other 23.
+- AppStore functional probe after content-filter recheck: total 658, installed 3, collections 8, Games 618, Soundtracks 1, Software 10, Tools 5, Videos 1, Other 23.
+- AppStore functional probe after dynamic collection empty-filter-group parity change: total 658, installed 3, collections 8, Games 618, Soundtracks 1, Software 10, Tools 5, Videos 1, Other 23.
+- AppStore functional probe after content-type UI binding coverage: total 658, installed 3, collections 8, Games 618, Soundtracks 1, Software 10, Tools 5, Videos 1, Other 23.
+- AppStore functional probe after all-empty dynamic collection filterSpec discard coverage: total 658, installed 3, collections 8, Games 618, Soundtracks 1, Software 10, Tools 5, Videos 1, Other 23.
+- AppStore functional probe after confirming all-empty dynamic filter specs are discarded like AppCore: total 658, installed 3, collections 8, Games 618, Soundtracks 1, Software 10, Tools 5, Videos 1, Other 23.
+- AppStore functional probe after numeric-only cloud collection parsing parity coverage: total 658, installed 3, collections 8, Games 618, Soundtracks 1, Software 10, Tools 5, Videos 1, Other 23.
+- AppStore functional probe: collection filters returned Aprovados e Jogáveis no Deck 316, Instalados 3, Jogáveis no Deck 316, Multijogador 256, Ocultos 3, Roletada 92, Um jogador 449, VR 226.
+- AppStore functional probe: Install emitted `steam://install/2494780`; Play emitted `steam://run/250900` without opening Steam.
+- Swift unit check: macOS launch/install failures use the same messages as the shared AppCore launch service and do not emit any Steam URL when unsupported.
+- Swift unit check: macOS shared Play/Install failure text matches the AppCore Portuguese and English strings exactly for unsupported storefront, launch-not-installed, missing Steam app id, and already-installed install attempts.
+- Swift unit check: macOS diagnostics record successful Steam URLs, unsupported launch/install attempts, missing app ids, non-installed launch attempts, already-installed install attempts, refresh start, refresh success, and refresh failure.
+- Swift unit check: failed `steam://run` opening surfaces `Could not open the Steam link on this Mac.` and logs the failed URL without crashing or pretending the action succeeded.
+- Swift unit check: install-state text covers installed, available, family-shared available, shared, and unknown states with shared ViewModel wording.
+- Swift unit check: displayed game tags trim whitespace, drop blank values, and deduplicate `RPG`/`rpg` and `Backlog`/`BACKLOG` before rendering chips.
+- Steam probe after public name fallback: unresolved `App <id>` titles dropped from 98 to 34; `253710` resolved to `theHunter Classic`.
+- Detected collections: Aprovados e Jogáveis no Deck, Instalados, Jogáveis no Deck, Multijogador, Ocultos, Roletada, Um jogador, VR.
+- Computer Use UI check: `Roletada` collection showed 92 eligible games out of 658 total entries.
+- Computer Use UI check: no collection with default `Games` type filter showed 618 eligible games out of 658 total entries.
+- Computer Use UI check: `Somente instalados` showed 3 eligible games out of 658 total entries.
+- Computer Use UI check: disabling `Jogos` with no other content type selected showed 0 matching games and disabled Draw.
+- Computer Use UI check: selected available game enabled Install and disabled Play; selected installed game disabled Install and enabled Play.
+- Computer Use UI check: switching BR to US after a draw preserved the drawn-game status and re-localized it from `Jogo sorteado` to `Drawn game`.
+- Computer Use UI check: disabled Play renders as a secondary/gray button, not as the prominent blue action.
+- Computer Use UI check: header, BR/US selector, long Portuguese filter labels, artwork placeholder, chips, status box, Install and Play buttons rendered without visible clipping at the default window size.
+- Computer Use runtime check: development `.app` opened from `dist/macos/SteamBacklogPicker.app`, process verified as running, and the default-size window rendered without clipping.
+- Computer Use runtime check: toggling "Only installed" changed the visible count from 3/658 to 618/658 with the default Games filter.
+- Computer Use runtime check: collection picker exposed all 8 Steam collections and selecting `Roletada` changed the visible count to 92/658.
+- Computer Use runtime check: Draw inside `Roletada` selected `Wednesdays`, rendered artwork, showed `Available to install`, enabled Install, disabled Play, and displayed the expected collection chips.
+- Computer Use runtime check after aligning draw timing: Draw inside `Roletada` selected `Lords of the Fallen`, rendered artwork, showed `Disponível para instalar`, enabled Install, and kept Play disabled.
+- Computer Use runtime check: Refresh library preserved `Roletada`, reset the current selection, and kept 92/658 available.
+- Computer Use runtime check: switching to BR localized the visible window controls/status and the desktop menu commands to `Atualizar biblioteca` and `Sortear`.
+- Computer Use runtime check: content type filters with no collection selected showed Games 618/658, Soundtracks 1/658, Software 10/658, Tools 5/658, Videos 1/658, and Other content 23/658.
+- Computer Use runtime check: the one-item Soundtracks filter showed `1 jogo disponível após aplicar os filtros (de 658 jogos).`
+- Swift unit check: content type filtering covers each visible type independently and treats legacy `.dlc` entries as Other content.
+- Swift unit check: persisted macOS state restores content type filters, language, and recent-draw history from an isolated UserDefaults suite without touching real user preferences.
+- Swift unit check: persisted collection selection remains in the picker before refresh and is canonicalized from `roletada` to `Roletada` after loading Steam collections.
+- Swift unit check: collection options deduplicate `Favorites`, `favorites`, and `FAVORITES` into a single picker option while trimming whitespace.
+- Swift unit check: Steam library discovery maps appinfo content types for soundtrack, software, tool, video and other before the filters run.
+- Swift unit check: Steam library discovery ignores empty dynamic collection filter groups and still applies the later installed-game group.
+- Swift unit check: Steam library discovery discards all-empty dynamic collection filter specs and does not apply that collection to installed, available, or shared entries.
+- Swift unit check: Steam library discovery ignores string-encoded `added` app ids and string-encoded `rgOptions`, so those cloud collection values do not apply only on macOS.
+- Swift unit check: Steam library discovery keeps an app with `Installed=1` only in `localconfig.vdf` as available unless it has a real manifest, so installed eligibility remains `[10, 100, 110]` in the fixture.
+- Swift unit check: Steam artwork URL fallback order includes header, capsule, SteamDB header, and portrait `library_600x900.jpg`, matching the WPF fallback sequence.
+- Swift unit check: Steam library discovery prefers official appinfo names over installed manifest names without importing every appinfo cache entry.
+- Swift unit check: duplicate-title Steam apps are ordered with the same identifier tie-breaker as the shared AppCore provider.
+- Swift unit check: Steam library discovery marks family-shared installed and available entries as shared and includes them in installed dynamic collections.
+- Swift UI render check: `ContentView` mounted in `NSHostingView` at the 900x650 default window size and produced a non-blank bitmap.
+- Swift UI source check: `ContentView` declares automation identifiers for language, filter panel, all content filters, collection picker, refresh, draw, status, game details, install, play, and drawing overlay.
+- Swift UI source check: the Steam storefront toggle sets `filterByStorefront` and mutates the included Steam storefront set instead of acting as a visual-only checkbox.
+- Swift UI source check: empty-selection installation metadata uses `GameDetails_InstallState_Unknown` rather than duplicating the draw prompt.
+- Swift unit check: shared desktop localization keys for labels, automation text, storefront fallback, game-count strings, and launch/install failures resolve in both BR and US.
+- Swift unit check: every resource key declared in the shared AppCore `LocalizationService` resolves through the macOS Swift localization table in both BR and US.
+- Swift source check: macOS Refresh/Draw menu items set `target = self`, validate via `canRefresh`/`canDraw`, and invoke `refreshLibrary()`/`drawGame()` on the shared `AppStore`.
+- Swift unit check: changing BR/US notifies the AppKit shell so menu commands are rebuilt with localized labels.
+- Swift unit check: persisted macOS preferences normalize legacy categories/storefronts, trim collection names, clamp negative history settings, and clear missing collection filters after refresh.
+- Swift unit check: partial persisted preferences with missing boolean/filter fields decode using defaults, preserve valid categories, decode missing storefronts as an empty unfiltered legacy set while `filterByStorefront` is false, and then normalize legacy values.
+- Swift unit check: failed refresh clears a selected collection, leaves the library empty, logs the failure, and keeps the error text as the final status.
+- Swift unit check: seeded macOS draws match the .NET `Random(seed)` selection sequence, resume from stored `randomPosition`, and reset position when the seed changes.
+- Swift unit check: reducing `historyLimit` trims persisted recent history immediately and makes older entries eligible again according to the shared `SelectionEngine` behavior.
+- Swift unit check: AppStore initialization trims loaded history above `historyLimit`, matching `SelectionEngine` settings normalization on load.
+- Swift unit check: after drawing the only eligible game with recent-game exclusion enabled, `canDraw` becomes false and eligible games are empty.
+- Swift unit check: changing the content filter from Games+Tools to Tools clears a selected Game and updates the filtered count to the remaining eligible tool.
+- Swift unit check: draw recalculates candidates after the animation delay and ignores duplicate draw requests while already drawing.
+- Swift unit check: refresh clears stale library entries immediately, disables Draw while loading, and ignores draw requests until the fresh library has loaded.
+- Swift unit check: refresh requests are ignored while a library refresh is already running, and `canRefresh` returns to enabled after the load completes.
+- Swift unit check: `checkForUpdates()` uses the injected macOS update checker so startup update behavior remains testable without a release feed.
+- Cross-version unit check: direct portable project runs passed Domain 14/14, SteamDiscovery net8.0 39/39, and Linux presentation 25/25 on this macOS host. A solution-level run also reached and passed SteamDiscovery net8.0 39/39, SteamDiscovery Windows-targeted TFM 41/41, SteamClientAdapter 21/21, SteamHooks 4/4, and Domain 14/14 before stopping at the WPF test host.
+- Latest visual tooling recheck: `CGWindowList` sees the debug `.app` window, but `System Events`, Computer Use, and `screencapture` cannot inspect its content in this session. Treat this as a local AX/TCC inspection limitation; visual UI validation should be rerun once the app is inspectable by Computer Use again.
+
+## Environment-limited checks
+
+- `dotnet test SteamBacklogPicker.sln` runs the Windows WPF UI test project, which requires `Microsoft.WindowsDesktop.App`; that runtime is not available on this macOS host, so Windows UI tests must be run on Windows CI or a Windows machine.
+- In the managed sandbox, `dotnet test SteamBacklogPicker.sln` can also fail before test execution because MSBuild cannot create its local IPC pipe (`SocketException (13): Permission denied`). Running outside the sandbox with `-m:1 /nodeReuse:false` avoids that IPC blocker, but still cannot execute the WPF test host on macOS.
+
+## Known release gap
+
+Release packaging is out of scope for the current validation pass; the SwiftUI app is runnable locally but is not yet signed, notarized, or packaged as a release DMG/PKG.

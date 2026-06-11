@@ -3,9 +3,10 @@
 Os cenários abaixo complementam a suíte automatizada e devem ser exercitados antes de cada entrega relevante. Eles focam em cenários críticos envolvendo autenticação, descoberta de bibliotecas Steam e comportamentos offline.
 
 
-## Runbooks de paridade Windows/Linux
+## Runbooks de paridade Windows/Linux/macOS
 - [Instalação e inicialização](./runbook-installacao-windows-linux.md)
 - [Jornadas equivalentes](./runbook-jornadas-paridade-windows-linux.md)
+- [Checklist macOS](./macos-port-checklist.md)
 
 ## 1. Conta Própria
 - **Pré-condições:** Iniciar sessão com uma conta que possua jogos próprios instalados na biblioteca padrão da Steam.

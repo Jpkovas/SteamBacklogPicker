@@ -5,6 +5,7 @@
 - **C#/.NET 8**: mantém domínio, parsing de manifests e integrações locais em uma base testável e multiplataforma.
 - **WPF no Windows**: entrega a experiência nativa Windows e integrações específicas como notificações e atualização via Squirrel quando o app está instalado nesse formato.
 - **Avalonia no Linux**: reutiliza AppCore e domínio, mantendo uma UI desktop Linux sem duplicar regras de seleção, localização ou leitura da biblioteca. O release Linux usa AppImage nativo quando `appimagetool` está disponível no CI.
+- **SwiftUI no macOS**: entrega cliente nativo macOS em SwiftPM, portando as mesmas jornadas visíveis com leitura local da Steam, coleções e ações `steam://`.
 
 O projeto é offline-first: a biblioteca é descoberta a partir de arquivos locais do Steam e do cliente Steam instalado, sem depender de serviços em nuvem.
 
@@ -20,6 +21,11 @@ flowchart LR
     subgraph Linux["Linux UI (Avalonia)"]
         LinuxView["AXAML views"]
         LinuxBootstrap["Linux bootstrap"]
+    end
+
+    subgraph Mac["macOS UI (SwiftUI)"]
+        MacView["SwiftUI views"]
+        MacServices["macOS Steam services"]
     end
 
     subgraph AppCore["AppCore compartilhado"]
@@ -42,6 +48,8 @@ flowchart LR
 
     WpfView --> WpfBootstrap --> AppCore
     LinuxView --> LinuxBootstrap --> AppCore
+    MacView --> MacServices
+    MacServices --> SteamFiles
     ViewModels --> Domain
     ViewModels --> LibraryService
     LibraryService --> Discovery
@@ -62,6 +70,7 @@ flowchart LR
 - **AppCore**: contém ViewModels, serviços compartilhados de biblioteca, localização, arte, lançamento e contratos de UX.
 - **SteamBacklogPicker.UI**: WPF, notificações/atualização Windows e bootstrap específico do Windows.
 - **SteamBacklogPicker.Linux**: Avalonia, notificações/atualização Linux e bootstrap específico do Linux.
+- **SteamBacklogPicker.Mac**: SwiftUI, descoberta local da Steam em macOS, coleções, arte, fallback de nomes e notificações nativas opcionais.
 
 ## Encapsulamento de dependências externas
 
@@ -81,7 +90,7 @@ flowchart LR
 - Watchers atualizam o cache quando manifests mudam, mas falhas transitórias preservam o último estado válido.
 - Updates Linux aceitam feeds assinados por RSA SHA-256; feeds sem assinatura exigem opt-in explícito para teste local.
 - Updates Windows via Squirrel ficam desativados por padrão enquanto não houver verificação independente de autenticidade.
-- Linux e Windows compartilham as mesmas regras de domínio e seleção.
+- Linux e Windows compartilham as mesmas regras de domínio e seleção via AppCore; macOS espelha essas regras em SwiftUI/Swift para manter o cliente nativo sem runtime .NET.
 
 ## Fluxo de bootstrap
 

@@ -43,6 +43,7 @@ public sealed class SelectionFilters
         else
         {
             IncludedCategories = IncludedCategories
+                .Select(NormalizeCategory)
                 .Distinct()
                 .ToList();
         }
@@ -54,5 +55,15 @@ public sealed class SelectionFilters
                 .Distinct()
                 .ToList();
         }
+    }
+
+    internal static ProductCategory NormalizeCategory(ProductCategory category)
+    {
+        return category switch
+        {
+            ProductCategory.Unknown => ProductCategory.Game,
+            ProductCategory.DLC => ProductCategory.Other,
+            _ => category,
+        };
     }
 }

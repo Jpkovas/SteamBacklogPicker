@@ -83,6 +83,42 @@ public sealed class MainWindowPresentationTests
     }
 
     [Fact]
+    public async Task MainViewModel_ShouldUsePortugueseSingularAvailabilityStatus()
+    {
+        var games = new[]
+        {
+            new GameEntry
+            {
+                Id = GameIdentifier.ForSteam(10),
+                Title = "Jogo",
+                ProductCategory = ProductCategory.Game,
+                InstallState = InstallState.Available,
+            },
+            new GameEntry
+            {
+                Id = GameIdentifier.ForSteam(20),
+                Title = "Ferramenta",
+                ProductCategory = ProductCategory.Tool,
+                InstallState = InstallState.Available,
+            },
+        };
+        var localization = new LocalizationService();
+        localization.SetLanguage("pt-BR");
+
+        var viewModel = new MainViewModel(
+            new SelectionEngine(),
+            new FakeLibraryService(games),
+            new FakeArtLocator(),
+            new FakeToastService(),
+            localization,
+            new FakeGameLaunchService());
+
+        await viewModel.InitializeAsync();
+
+        viewModel.StatusMessage.Should().Be("1 jogo disponível após aplicar os filtros (de 2 jogos).");
+    }
+
+    [Fact]
     public void MainWindowAxaml_ShouldBindCoreControlsToMainViewModel()
     {
         var axaml = File.ReadAllText(Path.Combine(GetRepositoryRoot(), "src/Presentation/SteamBacklogPicker.Linux/Views/MainWindow.axaml"));
