@@ -76,6 +76,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release upload "${GITHUB_REF_NAME}" \
-            "artifacts/linux/"* \
-            --clobber
+          find artifacts/linux -maxdepth 1 -type f -print0 \
+            | xargs -0 gh release upload "${GITHUB_REF_NAME}" --clobber
