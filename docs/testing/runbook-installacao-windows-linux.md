@@ -1,16 +1,16 @@
-# Runbook manual – Instalação e inicialização (Windows/Linux)
+# Runbook manual – Instalação e inicialização (Windows/Linux/macOS)
 
 Objetivo: validar que a instalação e o primeiro lançamento entregam comportamento equivalente, mudando apenas o método de instalação por plataforma.
 
 ## Matriz de execução
 
-| Etapa | Windows | Linux | Critério de aprovação |
-| --- | --- | --- | --- |
-| Preparação | Confirmar Steam instalado e biblioteca com ao menos 10 jogos | Confirmar Steam instalado e biblioteca com ao menos 10 jogos | Pré-condições equivalentes |
-| Instalação | Executar a saída Windows publicada pela release atual | Baixar e executar pacote Linux da release (`SteamBacklogPicker-<versao>-linux-x64.AppImage`) | App inicia sem erro |
-| Primeiro lançamento | Abrir app pelo atalho/menu | Abrir app pelo menu/comando do ambiente gráfico | Tela principal renderiza |
-| Descoberta inicial | Aguardar varredura inicial da biblioteca | Aguardar varredura inicial da biblioteca | Jogos aparecem sem inconsistência crítica |
-| Telemetria | Revisar prompt de consentimento | Revisar prompt de consentimento | Mensagem e escolha equivalentes |
+| Etapa | Windows | Linux | macOS | Critério de aprovação |
+| --- | --- | --- | --- | --- |
+| Preparação | Confirmar Steam instalado e biblioteca com ao menos 10 jogos | Confirmar Steam instalado e biblioteca com ao menos 10 jogos | Confirmar Steam instalado em `~/Library/Application Support/Steam` ou `STEAM_PATH` | Pré-condições equivalentes |
+| Instalação | Executar a saída Windows publicada pela release atual | Baixar e executar pacote Linux da release (`SteamBacklogPicker-<versao>-linux-x64.AppImage`) | Usar a build local SwiftUI gerada pelo helper em `dist/macos/SteamBacklogPicker.app` | App inicia sem erro |
+| Primeiro lançamento | Abrir app pelo atalho/menu | Abrir app pelo menu/comando do ambiente gráfico | Abrir o `.app` local | Tela principal renderiza |
+| Descoberta inicial | Aguardar varredura inicial da biblioteca | Aguardar varredura inicial da biblioteca | Aguardar leitura de manifests, caches locais e coleções da Steam | Jogos aparecem sem inconsistência crítica |
+| Telemetria | Revisar prompt de consentimento | Revisar prompt de consentimento | Confirmar que não há prompt extra no cliente macOS local nesta etapa | Mensagem e escolha equivalentes ou diferença documentada |
 
 ## Casos manuais detalhados
 
@@ -20,6 +20,10 @@ Objetivo: validar que a instalação e o primeiro lançamento entregam comportam
 3. Abrir o app e validar que não há erro de bootstrap.
 
 **Resultado esperado:** instalação concluída, app abre e exibe UI principal.
+
+### Nota sobre macOS
+
+O port macOS ainda não tem release assinado/notarizado nesta etapa. Para validação manual, use a build local SwiftPM empacotada como `.app` em `dist/macos/SteamBacklogPicker.app`; DMG/PKG e notarização ficam fora do escopo até o fluxo de release macOS ser aberto.
 
 ### Nota sobre update Windows
 

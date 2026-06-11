@@ -1,6 +1,6 @@
 # SteamBacklogPicker
 
-SteamBacklogPicker é um app desktop para sortear o próximo jogo da sua biblioteca Steam sem depender de serviços em nuvem. Os dados são lidos localmente do cliente Steam.
+SteamBacklogPicker é um app desktop para sortear o próximo jogo da sua biblioteca Steam. Os dados são lidos localmente do cliente Steam sempre que possível; no macOS, títulos ausentes no cache local podem ser completados pela API pública de detalhes da loja Steam e salvos em cache local.
 
 ## Capacidades principais
 
@@ -12,27 +12,28 @@ SteamBacklogPicker é um app desktop para sortear o próximo jogo da sua bibliot
 
 ## Requisitos por plataforma
 
-| Item | Windows | Linux |
-| --- | --- | --- |
-| SO | Windows 10 21H2+ ou Windows 11 | Distribuição x64 com desktop moderno (GNOME/KDE/XFCE) |
-| Runtime | .NET 8 Desktop Runtime / SDK para build local | .NET 8 SDK para execução/build local |
-| Steam | Cliente Steam instalado com acesso aos manifests em `steamapps` | Cliente Steam instalado com acesso aos manifests em `steamapps` |
-| Hardware | CPU 64-bit, 4 GB RAM, 512 MB livres | CPU 64-bit, 4 GB RAM, 512 MB livres |
+| Item | Windows | Linux | macOS |
+| --- | --- | --- | --- |
+| SO | Windows 10 21H2+ ou Windows 11 | Distribuição x64 com desktop moderno (GNOME/KDE/XFCE) | macOS 13+ |
+| Runtime | .NET 8 Desktop Runtime / SDK para build local | .NET 8 SDK para execução/build local | Xcode/Swift 5.9+ para build local |
+| Steam | Cliente Steam instalado com acesso aos manifests em `steamapps` | Cliente Steam instalado com acesso aos manifests em `steamapps` | Cliente Steam instalado em `~/Library/Application Support/Steam` ou `STEAM_PATH`; a versão macOS usa manifests, perfil local, `librarycache`, `appcache/appinfo.vdf`, `cloudstorage` para coleções e fallback público `appdetails` para nomes ausentes |
+| Hardware | CPU 64-bit, 4 GB RAM, 512 MB livres | CPU 64-bit, 4 GB RAM, 512 MB livres | Apple Silicon ou Intel 64-bit, 4 GB RAM, 512 MB livres |
 
 ## Instalação e execução (passos paralelos)
 
-| Etapa | Windows | Linux |
-| --- | --- | --- |
-| 1. Clonar | `git clone https://github.com/Jpkovas/SteamBacklogPicker.git` | `git clone https://github.com/Jpkovas/SteamBacklogPicker.git` |
-| 2. Entrar no diretório | `cd SteamBacklogPicker` | `cd SteamBacklogPicker` |
-| 3. Restaurar dependências | `dotnet restore SteamBacklogPicker.sln` | `dotnet restore SteamBacklogPicker.sln` |
-| 4. Build | `dotnet build SteamBacklogPicker.sln -c Release --no-restore` | `dotnet build SteamBacklogPicker.sln -c Release --no-restore` |
-| 5. Executar app | `dotnet run --project src/Presentation/SteamBacklogPicker.UI/SteamBacklogPicker.UI.csproj` | `dotnet run --project src/Presentation/SteamBacklogPicker.Linux/SteamBacklogPicker.Linux.csproj` |
+| Etapa | Windows | Linux | macOS |
+| --- | --- | --- | --- |
+| 1. Clonar | `git clone https://github.com/Jpkovas/SteamBacklogPicker.git` | `git clone https://github.com/Jpkovas/SteamBacklogPicker.git` | `git clone https://github.com/Jpkovas/SteamBacklogPicker.git` |
+| 2. Entrar no diretório | `cd SteamBacklogPicker` | `cd SteamBacklogPicker` | `cd SteamBacklogPicker` |
+| 3. Restaurar dependências | `dotnet restore SteamBacklogPicker.sln` | `dotnet restore SteamBacklogPicker.sln` | Não há restore externo; SwiftPM usa `Package.swift` |
+| 4. Build | `dotnet build SteamBacklogPicker.sln -c Release --no-restore` | `dotnet build SteamBacklogPicker.sln -c Release --no-restore` | `swift build --product SteamBacklogPickerMac` |
+| 5. Executar app | `dotnet run --project src/Presentation/SteamBacklogPicker.UI/SteamBacklogPicker.UI.csproj` | `dotnet run --project src/Presentation/SteamBacklogPicker.Linux/SteamBacklogPicker.Linux.csproj` | `swift run SteamBacklogPickerMac` em desenvolvimento local |
 
 ## Distribuição
 
 - **Windows**: o workflow atual publica saída bruta de `dotnet publish`; instaladores Squirrel/MSIX ainda dependem de automação de empacotamento a ser restaurada. O auto-update Squirrel legado fica desativado por padrão e só roda com `SBP_ENABLE_LEGACY_WINDOWS_UPDATE=true` até existir Authenticode/pinning de certificado.
 - **Linux**: release publica um AppImage Linux x64 nativo, feed `linux-appimage-update.json`, checksum SHA-256 e assinatura do feed quando a chave de release está configurada. Execuções locais do script sem `appimagetool` caem para executável portátil.
+- **macOS**: a versão SwiftUI nativa vive em `src/Presentation/SteamBacklogPicker.Mac` e roda localmente via SwiftPM. Assinatura, notarização, bundle `.app` versionado e empacotamento DMG/PKG ainda não fazem parte do fluxo de release.
 
 ## Resolução de instalação Steam no Linux
 

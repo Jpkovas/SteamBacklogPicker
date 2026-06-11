@@ -325,12 +325,14 @@ public sealed class MainViewModel : ObservableObject
         }
         else if (_eligibleGameCount == total)
         {
-            SetStatus(loc => loc.GetString("Status_AllEligible", loc.FormatGameCount(total)));
+            SetStatus(loc => loc.GetString(
+                CountSensitiveStatusKey("Status_AllEligible", total),
+                loc.FormatGameCount(total)));
         }
         else
         {
             SetStatus(loc => loc.GetString(
-                "Status_FilteredCount",
+                CountSensitiveStatusKey("Status_FilteredCount", _eligibleGameCount),
                 loc.FormatGameCount(_eligibleGameCount),
                 loc.FormatGameCount(total)));
         }
@@ -368,6 +370,9 @@ public sealed class MainViewModel : ObservableObject
         _statusFactory = null;
         StatusMessage = message;
     }
+
+    private static string CountSensitiveStatusKey(string prefix, int count)
+        => count == 1 ? $"{prefix}_Singular" : $"{prefix}_Plural";
 
     private void ReapplyStatus()
     {

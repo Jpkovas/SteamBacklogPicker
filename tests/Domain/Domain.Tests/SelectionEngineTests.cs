@@ -320,6 +320,65 @@ public sealed class SelectionEngineTests
     }
 
     [Fact]
+    public void FilterGames_ShouldTreatLegacyDlcAsOtherContent()
+    {
+        var settingsPath = CreateSettingsPath();
+        try
+        {
+            var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
+            engine.UpdatePreferences(new SelectionPreferences
+            {
+                Filters = new SelectionFilters
+                {
+                    RequireInstalled = false,
+                    IncludedCategories = new List<ProductCategory> { ProductCategory.Other },
+                },
+                HistoryLimit = 10,
+            });
+
+            var games = new[]
+            {
+                new GameEntry
+                {
+                    Id = GameIdentifier.ForSteam(1),
+                    Title = "Legacy DLC",
+                    InstallState = InstallState.Installed,
+                    OwnershipType = OwnershipType.Owned,
+                    ProductCategory = ProductCategory.DLC,
+                },
+                new GameEntry
+                {
+                    Id = GameIdentifier.ForSteam(2),
+                    Title = "Other Content",
+                    InstallState = InstallState.Installed,
+                    OwnershipType = OwnershipType.Owned,
+                    ProductCategory = ProductCategory.Other,
+                },
+                new GameEntry
+                {
+                    Id = GameIdentifier.ForSteam(3),
+                    Title = "Base Game",
+                    InstallState = InstallState.Installed,
+                    OwnershipType = OwnershipType.Owned,
+                    ProductCategory = ProductCategory.Game,
+                },
+            };
+
+            var filtered = engine.FilterGames(games);
+
+            filtered.Select(game => game.Id).Should().BeEquivalentTo(new[]
+            {
+                GameIdentifier.ForSteam(1),
+                GameIdentifier.ForSteam(2),
+            });
+        }
+        finally
+        {
+            Cleanup(settingsPath);
+        }
+    }
+
+    [Fact]
     public void FilterGames_ShouldReturnNoMatches_WhenAllCategoriesAreExcluded()
     {
         var settingsPath = CreateSettingsPath();

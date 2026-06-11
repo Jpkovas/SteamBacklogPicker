@@ -266,11 +266,7 @@ public sealed class SelectionEngine : ISelectionEngine
                 continue;
             }
 
-            var category = game.ProductCategory;
-            if (category == ProductCategory.Unknown)
-            {
-                category = ProductCategory.Game;
-            }
+            var category = SelectionFilters.NormalizeCategory(game.ProductCategory);
 
             if (allowedCategorySet is not null && !allowedCategorySet.Contains(category))
             {

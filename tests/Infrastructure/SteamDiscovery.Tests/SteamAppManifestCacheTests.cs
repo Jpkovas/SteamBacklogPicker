@@ -148,8 +148,9 @@ public sealed class SteamAppManifestCacheTests
         var pathIndexField = typeof(SteamAppManifestCache).GetField("_idByManifestPath", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
         Assert.NotNull(pathIndexField);
         var pathIndex = Assert.IsAssignableFrom<IReadOnlyDictionary<string, GameIdentifier>>(pathIndexField!.GetValue(cache));
-        Assert.Contains(renamedPath, pathIndex.Keys);
-        Assert.DoesNotContain(oldPath, pathIndex.Keys);
+        var indexedPaths = pathIndex.Keys.ToArray();
+        Assert.Contains(renamedPath, indexedPaths);
+        Assert.DoesNotContain(oldPath, indexedPaths);
     }
 
     [Fact]
@@ -311,5 +312,4 @@ public sealed class SteamAppManifestCacheTests
         }
     }
 }
-
 

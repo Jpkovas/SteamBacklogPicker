@@ -37,22 +37,22 @@
 4. **Curadoria de Promoções**: Usuário compara jogos em promoção com o backlog, destacando títulos com alta prioridade e custo-benefício.
 5. **Revisão Mensal**: Relatório automático destaca jogos não tocados nos últimos 6 meses e sugere rotação para manter a biblioteca ativa.
 
-## Paridade de funcionalidade (Windows x Linux)
+## Paridade de funcionalidade (Windows x Linux x macOS)
 
-A paridade é validada por jornada do usuário e deve ser mantida para qualquer release em ambas as plataformas.
+A paridade é validada por jornada do usuário e deve ser mantida para Windows, Linux e macOS. Empacotamento/release macOS não é exigido na etapa atual, mas o comportamento do app local deve ser equivalente.
 
-| Jornada do usuário | Critério de aceitação | Windows | Linux |
-| --- | --- | --- | --- |
-| Abrir app e carregar biblioteca Steam | App abre sem erro e lista jogos locais da Steam em até 60s para biblioteca média | Obrigatório | Obrigatório |
-| Aplicar filtros e refinar sorteio | Filtros principais (tags, coleção, instalado/não instalado) alteram o conjunto sorteável de forma equivalente | Obrigatório | Obrigatório |
-| Sortear jogo e repetir sorteio | Ação de sorteio apresenta jogo válido e `Sortear novamente` responde sem travar | Obrigatório | Obrigatório |
-| Abrir jogo no cliente Steam | Ação de abrir jogo dispara protocolo/comando Steam para título sorteado | Obrigatório | Obrigatório |
-| Diagnóstico e logs | Logs locais incluem erros de descoberta e falhas de inicialização | Obrigatório | Obrigatório |
-| Notificações de UX | Notificação de ação concluída existe (nativa ou fallback documentado) | Obrigatório | Obrigatório |
-| Atualização do app | Fluxo de atualização deve existir; enquanto não houver release Linux automatizada, a diferença deve ser registrada no changelog de portabilidade | Obrigatório | Obrigatório (pode ser temporariamente diferente) |
+| Jornada do usuário | Critério de aceitação | Windows | Linux | macOS |
+| --- | --- | --- | --- | --- |
+| Abrir app e carregar biblioteca Steam | App abre sem erro e lista jogos locais da Steam em até 60s para biblioteca média | Obrigatório | Obrigatório | Obrigatório |
+| Aplicar filtros e refinar sorteio | Filtros principais (tipo de conteúdo, coleção, instalado/não instalado, Steam Deck e loja) alteram o conjunto sorteável de forma equivalente | Obrigatório | Obrigatório | Obrigatório |
+| Sortear jogo e repetir sorteio | Ação de sorteio apresenta jogo válido e novo sorteio responde sem travar | Obrigatório | Obrigatório | Obrigatório |
+| Abrir jogo no cliente Steam | Ação de abrir jogo dispara protocolo/comando Steam para título sorteado | Obrigatório | Obrigatório | Obrigatório |
+| Diagnóstico e logs | Erros de descoberta e falhas de inicialização são observáveis por mecanismo local da plataforma | Obrigatório | Obrigatório | Obrigatório |
+| Notificações de UX | Notificação de ação concluída existe (nativa ou fallback documentado) | Obrigatório | Obrigatório | Obrigatório |
+| Atualização do app | Fluxo de atualização deve existir para releases; diferenças temporárias devem ser registradas no changelog de portabilidade | Obrigatório | Obrigatório | Fora do escopo desta etapa sem release |
 
 ### Regra de aceite de paridade
-- Uma release só é considerada "com paridade" quando todas as jornadas acima estiverem com status equivalente ou diferença temporária registrada conforme a convenção abaixo.
+- Uma entrega só é considerada "com paridade funcional" quando todas as jornadas acima estiverem com status equivalente ou diferença temporária registrada conforme a convenção abaixo.
 - Diferenças temporárias precisam de prazo de convergência explícito e dono responsável.
 
 ## Convenção de changelog de portabilidade
