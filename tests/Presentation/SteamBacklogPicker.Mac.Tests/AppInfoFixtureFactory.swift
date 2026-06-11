@@ -4,6 +4,7 @@ struct AppInfoFixtureEntry {
     var appId: UInt32
     var name: String
     var type: String
+    var isFamilyShared: Bool = false
     var categoryIds: [Int] = []
     var deckCategory: Int?
 }
@@ -62,7 +63,8 @@ enum AppInfoFixtureFactory {
             "type",
             "category",
             "steam_deck_compatibility",
-            "overall_category"
+            "overall_category",
+            "IsSubscribedFromFamilySharing"
         ]
 
         for entry in entries {
@@ -89,6 +91,11 @@ enum AppInfoFixtureFactory {
         payload.append(0x01)
         payload.appendUInt32(index("type", in: strings))
         payload.appendNullTerminatedString(entry.type)
+        if entry.isFamilyShared {
+            payload.append(0x02)
+            payload.appendUInt32(index("IsSubscribedFromFamilySharing", in: strings))
+            payload.appendUInt32(1)
+        }
 
         if !entry.categoryIds.isEmpty {
             payload.append(0x00)

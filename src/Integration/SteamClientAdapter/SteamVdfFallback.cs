@@ -138,6 +138,7 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
             UpsertDefinition(definitions, appId, null, null, null, appCollections);
         }
 
+        AddFamilySharedAppInfoDefinitions(definitions);
         ApplyAppMetadata(definitions);
 
         return definitions;
@@ -166,7 +167,7 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
                 continue;
             }
 
-            var appsNode = storeNode.FindPath("apps") ?? FindChildCaseInsensitive(storeNode, "apps");
+            var appsNode = FindLargestNumericChildrenNode(storeNode, "apps");
             if (appsNode is null)
             {
                 continue;
@@ -706,6 +707,26 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
         }
     }
 
+    private void AddFamilySharedAppInfoDefinitions(Dictionary<uint, SteamAppDefinition> definitions)
+    {
+        EnsureAppInfoMetadataLoaded();
+        foreach (var (appId, isFamilyShared) in _familySharingCache)
+        {
+            if (!isFamilyShared || definitions.ContainsKey(appId))
+            {
+                continue;
+            }
+
+            UpsertDefinition(
+                definitions,
+                appId,
+                _appNames.TryGetValue(appId, out var name) ? name : null,
+                false,
+                _appTypes.TryGetValue(appId, out var type) ? type : null,
+                null);
+        }
+    }
+
     private static IEnumerable<string> GetUserDirectoryCandidates(string steamId)
     {
         yield return steamId;
@@ -782,6 +803,35 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
         }
 
         return null;
+    }
+
+    private static ValveKeyValueNode? FindLargestNumericChildrenNode(ValveKeyValueNode parent, string name)
+    {
+        ValveKeyValueNode? best = null;
+        var bestCount = -1;
+
+        void Visit(ValveKeyValueNode current)
+        {
+            if (string.Equals(current.Name, name, StringComparison.OrdinalIgnoreCase))
+            {
+                var numericChildren = current.Children.Keys.Count(static key =>
+                    uint.TryParse(key, NumberStyles.Integer, CultureInfo.InvariantCulture, out _));
+
+                if (numericChildren > bestCount)
+                {
+                    best = current;
+                    bestCount = numericChildren;
+                }
+            }
+
+            foreach (var child in current.Children.Values)
+            {
+                Visit(child);
+            }
+        }
+
+        Visit(parent);
+        return best;
     }
 
     private bool TryParseTextVdfFile(string path, out ValveKeyValueNode root)
@@ -1071,6 +1121,4 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
         return compatibility != SteamDeckCompatibility.Unknown;
     }
 }
-
-
 
