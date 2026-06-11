@@ -123,6 +123,109 @@ public sealed class SteamVdfFallbackTests : IDisposable
     }
 
     [Fact]
+    public void GetKnownApps_ReadsNestedLocalConfigAppsWithoutLibraryCacheOrAppInfo()
+    {
+        var appInfoPath = Path.Combine(_steamRoot, "appcache", "appinfo.vdf");
+        if (File.Exists(appInfoPath))
+        {
+            File.Delete(appInfoPath);
+        }
+
+        var sharedConfigPath = Path.Combine(_steamRoot, "userdata", "76561198000000000", "7", "remote", "sharedconfig.vdf");
+        if (File.Exists(sharedConfigPath))
+        {
+            File.Delete(sharedConfigPath);
+        }
+
+        var localConfigPath = Path.Combine(_steamRoot, "userdata", "76561198000000000", "config", "localconfig.vdf");
+        File.WriteAllText(
+            localConfigPath,
+            """
+            "UserLocalConfigStore"
+            {
+                "Software"
+                {
+                    "Valve"
+                    {
+                        "Steam"
+                        {
+                            "apps"
+                            {
+                                "40"
+                                {
+                                    "name"      "Nested Owned Installed"
+                                    "Installed" "1"
+                                }
+                                "50"
+                                {
+                                    "name"      "Nested Owned Available"
+                                    "Installed" "0"
+                                }
+                                "60"
+                                {
+                                    "name"      "Nested Family Available"
+                                    "Installed" "0"
+                                    "IsSubscribedFromFamilySharing" "1"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            """);
+
+        var fallback = CreateFallback();
+
+        var apps = fallback.GetKnownApps();
+
+        Assert.True(apps.TryGetValue(40u, out var installed));
+        Assert.True(installed.IsInstalled);
+        Assert.Equal("Nested Owned Installed", installed.Name);
+
+        Assert.True(apps.TryGetValue(50u, out var available));
+        Assert.False(available.IsInstalled);
+        Assert.Equal("Nested Owned Available", available.Name);
+
+        Assert.True(apps.TryGetValue(60u, out var familyShared));
+        Assert.False(familyShared.IsInstalled);
+        Assert.Equal("Nested Family Available", familyShared.Name);
+        Assert.True(fallback.IsSubscribedFromFamilySharing(60u));
+    }
+
+    [Fact]
+    public void GetKnownApps_IncludesAppInfoOnlyFamilySharedApps()
+    {
+        var localConfigPath = Path.Combine(_steamRoot, "userdata", "76561198000000000", "config", "localconfig.vdf");
+        File.WriteAllText(localConfigPath, """
+            "UserLocalConfigStore"
+            {
+                "apps"
+                {
+                    "10"
+                    {
+                        "name"      "Sample Game"
+                        "Installed" "1"
+                    }
+                }
+            }
+            """);
+
+        var sharedConfigPath = Path.Combine(_steamRoot, "userdata", "76561198000000000", "7", "remote", "sharedconfig.vdf");
+        if (File.Exists(sharedConfigPath))
+        {
+            File.Delete(sharedConfigPath);
+        }
+
+        var fallback = CreateFallback();
+
+        var apps = fallback.GetKnownApps();
+
+        Assert.True(apps.TryGetValue(20u, out var familyShared));
+        Assert.False(familyShared.IsInstalled);
+        Assert.True(fallback.IsSubscribedFromFamilySharing(20u));
+    }
+
+    [Fact]
     public void GetKnownApps_ReturnsMetadataForAllDiscoveredTitles()
     {
         var fallback = CreateFallback();

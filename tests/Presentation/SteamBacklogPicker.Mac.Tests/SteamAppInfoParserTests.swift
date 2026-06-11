@@ -26,4 +26,23 @@ final class SteamAppInfoParserTests: XCTestCase {
         XCTAssertEqual(metadata[550]?.deckCompatibility, .playable)
     }
 
+    func testParseAppMetadataReadsFamilySharingFlag() throws {
+        let appInfoURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("SteamBacklogPickerAppInfo-\(UUID().uuidString).vdf")
+        defer { try? FileManager.default.removeItem(at: appInfoURL) }
+
+        try AppInfoFixtureFactory.makeAppInfoFixture(entries: [
+            AppInfoFixtureEntry(
+                appId: 620,
+                name: "Portal 2",
+                type: "game",
+                isFamilyShared: true
+            )
+        ]).write(to: appInfoURL)
+
+        let metadata = SteamAppInfoParser().parseAppMetadata(from: appInfoURL)
+
+        XCTAssertEqual(metadata[620]?.isFamilyShared, true)
+    }
+
 }

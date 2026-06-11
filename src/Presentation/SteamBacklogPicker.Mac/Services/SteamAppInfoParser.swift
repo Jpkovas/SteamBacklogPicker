@@ -94,8 +94,9 @@ struct SteamAppInfoParser {
         let type = common?.children["type"]?.value
         let categoryIds = extractCategoryIds(from: common)
         let deckCompatibility = extractDeckCompatibility(from: common)
+        let isFamilyShared = extractFamilySharingFlag(from: root) ?? false
 
-        if name == nil && type == nil && categoryIds.isEmpty && deckCompatibility == .unknown {
+        if name == nil && type == nil && categoryIds.isEmpty && deckCompatibility == .unknown && !isFamilyShared {
             return nil
         }
 
@@ -104,7 +105,8 @@ struct SteamAppInfoParser {
             name: name,
             type: type,
             storeCategoryIds: categoryIds,
-            deckCompatibility: deckCompatibility
+            deckCompatibility: deckCompatibility,
+            isFamilyShared: isFamilyShared
         )
     }
 
@@ -142,6 +144,29 @@ struct SteamAppInfoParser {
         default:
             return .unknown
         }
+    }
+
+    private func extractFamilySharingFlag(from node: AppInfoNode) -> Bool? {
+        for (key, child) in node.children {
+            if normalizedFlagName(key) == "issubscribedfromfamilysharing", let boolValue = child.boolValue {
+                return boolValue
+            }
+
+            if let descendant = extractFamilySharingFlag(from: child) {
+                return descendant
+            }
+        }
+
+        return nil
+    }
+
+    private func normalizedFlagName(_ value: String) -> String {
+        let filtered = value.lowercased().filter { $0.isLetter || $0.isNumber }
+        if filtered.first == "b" {
+            return String(filtered.dropFirst())
+        }
+
+        return filtered
     }
 
     private func parseObject(_ data: Data, cursor: inout Int, stringTable: [String]) -> AppInfoNode {
@@ -214,6 +239,7 @@ struct SteamAppInfoMetadata {
     var type: String?
     var storeCategoryIds: [Int] = []
     var deckCompatibility: SteamDeckCompatibility = .unknown
+    var isFamilyShared: Bool = false
 }
 
 private struct AppInfoNode {

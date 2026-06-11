@@ -90,6 +90,88 @@ final class SteamLibraryServiceTests: XCTestCase {
         XCTAssertFalse(byAppId[110]?.tags.contains("All Empty Groups") == true)
     }
 
+    func testLoadLibraryUsesAppInfoFamilySharingWhenLocalConfigDoesNotExposeIt() throws {
+        let steam = temporaryDirectory.appendingPathComponent("Steam", isDirectory: true)
+        try createSteamFixture(at: steam)
+
+        try write(
+            #"""
+            "UserLocalConfigStore"
+            {
+                "Software"
+                {
+                    "Valve"
+                    {
+                        "Steam"
+                        {
+                            "apps"
+                            {
+                                "130"
+                                {
+                                    "name" "Family From AppInfo"
+                                    "Installed" "0"
+                                    "AppType" "game"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            """#,
+            to: steam.appendingPathComponent("userdata/76561198000000000/config/localconfig.vdf")
+        )
+
+        try writeAppInfoFixture(
+            entries: [
+                AppInfoFixtureEntry(
+                    appId: 130,
+                    name: "Family From AppInfo",
+                    type: "game",
+                    isFamilyShared: true
+                )
+            ],
+            to: steam.appendingPathComponent("appcache/appinfo.vdf")
+        )
+
+        let games = try SteamLibraryService(
+            steamDirectory: steam,
+            appNameResolver: FixtureAppNameResolver(names: [:])
+        ).loadLibrary()
+
+        let entry = games.first { $0.steamAppId == 130 }
+        XCTAssertEqual(entry?.ownershipType, .familyShared)
+        XCTAssertEqual(entry?.installState, .shared)
+    }
+
+    func testLoadLibraryIncludesAppInfoOnlyFamilySharedApps() throws {
+        let steam = temporaryDirectory.appendingPathComponent("Steam", isDirectory: true)
+        try createMinimalSteamFixture(at: steam)
+        try writeAppInfoFixture(
+            entries: [
+                AppInfoFixtureEntry(
+                    appId: 140,
+                    name: "Family Only From AppInfo",
+                    type: "game",
+                    isFamilyShared: true
+                )
+            ],
+            to: steam.appendingPathComponent("appcache/appinfo.vdf")
+        )
+
+        let games = try SteamLibraryService(
+            steamDirectory: steam,
+            appNameResolver: FixtureAppNameResolver(names: [:])
+        ).loadLibrary()
+
+        let byAppId = Dictionary(uniqueKeysWithValues: games.compactMap { game in
+            game.steamAppId.map { ($0, game) }
+        })
+        XCTAssertEqual(Set(byAppId.keys), [140])
+        XCTAssertEqual(byAppId[140]?.title, "Family Only From AppInfo")
+        XCTAssertEqual(byAppId[140]?.ownershipType, .familyShared)
+        XCTAssertEqual(byAppId[140]?.installState, .shared)
+    }
+
     private func createSteamFixture(at steam: URL) throws {
         try write(
             #"""
@@ -266,6 +348,35 @@ final class SteamLibraryServiceTests: XCTestCase {
 
         try writeCloudCollections(
             to: steam.appendingPathComponent("userdata/76561198000000000/config/cloudstorage/cloud-storage-namespace-1.json")
+        )
+    }
+
+    private func createMinimalSteamFixture(at steam: URL) throws {
+        try write(
+            #"""
+            "LibraryFolders"
+            {
+                "0"
+                {
+                    "path" "\#(steam.path)"
+                }
+            }
+            """#,
+            to: steam.appendingPathComponent("steamapps/libraryfolders.vdf")
+        )
+
+        try write(
+            #"""
+            "users"
+            {
+                "76561198000000000"
+                {
+                    "MostRecent" "1"
+                    "Timestamp" "1710000000"
+                }
+            }
+            """#,
+            to: steam.appendingPathComponent("config/loginusers.vdf")
         )
     }
 

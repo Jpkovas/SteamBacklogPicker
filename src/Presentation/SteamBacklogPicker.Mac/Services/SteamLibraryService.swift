@@ -263,6 +263,9 @@ struct SteamLibraryService {
         if info.deckCompatibility != .unknown {
             app?.deckCompatibility = info.deckCompatibility
         }
+        if info.isFamilyShared {
+            app?.isFamilyShared = true
+        }
         return app
     }
 
@@ -590,6 +593,18 @@ private extension SteamLibraryService {
         let appInfo = SteamAppInfoParser().parseAppMetadata(from: appInfoURL)
         metadata.appInfo = appInfo
 
+        for info in appInfo.values where info.isFamilyShared && metadata.apps[info.appId] == nil {
+            metadata.apps[info.appId] = SteamAppMetadata(
+                appId: info.appId,
+                name: info.name,
+                isInstalled: false,
+                type: info.type,
+                isFamilyShared: true,
+                storeCategoryIds: info.storeCategoryIds,
+                deckCompatibility: info.deckCompatibility
+            )
+        }
+
         for appId in metadata.apps.keys {
             guard let info = appInfo[appId], var app = metadata.apps[appId] else {
                 continue
@@ -606,6 +621,9 @@ private extension SteamLibraryService {
             }
             if info.deckCompatibility != .unknown {
                 app.deckCompatibility = info.deckCompatibility
+            }
+            if info.isFamilyShared {
+                app.isFamilyShared = true
             }
             metadata.apps[appId] = app
         }

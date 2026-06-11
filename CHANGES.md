@@ -12,6 +12,7 @@
 - Alinhei também o parser macOS de `filterSpec`: grupos vazios são descartados como no fallback compartilhado, e coleções dinâmicas com todos os grupos vazios não são aplicadas.
 - Alinhei o parser macOS de coleções cloud ao fallback compartilhado para aceitar apenas números JSON em `added` e `rgOptions`, evitando que strings numéricas criem membros/opções só no cliente macOS.
 - Cobri a descoberta macOS de jogos via compartilhamento familiar, preservando `OwnershipType.familyShared` e `InstallState.shared` tanto para manifests com proprietário diferente quanto para entradas disponíveis vindas do metadata da Steam.
+- Ampliei a descoberta local da Steam no fallback compartilhado e no cliente macOS para ler árvores reais de `localconfig.vdf` em profundidade e incluir entradas de Steam Family sinalizadas em `appcache/appinfo.vdf`, sem exigir chave de API ou configuração do usuário.
 - Recriei a tela principal em SwiftUI com header, seletor PT/EN, sidebar de filtros, status, painel de arte, botão de instalar e botão de jogar, mantendo a composição visual das versões Windows/Linux.
 - Ajustei a sidebar macOS para colocar o seletor de coleção dentro da área rolável de filtros, separar melhor as ações fixas de atualizar/sortear e alinhar paddings/largura do dropdown à composição Windows/Linux.
 - Compactei o header macOS, troquei o seletor de coleção por um menu de largura total e limitei o redimensionamento máximo da janela ao tamanho visual validado para evitar layouts excessivamente esticados.
