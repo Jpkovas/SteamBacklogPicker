@@ -81,6 +81,8 @@
                         IsChecked="{Binding Preferences.RequireInstalled, Mode=TwoWay}" />
               <CheckBox Content="{DynamicResource Filters_ExcludeDeckUnsupported}"
                         IsChecked="{Binding Preferences.ExcludeDeckUnsupported, Mode=TwoWay}" />
+              <CheckBox Content="{DynamicResource Filters_RequireMacCompatible}"
+                        IsChecked="{Binding Preferences.RequireMacCompatible, Mode=TwoWay}" />
 
               <TextBlock Classes="sectionLabel" Text="{DynamicResource Filters_ContentTypesLabel}" />
               <CheckBox Content="{DynamicResource Filters_IncludeGames}"

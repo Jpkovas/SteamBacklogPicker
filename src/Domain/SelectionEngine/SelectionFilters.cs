@@ -10,6 +10,8 @@ public sealed class SelectionFilters
 
     public bool ExcludeDeckUnsupported { get; set; }
 
+    public bool RequireMacCompatible { get; set; }
+
     public string? RequiredCollection { get; set; }
 
     public List<ProductCategory> IncludedCategories { get; set; } = new() { ProductCategory.Game };
@@ -24,6 +26,7 @@ public sealed class SelectionFilters
         {
             RequireInstalled = RequireInstalled,
             ExcludeDeckUnsupported = ExcludeDeckUnsupported,
+            RequireMacCompatible = RequireMacCompatible,
             RequiredCollection = RequiredCollection,
             IncludedCategories = IncludedCategories is null ? new List<ProductCategory>() : new List<ProductCategory>(IncludedCategories),
             FilterByStorefront = FilterByStorefront,

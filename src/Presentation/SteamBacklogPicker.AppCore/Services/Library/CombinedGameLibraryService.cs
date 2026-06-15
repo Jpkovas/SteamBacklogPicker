@@ -72,6 +72,7 @@ public sealed class CombinedGameLibraryService : IGameLibraryService
 
         var tags = MergeSets(current.Tags, incoming.Tags, StringComparer.OrdinalIgnoreCase);
         var categories = MergeSets(current.StoreCategoryIds, incoming.StoreCategoryIds);
+        var platforms = MergeSets(current.SupportedPlatforms, incoming.SupportedPlatforms);
 
         return current with
         {
@@ -84,6 +85,7 @@ public sealed class CombinedGameLibraryService : IGameLibraryService
             Tags = tags,
             StoreCategoryIds = categories,
             DeckCompatibility = deck,
+            SupportedPlatforms = platforms,
         };
     }
 

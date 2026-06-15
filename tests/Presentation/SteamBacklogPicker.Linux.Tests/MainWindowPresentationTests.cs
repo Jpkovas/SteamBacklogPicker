@@ -125,6 +125,7 @@ public sealed class MainWindowPresentationTests
 
         axaml.Should().Contain("{Binding Preferences.RequireInstalled");
         axaml.Should().Contain("{Binding Preferences.ExcludeDeckUnsupported");
+        axaml.Should().Contain("{Binding Preferences.RequireMacCompatible");
         axaml.Should().Contain("{Binding Preferences.CollectionOptions}");
         axaml.Should().Contain("{Binding Preferences.SelectedCollection, Mode=TwoWay}");
         axaml.Should().Contain("Command=\"{Binding RefreshCommand}\"");

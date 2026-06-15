@@ -68,6 +68,34 @@ public sealed class SteamLibraryProviderTests
         entry.InstallState.Should().Be(InstallState.Available);
     }
 
+    [Fact]
+    public async Task GetLibraryAsync_ShouldAssignSupportedPlatforms_FromFallbackMetadata()
+    {
+        const uint appId = 6262;
+        using var environment = new TestLibraryEnvironment();
+
+        var locator = new FakeLibraryLocator(environment.LibraryRoot);
+        var adapter = new FakeSteamClientAdapter(Array.Empty<uint>(), Array.Empty<uint>());
+        var definition = new SteamAppDefinition(appId, "Mac Game", IsInstalled: false, Type: "game", Collections: Array.Empty<string>())
+        {
+            SupportedPlatforms = new[] { SteamPlatform.Windows, SteamPlatform.MacOS }
+        };
+        var fallback = new FakeSteamVdfFallback(
+            new Dictionary<uint, SteamAppDefinition>
+            {
+                [appId] = definition
+            },
+            sharedAppIds: Array.Empty<uint>());
+        using var cache = new SteamAppManifestCache(locator, adapter, fallback, new ValveTextVdfParser());
+
+        var provider = new SteamLibraryProvider(cache, locator, fallback);
+
+        var results = await provider.GetLibraryAsync();
+
+        var entry = results.Should().ContainSingle(game => game.Id == GameIdentifier.ForSteam(appId)).Subject;
+        entry.SupportedPlatforms.Should().BeEquivalentTo(new[] { SteamPlatform.Windows, SteamPlatform.MacOS });
+    }
+
     private sealed class TestLibraryEnvironment : IDisposable
     {
         private readonly string root;
@@ -210,7 +238,6 @@ public sealed class SteamLibraryProviderTests
         entry.Tags.Should().Contain("Jogáveis no Deck");
     }
 }
-
 
 
 

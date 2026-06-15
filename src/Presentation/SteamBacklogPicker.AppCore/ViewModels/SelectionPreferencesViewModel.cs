@@ -14,6 +14,7 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
     private readonly ILocalizationService _localizationService;
     private bool _requireInstalled;
     private bool _excludeDeckUnsupported;
+    private bool _requireMacCompatible;
     private bool _includeGames = true;
     private bool _includeSoundtracks;
     private bool _includeSoftware;
@@ -60,6 +61,18 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
             if (SetProperty(ref _excludeDeckUnsupported, value) && !_isHydrating)
             {
                 UpdatePreferences(p => p.Filters.ExcludeDeckUnsupported = value);
+            }
+        }
+    }
+
+    public bool RequireMacCompatible
+    {
+        get => _requireMacCompatible;
+        set
+        {
+            if (SetProperty(ref _requireMacCompatible, value) && !_isHydrating)
+            {
+                UpdatePreferences(p => p.Filters.RequireMacCompatible = value);
             }
         }
     }
@@ -178,6 +191,7 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
         {
             RequireInstalled = preferences.Filters.RequireInstalled;
             ExcludeDeckUnsupported = preferences.Filters.ExcludeDeckUnsupported;
+            RequireMacCompatible = preferences.Filters.RequireMacCompatible;
 
             var categories = preferences.Filters.IncludedCategories ?? new List<ProductCategory>();
             IncludeGames = categories.Contains(ProductCategory.Game);

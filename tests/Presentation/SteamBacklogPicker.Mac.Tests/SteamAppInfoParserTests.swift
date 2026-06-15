@@ -14,7 +14,8 @@ final class SteamAppInfoParserTests: XCTestCase {
                 name: "Left 4 Dead 2",
                 type: "game",
                 categoryIds: [2, 38],
-                deckCategory: 2
+                deckCategory: 2,
+                osList: "windows,macos,linux"
             )
         ]).write(to: appInfoURL)
 
@@ -24,6 +25,7 @@ final class SteamAppInfoParserTests: XCTestCase {
         XCTAssertEqual(metadata[550]?.type, "game")
         XCTAssertEqual(metadata[550]?.storeCategoryIds, [2, 38])
         XCTAssertEqual(metadata[550]?.deckCompatibility, .playable)
+        XCTAssertEqual(metadata[550]?.supportedPlatforms, [.windows, .macOS, .linux])
     }
 
     func testParseAppMetadataReadsFamilySharingFlag() throws {

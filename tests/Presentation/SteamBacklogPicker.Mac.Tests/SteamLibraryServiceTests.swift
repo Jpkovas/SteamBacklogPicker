@@ -50,6 +50,7 @@ final class SteamLibraryServiceTests: XCTestCase {
         ])
         XCTAssertEqual(byAppId[20]?.storeCategoryIds, [2])
         XCTAssertEqual(byAppId[20]?.deckCompatibility, .playable)
+        XCTAssertEqual(byAppId[20]?.supportedPlatforms, [.windows, .macOS])
         XCTAssertEqual(byAppId[30]?.title, "Available From Cache")
         XCTAssertEqual(byAppId[30]?.installState, .available)
         XCTAssertEqual(byAppId[40]?.title, "Collection From AppInfo")
@@ -332,7 +333,8 @@ final class SteamLibraryServiceTests: XCTestCase {
                     name: "Available From AppInfo",
                     type: "game",
                     categoryIds: [2],
-                    deckCategory: 2
+                    deckCategory: 2,
+                    osList: "windows,macos"
                 ),
                 AppInfoFixtureEntry(appId: 40, name: "Collection From AppInfo", type: "software"),
                 AppInfoFixtureEntry(appId: 60, name: "Fixture Soundtrack", type: "soundtrack"),

@@ -53,6 +53,7 @@ final class ContentViewRenderingTests: XCTestCase {
             "FiltersPanel",
             "Filters_RequireInstalled",
             "Filters_ExcludeDeckUnsupported",
+            "Filters_RequireMacCompatible",
             "Filters_IncludeGames",
             "Filters_IncludeSoundtracks",
             "Filters_IncludeSoftware",

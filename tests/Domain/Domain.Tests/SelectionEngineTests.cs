@@ -575,6 +575,65 @@ public sealed class SelectionEngineTests
     }
 
     [Fact]
+    public void FilterGames_ShouldRequireExplicitMacCompatibility_WhenPreferenceIsEnabled()
+    {
+        var settingsPath = CreateSettingsPath();
+        try
+        {
+            var engine = new SelectionEngine(settingsPath, () => DateTimeOffset.UnixEpoch);
+            engine.UpdatePreferences(new SelectionPreferences
+            {
+                Filters = new SelectionFilters
+                {
+                    RequireMacCompatible = true,
+                },
+                HistoryLimit = 10,
+            });
+
+            var games = new[]
+            {
+                new GameEntry
+                {
+                    Id = GameIdentifier.ForSteam(1),
+                    Title = "Mac Game",
+                    InstallState = InstallState.Installed,
+                    OwnershipType = OwnershipType.Owned,
+                    ProductCategory = ProductCategory.Game,
+                    SupportedPlatforms = new[] { SteamPlatform.Windows, SteamPlatform.MacOS },
+                },
+                new GameEntry
+                {
+                    Id = GameIdentifier.ForSteam(2),
+                    Title = "Windows Only",
+                    InstallState = InstallState.Installed,
+                    OwnershipType = OwnershipType.Owned,
+                    ProductCategory = ProductCategory.Game,
+                    SupportedPlatforms = new[] { SteamPlatform.Windows },
+                },
+                new GameEntry
+                {
+                    Id = GameIdentifier.ForSteam(3),
+                    Title = "Unknown Platform",
+                    InstallState = InstallState.Installed,
+                    OwnershipType = OwnershipType.Owned,
+                    ProductCategory = ProductCategory.Game,
+                },
+            };
+
+            var filtered = engine.FilterGames(games);
+
+            filtered.Select(game => game.Id).Should().BeEquivalentTo(new[]
+            {
+                GameIdentifier.ForSteam(1),
+            });
+        }
+        finally
+        {
+            Cleanup(settingsPath);
+        }
+    }
+
+    [Fact]
     public void FilterGames_ShouldTreatStorefrontIdentifiersIndependently()
     {
         var settingsPath = CreateSettingsPath();

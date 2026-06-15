@@ -167,6 +167,11 @@
                                       IsChecked="{Binding Preferences.ExcludeDeckUnsupported, Mode=TwoWay}"
                                       AutomationProperties.Name="{DynamicResource Filters_ExcludeDeckUnsupported}" />
 
+                            <CheckBox Content="{DynamicResource Filters_RequireMacCompatible}"
+                                      Style="{StaticResource FilterCheckBoxStyle}"
+                                      IsChecked="{Binding Preferences.RequireMacCompatible, Mode=TwoWay}"
+                                      AutomationProperties.Name="{DynamicResource Filters_RequireMacCompatible}" />
+
                             <TextBlock Text="{DynamicResource Filters_ContentTypesLabel}"
                                        Style="{StaticResource SectionLabelTextStyle}" />
 

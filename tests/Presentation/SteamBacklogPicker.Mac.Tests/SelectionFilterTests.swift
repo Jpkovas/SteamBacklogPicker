@@ -89,6 +89,19 @@ final class SelectionFilterTests: XCTestCase {
         XCTAssertTrue(store.eligibleGames().isEmpty)
     }
 
+    func testEligibleGamesRequireExplicitMacCompatibilityWhenFilterIsEnabled() {
+        let store = makeStore()
+        store.library = [
+            makeGame(appId: 10, title: "Mac Game", installState: .available, supportedPlatforms: [.windows, .macOS]),
+            makeGame(appId: 20, title: "Windows Game", installState: .available, supportedPlatforms: [.windows]),
+            makeGame(appId: 30, title: "Unknown Platform Game", installState: .available)
+        ]
+
+        store.preferences.filters.requireMacCompatible = true
+
+        XCTAssertEqual(store.eligibleGames().map(\.title), ["Mac Game"])
+    }
+
     func testEligibleGamesRespectEachContentTypeFilter() {
         let store = makeStore()
         store.library = [
@@ -539,6 +552,7 @@ final class SelectionFilterTests: XCTestCase {
 
         XCTAssertFalse(store.preferences.filters.requireInstalled)
         XCTAssertFalse(store.preferences.filters.excludeDeckUnsupported)
+        XCTAssertFalse(store.preferences.filters.requireMacCompatible)
         XCTAssertEqual(store.preferences.filters.requiredCollection, "Favorites")
         XCTAssertEqual(store.preferences.filters.includedCategories, [.game, .other])
         XCTAssertFalse(store.preferences.filters.filterByStorefront)
@@ -817,7 +831,8 @@ final class SelectionFilterTests: XCTestCase {
         ownershipType: OwnershipType? = nil,
         productCategory: ProductCategory = .game,
         tags: [String] = [],
-        deckCompatibility: SteamDeckCompatibility = .unknown
+        deckCompatibility: SteamDeckCompatibility = .unknown,
+        supportedPlatforms: Set<SteamPlatform> = []
     ) -> GameEntry {
         GameEntry(
             storefront: storefront,
@@ -830,6 +845,7 @@ final class SelectionFilterTests: XCTestCase {
             lastPlayed: nil,
             tags: tags,
             deckCompatibility: deckCompatibility,
+            supportedPlatforms: supportedPlatforms,
             coverURL: nil
         )
     }

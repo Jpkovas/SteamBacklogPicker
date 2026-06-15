@@ -115,6 +115,8 @@ private struct FilterSidebarView: View {
                         .accessibilityIdentifier("Filters_RequireInstalled")
                     Toggle(store.text("Filters_ExcludeDeckUnsupported"), isOn: $store.preferences.filters.excludeDeckUnsupported)
                         .accessibilityIdentifier("Filters_ExcludeDeckUnsupported")
+                    Toggle(store.text("Filters_RequireMacCompatible"), isOn: $store.preferences.filters.requireMacCompatible)
+                        .accessibilityIdentifier("Filters_RequireMacCompatible")
 
                     SectionLabel(store.text("Filters_ContentTypesLabel"))
                     Toggle(store.text("Filters_IncludeGames"), isOn: store.bindingForCategory(.game))

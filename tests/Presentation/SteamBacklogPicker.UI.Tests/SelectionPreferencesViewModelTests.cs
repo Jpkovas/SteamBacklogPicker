@@ -80,6 +80,30 @@ public sealed class SelectionPreferencesViewModelTests
     }
 
     [Fact]
+    public void RequireMacCompatible_ShouldUpdatePreferences()
+    {
+        var initialPreferences = new SelectionPreferences
+        {
+            Filters = new SelectionFilters
+            {
+                RequireMacCompatible = false,
+            },
+        };
+
+        var engine = new FakeSelectionEngine(initialPreferences);
+        var localization = new FakeLocalizationService();
+        var viewModel = new SelectionPreferencesViewModel(engine, localization);
+
+        viewModel.RequireMacCompatible = true;
+        engine.LastUpdatedPreferences.Filters.RequireMacCompatible.Should().BeTrue();
+        viewModel.RequireMacCompatible.Should().BeTrue();
+
+        viewModel.RequireMacCompatible = false;
+        engine.LastUpdatedPreferences.Filters.RequireMacCompatible.Should().BeFalse();
+        viewModel.RequireMacCompatible.Should().BeFalse();
+    }
+
+    [Fact]
     public void StorefrontToggles_ShouldUpdatePreferences()
     {
         var initialPreferences = new SelectionPreferences

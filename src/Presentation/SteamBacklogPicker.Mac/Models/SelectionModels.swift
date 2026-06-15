@@ -3,6 +3,7 @@ import Foundation
 struct SelectionFilters: Codable, Equatable {
     var requireInstalled = false
     var excludeDeckUnsupported = false
+    var requireMacCompatible = false
     var requiredCollection: String?
     var includedCategories: Set<ProductCategory> = [.game]
     var filterByStorefront = false
@@ -14,6 +15,7 @@ struct SelectionFilters: Codable, Equatable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         requireInstalled = try container.decodeIfPresent(Bool.self, forKey: .requireInstalled) ?? false
         excludeDeckUnsupported = try container.decodeIfPresent(Bool.self, forKey: .excludeDeckUnsupported) ?? false
+        requireMacCompatible = try container.decodeIfPresent(Bool.self, forKey: .requireMacCompatible) ?? false
         requiredCollection = try container.decodeIfPresent(String.self, forKey: .requiredCollection)
         includedCategories = try container.decodeIfPresent(Set<ProductCategory>.self, forKey: .includedCategories) ?? [.game]
         filterByStorefront = try container.decodeIfPresent(Bool.self, forKey: .filterByStorefront) ?? false
