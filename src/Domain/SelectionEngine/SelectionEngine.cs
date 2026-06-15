@@ -261,6 +261,11 @@ public sealed class SelectionEngine : ISelectionEngine
                 continue;
             }
 
+            if (filters.RequireMacCompatible && !SupportsPlatform(game, SteamPlatform.MacOS))
+            {
+                continue;
+            }
+
             if (allowedStorefrontSet is not null && !allowedStorefrontSet.Contains(game.Id.Storefront))
             {
                 continue;
@@ -286,6 +291,12 @@ public sealed class SelectionEngine : ISelectionEngine
         }
 
         return results;
+    }
+
+    private static bool SupportsPlatform(GameEntry game, SteamPlatform platform)
+    {
+        var platforms = game.SupportedPlatforms;
+        return platforms is not null && platforms.Contains(platform);
     }
 
     private HashSet<GameIdentifier> GetExcludedGameIds()

@@ -50,4 +50,6 @@ public sealed record class GameEntry
     public IReadOnlyCollection<int> StoreCategoryIds { get; init; } = Array.Empty<int>();
 
     public SteamDeckCompatibility DeckCompatibility { get; init; } = SteamDeckCompatibility.Unknown;
+
+    public IReadOnlyCollection<SteamPlatform> SupportedPlatforms { get; init; } = Array.Empty<SteamPlatform>();
 }

@@ -74,6 +74,11 @@ public sealed class SteamLibraryProvider : IGameLibraryProvider
                     enriched = enriched with { DeckCompatibility = definition.DeckCompatibility };
                 }
 
+                if (definition.SupportedPlatforms.Count > 0)
+                {
+                    enriched = enriched with { SupportedPlatforms = definition.SupportedPlatforms };
+                }
+
                 var category = MapProductCategory(definition.Type);
                 if (enriched.ProductCategory != category)
                 {
@@ -140,7 +145,8 @@ public sealed class SteamLibraryProvider : IGameLibraryProvider
                 ProductCategory = category,
                 Tags = definition.Collections ?? Array.Empty<string>(),
                 StoreCategoryIds = definition.StoreCategoryIds ?? Array.Empty<int>(),
-                DeckCompatibility = definition.DeckCompatibility
+                DeckCompatibility = definition.DeckCompatibility,
+                SupportedPlatforms = definition.SupportedPlatforms
             };
         }
 
@@ -330,5 +336,4 @@ public sealed class SteamLibraryProvider : IGameLibraryProvider
     }
 
 }
-
 

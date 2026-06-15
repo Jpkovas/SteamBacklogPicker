@@ -94,9 +94,10 @@ struct SteamAppInfoParser {
         let type = common?.children["type"]?.value
         let categoryIds = extractCategoryIds(from: common)
         let deckCompatibility = extractDeckCompatibility(from: common)
+        let supportedPlatforms = extractSupportedPlatforms(from: common)
         let isFamilyShared = extractFamilySharingFlag(from: root) ?? false
 
-        if name == nil && type == nil && categoryIds.isEmpty && deckCompatibility == .unknown && !isFamilyShared {
+        if name == nil && type == nil && categoryIds.isEmpty && deckCompatibility == .unknown && supportedPlatforms.isEmpty && !isFamilyShared {
             return nil
         }
 
@@ -106,6 +107,7 @@ struct SteamAppInfoParser {
             type: type,
             storeCategoryIds: categoryIds,
             deckCompatibility: deckCompatibility,
+            supportedPlatforms: supportedPlatforms,
             isFamilyShared: isFamilyShared
         )
     }
@@ -144,6 +146,28 @@ struct SteamAppInfoParser {
         default:
             return .unknown
         }
+    }
+
+    private func extractSupportedPlatforms(from common: AppInfoNode?) -> Set<SteamPlatform> {
+        guard let value = common?.children["oslist"]?.value else {
+            return []
+        }
+
+        var platforms = Set<SteamPlatform>()
+        for rawItem in value.split(separator: ",") {
+            switch rawItem.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+            case "windows", "win":
+                platforms.insert(.windows)
+            case "macos", "mac", "osx":
+                platforms.insert(.macOS)
+            case "linux", "steamdeck":
+                platforms.insert(.linux)
+            default:
+                continue
+            }
+        }
+
+        return platforms
     }
 
     private func extractFamilySharingFlag(from node: AppInfoNode) -> Bool? {
@@ -239,6 +263,7 @@ struct SteamAppInfoMetadata {
     var type: String?
     var storeCategoryIds: [Int] = []
     var deckCompatibility: SteamDeckCompatibility = .unknown
+    var supportedPlatforms: Set<SteamPlatform> = []
     var isFamilyShared: Bool = false
 }
 

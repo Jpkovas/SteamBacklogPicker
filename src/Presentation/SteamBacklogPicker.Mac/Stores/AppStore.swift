@@ -299,6 +299,10 @@ final class AppStore: ObservableObject {
                 return false
             }
 
+            if preferences.filters.requireMacCompatible && !game.supportedPlatforms.contains(.macOS) {
+                return false
+            }
+
             if preferences.filters.filterByStorefront && !preferences.filters.includedStorefronts.contains(game.storefront) {
                 return false
             }

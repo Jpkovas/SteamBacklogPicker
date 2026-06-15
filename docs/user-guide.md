@@ -12,7 +12,7 @@
 
 - **Visão da biblioteca**: mostra total de jogos detectados, filtros ativos e ações rápidas de atualização.
 - **Cartão do jogo sorteado**: exibe capa, status de instalação e ações disponíveis para o jogo atual.
-- **Painel de filtros**: permite priorizar jogos instalados, aplicar recortes por tags/coleções e ajustar critérios de sorteio.
+- **Painel de filtros**: permite priorizar jogos instalados, remover incompatíveis com Steam Deck, limitar o sorteio a jogos explicitamente compatíveis com macOS, aplicar recortes por tags/coleções e ajustar tipos de conteúdo.
 - **Ações principais**:
   - `Sortear novamente`: executa novo sorteio com os filtros atuais.
   - `Abrir no Steam`: abre o jogo selecionado no cliente Steam.
@@ -32,6 +32,7 @@
 - Se a biblioteca não for encontrada, revise os caminhos Steam em **Configurações** e confirme acesso à pasta `steamapps`.
 - Em caso de erro recorrente, exporte/colete logs e informe a versão do app no relato.
 - Se o Steam estiver fechado ou sem metadados recentes, o app pode usar cache local até nova atualização da biblioteca.
+- O filtro de compatibilidade macOS depende do metadado local `appinfo.vdf`; quando ele está ativo, jogos sem informação de plataforma também saem da pool.
 
 ## Uso offline
 

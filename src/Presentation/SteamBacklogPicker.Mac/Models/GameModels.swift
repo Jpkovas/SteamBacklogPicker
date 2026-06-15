@@ -38,6 +38,12 @@ enum SteamDeckCompatibility: String, Codable {
     case unsupported
 }
 
+enum SteamPlatform: String, Codable, CaseIterable {
+    case windows
+    case macOS
+    case linux
+}
+
 struct GameEntry: Codable, Identifiable, Equatable {
     let storefront: Storefront
     let steamAppId: UInt32?
@@ -50,6 +56,7 @@ struct GameEntry: Codable, Identifiable, Equatable {
     var tags: [String]
     var storeCategoryIds: [Int] = []
     var deckCompatibility: SteamDeckCompatibility
+    var supportedPlatforms: Set<SteamPlatform> = []
     var coverURL: URL?
     var coverURLs: [URL] = []
 
@@ -75,6 +82,7 @@ struct GameEntry: Codable, Identifiable, Equatable {
             tags: [],
             storeCategoryIds: [],
             deckCompatibility: .unknown,
+            supportedPlatforms: [],
             coverURL: nil,
             coverURLs: []
         )

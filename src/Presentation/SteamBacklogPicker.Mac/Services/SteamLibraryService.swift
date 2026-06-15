@@ -210,6 +210,7 @@ struct SteamLibraryService {
             tags: tags,
             storeCategoryIds: appMetadata?.storeCategoryIds ?? [],
             deckCompatibility: appMetadata?.deckCompatibility ?? .unknown,
+            supportedPlatforms: appMetadata?.supportedPlatforms ?? [],
             coverURL: artworkURLs.first,
             coverURLs: artworkURLs
         )
@@ -237,6 +238,7 @@ struct SteamLibraryService {
             tags: tags,
             storeCategoryIds: app.storeCategoryIds,
             deckCompatibility: app.deckCompatibility,
+            supportedPlatforms: app.supportedPlatforms,
             coverURL: artworkURLs.first,
             coverURLs: artworkURLs
         )
@@ -262,6 +264,9 @@ struct SteamLibraryService {
         }
         if info.deckCompatibility != .unknown {
             app?.deckCompatibility = info.deckCompatibility
+        }
+        if !info.supportedPlatforms.isEmpty {
+            app?.supportedPlatforms = info.supportedPlatforms
         }
         if info.isFamilyShared {
             app?.isFamilyShared = true
@@ -433,6 +438,7 @@ private struct SteamAppMetadata {
     var isFamilyShared: Bool
     var storeCategoryIds: [Int] = []
     var deckCompatibility: SteamDeckCompatibility = .unknown
+    var supportedPlatforms: Set<SteamPlatform> = []
 
     var category: ProductCategory {
         ProductCategory.fromSteamType(type)
@@ -601,7 +607,8 @@ private extension SteamLibraryService {
                 type: info.type,
                 isFamilyShared: true,
                 storeCategoryIds: info.storeCategoryIds,
-                deckCompatibility: info.deckCompatibility
+                deckCompatibility: info.deckCompatibility,
+                supportedPlatforms: info.supportedPlatforms
             )
         }
 
@@ -621,6 +628,9 @@ private extension SteamLibraryService {
             }
             if info.deckCompatibility != .unknown {
                 app.deckCompatibility = info.deckCompatibility
+            }
+            if !info.supportedPlatforms.isEmpty {
+                app.supportedPlatforms = info.supportedPlatforms
             }
             if info.isFamilyShared {
                 app.isFamilyShared = true

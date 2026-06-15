@@ -37,6 +37,7 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
     private readonly Dictionary<uint, string> _appTypes = new();
     private readonly Dictionary<uint, IReadOnlyList<int>> _appCategories = new();
     private readonly Dictionary<uint, SteamDeckCompatibility> _appDeckCompatibility = new();
+    private readonly Dictionary<uint, IReadOnlyList<SteamPlatform>> _appSupportedPlatforms = new();
     private IReadOnlyList<SteamCollectionDefinition>? _collectionDefinitions;
     private bool _appInfoLoaded;
     private string? _currentSteamId;
@@ -503,6 +504,12 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
                 {
                     _appDeckCompatibility[appId] = compatibility;
                 }
+
+                var platforms = ExtractSupportedPlatforms(node);
+                if (platforms.Count > 0)
+                {
+                    _appSupportedPlatforms[appId] = platforms;
+                }
             }
 
             loaded = true;
@@ -701,6 +708,11 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
             if (_appDeckCompatibility.TryGetValue(appId, out var deckCompatibility))
             {
                 updated = updated with { DeckCompatibility = deckCompatibility };
+            }
+
+            if (_appSupportedPlatforms.TryGetValue(appId, out var supportedPlatforms))
+            {
+                updated = updated with { SupportedPlatforms = supportedPlatforms };
             }
 
             definitions[appId] = updated;
@@ -1120,5 +1132,38 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
 
         return compatibility != SteamDeckCompatibility.Unknown;
     }
-}
 
+    private static IReadOnlyList<SteamPlatform> ExtractSupportedPlatforms(ValveKeyValueNode node)
+    {
+        var common = FindChildCaseInsensitive(node, "common");
+        if (common is null)
+        {
+            return Array.Empty<SteamPlatform>();
+        }
+
+        var osList = FindChildCaseInsensitive(common, "oslist");
+        if (string.IsNullOrWhiteSpace(osList?.Value))
+        {
+            return Array.Empty<SteamPlatform>();
+        }
+
+        var platforms = new List<SteamPlatform>();
+        foreach (var item in osList.Value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var platform = item.ToLowerInvariant() switch
+            {
+                "windows" or "win" => SteamPlatform.Windows,
+                "macos" or "mac" or "osx" => SteamPlatform.MacOS,
+                "linux" or "steamdeck" => SteamPlatform.Linux,
+                _ => (SteamPlatform?)null,
+            };
+
+            if (platform.HasValue && !platforms.Contains(platform.Value))
+            {
+                platforms.Add(platform.Value);
+            }
+        }
+
+        return platforms;
+    }
+}

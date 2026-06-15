@@ -55,6 +55,7 @@ public sealed class CombinedGameLibraryServiceTests
             Tags = new[] { "Installed" },
             StoreCategoryIds = new[] { 1 },
             DeckCompatibility = SteamDeckCompatibility.Unknown,
+            SupportedPlatforms = new[] { SteamPlatform.Windows },
         };
         var enriched = new GameEntry
         {
@@ -65,6 +66,7 @@ public sealed class CombinedGameLibraryServiceTests
             Tags = new[] { "Catalog" },
             StoreCategoryIds = new[] { 2 },
             DeckCompatibility = SteamDeckCompatibility.Verified,
+            SupportedPlatforms = new[] { SteamPlatform.MacOS },
         };
 
         var service = new CombinedGameLibraryService(new[]
@@ -81,6 +83,7 @@ public sealed class CombinedGameLibraryServiceTests
         entry.Tags.Should().Contain(new[] { "Installed", "Catalog" });
         entry.StoreCategoryIds.Should().Contain(new[] { 1, 2 });
         entry.DeckCompatibility.Should().Be(SteamDeckCompatibility.Verified);
+        entry.SupportedPlatforms.Should().Contain(new[] { SteamPlatform.Windows, SteamPlatform.MacOS });
     }
 
     private sealed class FakeLibraryProvider : IGameLibraryProvider

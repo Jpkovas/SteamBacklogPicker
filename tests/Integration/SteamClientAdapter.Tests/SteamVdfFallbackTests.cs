@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using Domain;
 using SteamClientAdapter;
 using System.Linq;
 using SteamTestUtilities.ValveFormat;
@@ -253,6 +254,27 @@ public sealed class SteamVdfFallbackTests : IDisposable
         Assert.Contains("Jogáveis no Deck", available.Collections);
     }
 
+    [Fact]
+    public void GetKnownApps_ReadsSupportedPlatformsFromAppInfoOsList()
+    {
+        var appInfoPath = Path.Combine(_steamRoot, "appcache", "appinfo.vdf");
+        File.WriteAllBytes(
+            appInfoPath,
+            CreateLegacyAppInfoFixture(
+                (10u, "Sample Game", "game", "windows,macos,linux"),
+                (20u, "Family Shared Game", "game", "windows")));
+
+        var fallback = CreateFallback();
+
+        var apps = fallback.GetKnownApps();
+
+        Assert.True(apps.TryGetValue(10u, out var macGame));
+        Assert.Equal(new[] { SteamPlatform.Windows, SteamPlatform.MacOS, SteamPlatform.Linux }, macGame.SupportedPlatforms);
+
+        Assert.True(apps.TryGetValue(20u, out var windowsGame));
+        Assert.Equal(new[] { SteamPlatform.Windows }, windowsGame.SupportedPlatforms);
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_steamRoot))
@@ -286,6 +308,56 @@ public sealed class SteamVdfFallbackTests : IDisposable
             var name = Path.GetFileName(directory)!;
             CopyDirectory(directory, Path.Combine(destinationDirectory, name));
         }
+    }
+
+    private static byte[] CreateLegacyAppInfoFixture(params (uint AppId, string Name, string Type, string OsList)[] entries)
+    {
+        using var stream = new MemoryStream();
+        using var writer = new BinaryWriter(stream);
+
+        foreach (var entry in entries)
+        {
+            var payload = CreateLegacyAppInfoPayload(entry.Name, entry.Type, entry.OsList);
+            writer.Write(entry.AppId);
+            writer.Write((uint)(40 + payload.Length));
+            writer.Write(new byte[40]);
+            writer.Write(payload);
+        }
+
+        writer.Write(0u);
+        writer.Write(0u);
+        return stream.ToArray();
+    }
+
+    private static byte[] CreateLegacyAppInfoPayload(string name, string type, string osList)
+    {
+        using var stream = new MemoryStream();
+        using var writer = new BinaryWriter(stream);
+
+        writer.Write((byte)0x00);
+        WriteNullTerminatedString(writer, "common");
+
+        writer.Write((byte)0x01);
+        WriteNullTerminatedString(writer, "name");
+        WriteNullTerminatedString(writer, name);
+
+        writer.Write((byte)0x01);
+        WriteNullTerminatedString(writer, "type");
+        WriteNullTerminatedString(writer, type);
+
+        writer.Write((byte)0x01);
+        WriteNullTerminatedString(writer, "oslist");
+        WriteNullTerminatedString(writer, osList);
+
+        writer.Write((byte)0x08);
+        writer.Write((byte)0x08);
+        return stream.ToArray();
+    }
+
+    private static void WriteNullTerminatedString(BinaryWriter writer, string value)
+    {
+        writer.Write(System.Text.Encoding.UTF8.GetBytes(value));
+        writer.Write((byte)0);
     }
 
     private sealed class PhysicalFileAccessor : IFileAccessor

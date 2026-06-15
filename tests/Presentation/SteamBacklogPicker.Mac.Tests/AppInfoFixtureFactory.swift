@@ -7,6 +7,7 @@ struct AppInfoFixtureEntry {
     var isFamilyShared: Bool = false
     var categoryIds: [Int] = []
     var deckCategory: Int?
+    var osList: String?
 }
 
 enum AppInfoFixtureFactory {
@@ -62,6 +63,7 @@ enum AppInfoFixtureFactory {
             "name",
             "type",
             "category",
+            "oslist",
             "steam_deck_compatibility",
             "overall_category",
             "IsSubscribedFromFamilySharing"
@@ -91,6 +93,11 @@ enum AppInfoFixtureFactory {
         payload.append(0x01)
         payload.appendUInt32(index("type", in: strings))
         payload.appendNullTerminatedString(entry.type)
+        if let osList = entry.osList {
+            payload.append(0x01)
+            payload.appendUInt32(index("oslist", in: strings))
+            payload.appendNullTerminatedString(osList)
+        }
         if entry.isFamilyShared {
             payload.append(0x02)
             payload.appendUInt32(index("IsSubscribedFromFamilySharing", in: strings))

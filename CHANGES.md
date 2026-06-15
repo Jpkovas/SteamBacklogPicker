@@ -1,5 +1,6 @@
 # CHANGES
 
+- Adicionei o filtro opt-in "Somente compatíveis com macOS" em Windows, Linux e macOS; quando ativo, a pool de sorteio mantém apenas jogos com suporte macOS explicitamente informado pelo `appcache/appinfo.vdf`, removendo também entradas sem metadado de plataforma.
 - Adicionei o cliente nativo macOS em SwiftUI em `src/Presentation/SteamBacklogPicker.Mac`, com pacote SwiftPM no repositório para manter Windows, Linux e macOS como três versões separadas.
 - Portabilizei para macOS a descoberta local da Steam, parsing de `libraryfolders.vdf`/`appmanifest_*.acf`, hidratação de coleções via `sharedconfig.vdf`, arte local/CDN, filtros, sorteio, histórico persistido e ações `steam://run`/`steam://install`.
 - Ampliei a descoberta macOS para combinar manifests instalados, `localconfig.vdf`, `librarycache` e nomes/tipos oficiais de `appcache/appinfo.vdf`, evitando limitar a biblioteca aos jogos instalados; o filtro "Somente instalados" agora usa apenas manifests reais como fonte de instalação.

@@ -18,6 +18,7 @@
 - Header, language selector, filter sidebar, status box, artwork panel, install button, and play button are visible at the default 900x650 minimum size.
 - Empty game details match the shared placeholder behavior: artwork shows the draw prompt, while metadata shows the unknown installation state.
 - Core controls expose stable macOS accessibility identifiers and localized labels for parity with WPF automation names and Computer Use validation.
+- The macOS compatibility filter is available in the sidebar with the same persisted preference as Windows/Linux and excludes games without explicit macOS support when enabled.
 - Steam library is loaded from `~/Library/Application Support/Steam` or `STEAM_PATH`.
 - Available games without `appmanifest_*.acf` are loaded from Steam profile metadata such as `localconfig.vdf` and `librarycache`.
 - Official names and content types are hydrated from `appcache/appinfo.vdf` so local profile labels do not replace game titles.

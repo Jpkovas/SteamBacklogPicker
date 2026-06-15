@@ -8,6 +8,7 @@ public sealed record class SteamAppDefinition
 {
     private IReadOnlyList<string> _collections = Array.Empty<string>();
     private IReadOnlyList<int> _storeCategoryIds = Array.Empty<int>();
+    private IReadOnlyList<SteamPlatform> _supportedPlatforms = Array.Empty<SteamPlatform>();
 
     public SteamAppDefinition(uint AppId, string? Name, bool IsInstalled, string? Type, IReadOnlyList<string>? Collections)
     {
@@ -39,4 +40,10 @@ public sealed record class SteamAppDefinition
     }
 
     public SteamDeckCompatibility DeckCompatibility { get; init; } = SteamDeckCompatibility.Unknown;
+
+    public IReadOnlyList<SteamPlatform> SupportedPlatforms
+    {
+        get => _supportedPlatforms;
+        init => _supportedPlatforms = value ?? Array.Empty<SteamPlatform>();
+    }
 }
