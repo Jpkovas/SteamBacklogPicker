@@ -23,7 +23,12 @@ public sealed record class SteamAppDefinition
 
     public string? Name { get; init; }
 
+    // Historical profile flag retained for compatibility; it is not installation evidence.
     public bool IsInstalled { get; init; }
+
+    public InstallState InstallState { get; init; } = InstallState.Unknown;
+
+    public OwnershipType OwnershipType { get; init; } = OwnershipType.Unknown;
 
     public string? Type { get; init; }
 

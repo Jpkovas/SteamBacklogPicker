@@ -9,6 +9,7 @@ using SteamBacklogPicker.UI.ViewModels;
 using SteamClientAdapter;
 using SteamDiscovery;
 using ValveFormatParser;
+using SteamCatalog;
 
 namespace SteamBacklogPicker.AppCore.Composition;
 
@@ -41,18 +42,27 @@ public static class ApplicationCoreServiceCollectionExtensions
         });
         services.AddSingleton<ISteamClientAdapter>(sp =>
         {
-            var environment = sp.GetRequiredService<ISteamEnvironment>();
             var adapter = new SteamClientAdapter.SteamClientAdapter(
                 sp.GetRequiredService<INativeLibraryLoader>(),
                 sp.GetRequiredService<ISteamVdfFallback>());
-            environment.TryInitializeSteamApi(adapter);
+            // Steamworks requires an application context. Local discovery works without loading game DLLs.
             return adapter;
         });
 
         services.AddSingleton<SteamAppManifestCache>();
         services.AddSingleton<ISelectionEngine>(_ => new SelectionEngine());
         services.AddSingleton<IGameLibraryProvider, SteamLibraryProvider>();
-        services.AddSingleton<IGameLibraryService, CombinedGameLibraryService>();
+        services.AddSingleton<CombinedGameLibraryService>();
+        services.AddSingleton<SqliteCatalogCache>();
+        services.AddSingleton<SteamKitCatalogTransport>();
+        services.AddSingleton<SteamStoreMetadataSource>();
+        services.AddSingleton<ISteamCatalogService>(sp => new SteamCatalogService(sp.GetRequiredService<SqliteCatalogCache>(),
+            new FallbackCatalogMetadataSource(sp.GetRequiredService<SteamKitCatalogTransport>(), sp.GetRequiredService<SteamStoreMetadataSource>())));
+        services.AddSingleton<ISteamFamilySessionService>(sp => new SteamFamilySessionService(
+            sp.GetRequiredService<SteamKitCatalogTransport>(), sp.GetRequiredService<SqliteCatalogCache>()));
+        services.AddSingleton<IGameLibraryService>(sp => new CatalogLibraryService(sp.GetRequiredService<CombinedGameLibraryService>(),
+            sp.GetRequiredService<ISteamVdfFallback>(), sp.GetRequiredService<ISteamCatalogService>(), sp.GetRequiredService<ISteamFamilySessionService>()));
+        services.AddSingleton(_ => new BacklogStore(Path.Combine(Path.GetDirectoryName(SqliteCatalogCache.GetDefaultPath())!, "backlog.json")));
         services.AddSingleton<IGameArtLocator, SteamGameArtLocator>();
         services.AddSingleton<ILocalizationService, LocalizationService>();
         services.AddSingleton<IGameLaunchService, GameLaunchService>();

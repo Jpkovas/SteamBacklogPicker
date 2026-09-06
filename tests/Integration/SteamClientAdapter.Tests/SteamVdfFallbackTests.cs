@@ -15,7 +15,7 @@ public sealed class SteamVdfFallbackTests : IDisposable
 
     public SteamVdfFallbackTests()
     {
-        _steamRoot = Path.Combine(AppContext.BaseDirectory, "steam-fixture");
+        _steamRoot = Path.Combine(Path.GetTempPath(), "SteamVdfFallbackTests", Guid.NewGuid().ToString("N"));
         if (Directory.Exists(_steamRoot))
         {
             Directory.Delete(_steamRoot, recursive: true);
@@ -49,13 +49,13 @@ public sealed class SteamVdfFallbackTests : IDisposable
     }
 
     [Fact]
-    public void GetInstalledAppIds_ReadsInstalledFlags()
+    public void GetInstalledAppIds_ShouldNotTreatProfileFlagsAsInstallationEvidence()
     {
         var fallback = CreateFallback();
 
         var appIds = fallback.GetInstalledAppIds();
 
-        Assert.Equal(new uint[] { 10, 20 }, appIds);
+        Assert.Empty(appIds);
     }
 
     [Fact]
@@ -87,7 +87,7 @@ public sealed class SteamVdfFallbackTests : IDisposable
     [Fact]
     public void IsSubscribedFromFamilySharing_FallsBackToLocalConfig()
     {
-        var fallbackRoot = Path.Combine(AppContext.BaseDirectory, "steam-fixture-local");
+        var fallbackRoot = Path.Combine(Path.GetTempPath(), "SteamVdfFallbackTests", Guid.NewGuid().ToString("N"));
         if (Directory.Exists(fallbackRoot))
         {
             Directory.Delete(fallbackRoot, recursive: true);
@@ -180,7 +180,8 @@ public sealed class SteamVdfFallbackTests : IDisposable
         var apps = fallback.GetKnownApps();
 
         Assert.True(apps.TryGetValue(40u, out var installed));
-        Assert.True(installed.IsInstalled);
+        Assert.False(installed.IsInstalled);
+        Assert.Equal(InstallState.Available, installed.InstallState);
         Assert.Equal("Nested Owned Installed", installed.Name);
 
         Assert.True(apps.TryGetValue(50u, out var available));
@@ -194,7 +195,7 @@ public sealed class SteamVdfFallbackTests : IDisposable
     }
 
     [Fact]
-    public void GetKnownApps_IncludesAppInfoOnlyFamilySharedApps()
+    public void GetKnownApps_ShouldNotImportAppInfoOnlyFamilySharingFlags()
     {
         var localConfigPath = Path.Combine(_steamRoot, "userdata", "76561198000000000", "config", "localconfig.vdf");
         File.WriteAllText(localConfigPath, """
@@ -221,9 +222,8 @@ public sealed class SteamVdfFallbackTests : IDisposable
 
         var apps = fallback.GetKnownApps();
 
-        Assert.True(apps.TryGetValue(20u, out var familyShared));
-        Assert.False(familyShared.IsInstalled);
-        Assert.True(fallback.IsSubscribedFromFamilySharing(20u));
+        Assert.DoesNotContain(20u, apps.Keys);
+        Assert.False(fallback.IsSubscribedFromFamilySharing(20u));
     }
 
     [Fact]
@@ -236,13 +236,15 @@ public sealed class SteamVdfFallbackTests : IDisposable
         Assert.Equal(3, apps.Count);
 
         Assert.True(apps.TryGetValue(10u, out var ownedInstalled));
-        Assert.True(ownedInstalled.IsInstalled);
+        Assert.False(ownedInstalled.IsInstalled);
+        Assert.Equal(OwnershipType.Unknown, ownedInstalled.OwnershipType);
         Assert.Equal("Sample Game", ownedInstalled.Name);
         Assert.Contains("Favoritos", ownedInstalled.Collections);
         Assert.Contains("Jogáveis no Deck", ownedInstalled.Collections);
 
         Assert.True(apps.TryGetValue(20u, out var familyShared));
-        Assert.True(familyShared.IsInstalled);
+        Assert.False(familyShared.IsInstalled);
+        Assert.Equal(OwnershipType.FamilyShared, familyShared.OwnershipType);
         Assert.Equal("Family Shared Game", familyShared.Name);
         Assert.Contains("Cooperativo", familyShared.Collections);
         Assert.Contains("VR", familyShared.Collections);
@@ -273,6 +275,148 @@ public sealed class SteamVdfFallbackTests : IDisposable
 
         Assert.True(apps.TryGetValue(20u, out var windowsGame));
         Assert.Equal(new[] { SteamPlatform.Windows }, windowsGame.SupportedPlatforms);
+    }
+
+    [Fact]
+    public void GetKnownApps_ShouldKeepMissingInstalledAndOwnershipUnknown()
+    {
+        File.WriteAllText(Path.Combine(_steamRoot, "userdata", "76561198000000000", "config", "localconfig.vdf"),
+            "\"UserLocalConfigStore\" { \"apps\" { \"90\" { \"name\" \"Played before\" } } }");
+        var app = CreateFallback().GetKnownApps()[90];
+        Assert.False(app.IsInstalled);
+        Assert.Equal(InstallState.Available, app.InstallState);
+        Assert.Equal(OwnershipType.Unknown, app.OwnershipType);
+    }
+
+    [Fact]
+    public void GetKnownApps_ShouldInvalidateAccountAndCollectionsWhenActiveUserChanges()
+    {
+        var fallback = CreateFallback();
+        Assert.True(fallback.IsSubscribedFromFamilySharing(20));
+        var second = Path.Combine(_steamRoot, "userdata", "76561198000000001", "config");
+        Directory.CreateDirectory(second);
+        File.WriteAllText(Path.Combine(second, "localconfig.vdf"),
+            "\"UserLocalConfigStore\" { \"apps\" { \"99\" { \"name\" \"Second account\" \"is_owned\" \"1\" } } }");
+        File.WriteAllText(Path.Combine(_steamRoot, "config", "loginusers.vdf"),
+            "\"users\" { \"76561198000000001\" { \"MostRecent\" \"1\" } }");
+        var apps = fallback.GetKnownApps();
+        Assert.Equal("76561198000000001", fallback.GetCurrentUserSteamId());
+        Assert.Equal(new[] { 99u }, apps.Keys);
+        Assert.Equal(OwnershipType.Owned, apps[99].OwnershipType);
+        Assert.False(fallback.IsSubscribedFromFamilySharing(20));
+        Assert.Empty(fallback.GetCollections());
+    }
+
+    [Fact]
+    public void GetCurrentUserSteamId_ShouldRejectNonNumericAndNonIndividualIds()
+    {
+        File.WriteAllText(Path.Combine(_steamRoot, "config", "loginusers.vdf"),
+            "\"users\" { \"../other\" { \"MostRecent\" \"1\" } \"123\" { \"Timestamp\" \"1700000000\" } }");
+        var fallback = CreateFallback();
+        Assert.Null(fallback.GetCurrentUserSteamId());
+        Assert.Empty(fallback.GetKnownApps());
+    }
+
+    [Fact]
+    public void GetKnownApps_ShouldReuseUnchangedSnapshotAndReloadReplacedAppInfo()
+    {
+        var path = Path.Combine(_steamRoot, "appcache", "appinfo.vdf");
+        File.WriteAllBytes(path, CreateLegacyAppInfoFixture((10u, "Official name", "game", "windows")));
+        var fallback = CreateFallback();
+        var first = fallback.GetKnownApps();
+        Assert.Equal("Official name", first[10].Name);
+        Assert.Same(first, fallback.GetKnownApps());
+        File.WriteAllBytes(path, CreateLegacyAppInfoFixture((10u, "Updated official title", "game", "linux")));
+        File.SetLastWriteTimeUtc(path, DateTime.UtcNow.AddSeconds(2));
+        var updated = fallback.GetKnownApps();
+        Assert.Equal("Updated official title", updated[10].Name);
+        Assert.Equal(new[] { SteamPlatform.Linux }, updated[10].SupportedPlatforms);
+    }
+
+    [Fact]
+    public void GetKnownApps_ShouldReadLibraryCacheJsonWithoutInferringInstallationOrOwnership()
+    {
+        var directory = Path.Combine(_steamRoot, "userdata", "76561198000000000", "config", "librarycache");
+        Directory.CreateDirectory(directory);
+        File.WriteAllText(Path.Combine(directory, "90.json"),
+            "{\"data\":{\"name\":\"Cached title\",\"app_type\":\"tool\",\"is_installed\":true}}");
+        var fallback = CreateFallback();
+        var app = fallback.GetKnownApps()[90];
+        Assert.Equal("Cached title", app.Name);
+        Assert.Equal("tool", app.Type);
+        Assert.False(app.IsInstalled);
+        Assert.Equal(OwnershipType.Unknown, app.OwnershipType);
+        File.WriteAllText(Path.Combine(directory, "91.json"), "{ broken");
+        Assert.Contains(90u, fallback.GetKnownApps().Keys);
+    }
+
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("[[5,{}]]")]
+    [InlineData("[[\"user-collections.x\",{\"value\":\"{\\\"id\\\":5}\"}]]")]
+    [InlineData("[[\"user-collections.x\",{\"value\":\"{\\\"id\\\":\\\"x\\\",\\\"filterSpec\\\":5}\"}]]")]
+    public void GetCollections_ShouldIgnoreWrongJsonTypes(string json)
+    {
+        var directory = Path.Combine(_steamRoot, "userdata", "76561198000000000", "config", "cloudstorage");
+        Directory.CreateDirectory(directory);
+        File.WriteAllText(Path.Combine(directory, "cloud-storage-namespace-1.json"), json);
+        var fallback = CreateFallback();
+        Assert.NotEmpty(fallback.GetKnownApps());
+        _ = fallback.GetCollections();
+    }
+
+    [Theory]
+    [InlineData("{\"related_apps\":[{\"name\":\"Other game\",\"is_owned\":true,\"is_family_shared\":true}]}", null)]
+    [InlineData("[[\"descriptions\",{\"name\":\"Other name\"}],[\"appinfo\",{\"common\":{\"name\":\"Section name\"}}]]", "Section name")]
+    public void GetKnownApps_ShouldOnlyReadMetadataFromRecognizedAppSections(string json, string? expectedName)
+    {
+        var directory = Path.Combine(_steamRoot, "userdata", "76561198000000000", "config", "librarycache");
+        Directory.CreateDirectory(directory);
+        File.WriteAllText(Path.Combine(directory, "90.json"), json);
+        var app = CreateFallback().GetKnownApps()[90];
+        Assert.Equal(expectedName, app.Name);
+        Assert.Equal(OwnershipType.Unknown, app.OwnershipType);
+    }
+
+    [Fact]
+    public void GetKnownApps_ShouldIgnoreInvalidZeroAppIdWithOwnershipFlag()
+    {
+        File.WriteAllText(Path.Combine(_steamRoot, "userdata", "76561198000000000", "config", "localconfig.vdf"),
+            "\"UserLocalConfigStore\" { \"apps\" { \"0\" { \"is_owned\" \"1\" } } }");
+        Assert.DoesNotContain(0u, CreateFallback().GetKnownApps().Keys);
+    }
+
+    [Theory]
+    [InlineData(0, SteamDeckCompatibility.Unknown)]
+    [InlineData(1, SteamDeckCompatibility.Unsupported)]
+    [InlineData(2, SteamDeckCompatibility.Playable)]
+    [InlineData(3, SteamDeckCompatibility.Verified)]
+    public void GetKnownApps_ShouldTranslateValveDeckCategoriesWithoutReorderingDomainValues(int rawCategory, SteamDeckCompatibility expected)
+    {
+        using var payload = new MemoryStream();
+        using (var writer = new BinaryWriter(payload, System.Text.Encoding.UTF8, leaveOpen: true))
+        {
+            writer.Write((byte)0);
+            WriteNullTerminatedString(writer, "common");
+            writer.Write((byte)0);
+            WriteNullTerminatedString(writer, "steam_deck_compatibility");
+            writer.Write((byte)2);
+            WriteNullTerminatedString(writer, "category");
+            writer.Write(rawCategory);
+            writer.Write(new byte[] { 8, 8, 8 });
+        }
+        using var appinfo = new MemoryStream();
+        using (var writer = new BinaryWriter(appinfo, System.Text.Encoding.UTF8, leaveOpen: true))
+        {
+            writer.Write(10u);
+            writer.Write((uint)(40 + payload.Length));
+            writer.Write(new byte[40]);
+            writer.Write(payload.ToArray());
+            writer.Write(0u);
+            writer.Write(0u);
+        }
+        File.WriteAllBytes(Path.Combine(_steamRoot, "appcache", "appinfo.vdf"), appinfo.ToArray());
+        Assert.Equal(expected, CreateFallback().GetKnownApps()[10].DeckCompatibility);
     }
 
     public void Dispose()

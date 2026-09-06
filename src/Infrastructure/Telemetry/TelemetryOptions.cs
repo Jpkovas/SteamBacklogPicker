@@ -23,8 +23,7 @@ public sealed class TelemetryOptions
     public bool EnableDebugSink { get; set; }
 
     /// <summary>
-    /// Gets or sets a value indicating whether telemetry features are enabled by default.
-    /// Users can still opt out by using the consent service.
+    /// Retained for configuration compatibility. Explicit consent is always required.
     /// </summary>
     public bool TelemetryEnabledByDefault { get; set; }
 

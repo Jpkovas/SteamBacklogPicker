@@ -1,0 +1,1425 @@
+{
+  "completeness": "complete",
+  "deferred": [],
+  "documentType": "codex-security.coverage",
+  "excludePaths": [],
+  "explicitExclusions": [],
+  "includePaths": [
+    "."
+  ],
+  "inventoryStrategy": "repository",
+  "mode": "repository",
+  "openQuestions": [
+    {
+      "question": "Native Linux updater signature/download/apply behavior was not executed on this Windows host; the test suite returns early for those tests."
+    },
+    {
+      "question": "macOS app and Swift tests were reviewed statically but not executed on macOS."
+    },
+    {
+      "question": "Authenticated Steam Families service feasibility and completeness remain untested; proposal only, no login credentials were used."
+    },
+    {
+      "question": "Dependency query reported no NuGet advisories at execution time; it is not proof that dependencies are vulnerability-free."
+    },
+    {
+      "question": "Parser failure cases were assessed statically and in focused review; no external attacker-controlled delivery path was established."
+    },
+    {
+      "question": "Only the documented Windows UI journey and local functional probes were exercised; full screen-reader, DPI, platform and release validation remain future work."
+    }
+  ],
+  "reviewedFileCount": 217,
+  "scanId": "7a9b64a8-a8fd-4da1-92db-cdf7b3ae79b2",
+  "schemaVersion": "1.0",
+  "surfaces": [
+    {
+      "disposition": "no_issue_found",
+      "fullyReviewedFiles": [
+        ".claude/settings.local.json",
+        ".gitattributes",
+        ".github/ISSUE_TEMPLATE/portability-divergence.yml",
+        ".github/workflows/dotnet.yml",
+        ".github/workflows/linux-release.yml",
+        ".gitignore",
+        "AGENTS.md",
+        "CHANGES.md",
+        "CLAUDE.md",
+        "Directory.Build.props",
+        "Directory.Build.targets",
+        "Package.swift",
+        "README.md",
+        "SteamBacklogPicker.sln",
+        "TODO.md",
+        "docs/accessibility-checklist.md",
+        "docs/advanced-integration.md",
+        "docs/appinfo-bool-type.md",
+        "docs/architecture.md",
+        "docs/notes/selection-engine-improvement.md",
+        "docs/requirements.md",
+        "docs/testing/journey-parity-checklist.md",
+        "docs/testing/macos-port-checklist.md",
+        "docs/testing/manual-test-cases.md",
+        "docs/testing/performance-report.md",
+        "docs/testing/regression-checklist.md",
+        "docs/testing/runbook-installacao-windows-linux.md",
+        "docs/testing/runbook-jornadas-paridade-windows-linux.md",
+        "docs/testing/test-parity-report.md",
+        "docs/user-guide.md",
+        "improvements.md",
+        "scripts/local-pipeline.sh",
+        "scripts/package-linux-appimage.sh",
+        "src/Domain/Domain.csproj",
+        "src/Domain/GameEntry.cs",
+        "src/Domain/GameIdentifier.cs",
+        "src/Domain/SelectionEngine/ISelectionEngine.cs",
+        "src/Domain/SelectionEngine/SelectionEngine.cs",
+        "src/Domain/SelectionEngine/SelectionFilters.cs",
+        "src/Domain/SelectionEngine/SelectionHistoryEntry.cs",
+        "src/Domain/SelectionEngine/SelectionPreferences.cs",
+        "src/Domain/SelectionEngine/SelectionSettings.cs",
+        "src/Domain/SteamDeckCompatibility.cs",
+        "src/Domain/SteamPlatform.cs",
+        "src/Domain/Storefront.cs",
+        "src/Infrastructure/SteamDiscovery/DefaultSteamInstallPathProvider.cs",
+        "src/Infrastructure/SteamDiscovery/ISteamInstallPathProvider.cs",
+        "src/Infrastructure/SteamDiscovery/ISteamLibraryFoldersParser.cs",
+        "src/Infrastructure/SteamDiscovery/LinuxSteamInstallPathProvider.cs",
+        "src/Infrastructure/SteamDiscovery/PlatformPathComparisonStrategy.cs",
+        "src/Infrastructure/SteamDiscovery/SteamAppManifestCache.cs",
+        "src/Infrastructure/SteamDiscovery/SteamDiscovery.csproj",
+        "src/Infrastructure/SteamDiscovery/SteamLibraryFoldersParser.cs",
+        "src/Infrastructure/SteamDiscovery/SteamLibraryLocator.cs",
+        "src/Infrastructure/SteamDiscovery/SteamPathResolutionAbstractions.cs",
+        "src/Infrastructure/SteamDiscovery/WindowsSteamInstallPathProvider.NonWindows.cs",
+        "src/Infrastructure/SteamDiscovery/WindowsSteamInstallPathProvider.cs",
+        "src/Infrastructure/Telemetry/FileTelemetryConsentStore.cs",
+        "src/Infrastructure/Telemetry/ITelemetryClient.cs",
+        "src/Infrastructure/Telemetry/ITelemetryConsentService.cs",
+        "src/Infrastructure/Telemetry/ITelemetryConsentStore.cs",
+        "src/Infrastructure/Telemetry/SerilogTelemetryClient.cs",
+        "src/Infrastructure/Telemetry/ServiceCollectionExtensions.cs",
+        "src/Infrastructure/Telemetry/Telemetry.csproj",
+        "src/Infrastructure/Telemetry/TelemetryBootstrapper.cs",
+        "src/Infrastructure/Telemetry/TelemetryConsentService.cs",
+        "src/Infrastructure/Telemetry/TelemetryConsentState.cs",
+        "src/Infrastructure/Telemetry/TelemetryOptions.cs",
+        "src/Integration/SteamClientAdapter/IFileAccessor.cs",
+        "src/Integration/SteamClientAdapter/INativeLibraryLoader.cs",
+        "src/Integration/SteamClientAdapter/Properties/AssemblyInfo.cs",
+        "src/Integration/SteamClientAdapter/SteamAppDefinition.cs",
+        "src/Integration/SteamClientAdapter/SteamClientAdapter.cs",
+        "src/Integration/SteamClientAdapter/SteamClientAdapter.csproj",
+        "src/Integration/SteamClientAdapter/SteamCollectionDefinition.cs",
+        "src/Integration/SteamClientAdapter/SteamVdfFallback.cs",
+        "src/Integration/SteamHooks/ISteamHookClient.cs",
+        "src/Integration/SteamHooks/ISteamProcessMemoryReader.cs",
+        "src/Integration/SteamHooks/LinuxProcMemReader.cs",
+        "src/Integration/SteamHooks/SteamDownloadEvent.cs",
+        "src/Integration/SteamHooks/SteamHookClientFactory.cs",
+        "src/Integration/SteamHooks/SteamHookDiagnostic.cs",
+        "src/Integration/SteamHooks/SteamHookMode.cs",
+        "src/Integration/SteamHooks/SteamHookOptions.cs",
+        "src/Integration/SteamHooks/SteamHooks.csproj",
+        "src/Integration/SteamHooks/SteamMemoryPollingHookClient.Windows.cs",
+        "src/Integration/SteamHooks/SteamMemoryPollingHookClient.cs",
+        "src/Integration/SteamHooks/SteamNamedPipeHookClient.cs",
+        "src/Integration/SteamHooks/SteamSnapshotParser.cs",
+        "src/Integration/ValveFormatParser/ValveBinaryVdfParser.cs",
+        "src/Integration/ValveFormatParser/ValveFormatParser.csproj",
+        "src/Integration/ValveFormatParser/ValveKeyValueNode.cs",
+        "src/Integration/ValveFormatParser/ValveTextVdfParser.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Composition/ApplicationCoreServiceCollectionExtensions.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Composition/PlatformUserExperienceServiceRegistrar.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Journey/JourneyParityChecklist.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Journey/JourneyStep.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/GameArt/IGameArtLocator.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/GameArt/SteamGameArtLocator.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/Launch/GameLaunchAction.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/Launch/GameLaunchOptions.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/Launch/GameLaunchService.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/Launch/IGameLaunchService.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/Library/CombinedGameLibraryService.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/Library/IGameLibraryProvider.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/Library/IGameLibraryService.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/Library/SteamLibraryProvider.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/Localization/ILocalizationService.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/Localization/LocalizationService.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/Notifications/IToastNotificationService.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/Notifications/NullToastNotificationService.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/Runtime/ISteamEnvironment.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/Runtime/SteamEnvironment.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/Runtime/SteamNativeLibraryCandidates.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/Updates/IAppUpdateService.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/Updates/LegacyWindowsUpdatePolicy.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/Updates/NoOpAppUpdateService.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/SteamBacklogPicker.AppCore.csproj",
+        "src/Presentation/SteamBacklogPicker.AppCore/ViewModels/AsyncRelayCommand.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/ViewModels/GameDetailsViewModel.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/ViewModels/MainViewModel.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/ViewModels/ObservableObject.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/ViewModels/RelayCommand.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/ViewModels/SelectionPreferencesViewModel.cs",
+        "src/Presentation/SteamBacklogPicker.Linux/App.axaml",
+        "src/Presentation/SteamBacklogPicker.Linux/App.axaml.cs",
+        "src/Presentation/SteamBacklogPicker.Linux/Assets/Flags.axaml",
+        "src/Presentation/SteamBacklogPicker.Linux/Assets/Icons.axaml",
+        "src/Presentation/SteamBacklogPicker.Linux/Composition/LinuxServiceCollectionExtensions.cs",
+        "src/Presentation/SteamBacklogPicker.Linux/Composition/ServiceCollectionExtensions.cs",
+        "src/Presentation/SteamBacklogPicker.Linux/Converters/StringEqualsConverter.cs",
+        "src/Presentation/SteamBacklogPicker.Linux/Program.cs",
+        "src/Presentation/SteamBacklogPicker.Linux/Services/Notifications/LinuxToastNotificationService.cs",
+        "src/Presentation/SteamBacklogPicker.Linux/Services/Updates/LinuxAppImageUpdateService.cs",
+        "src/Presentation/SteamBacklogPicker.Linux/SteamBacklogPicker.Linux.csproj",
+        "src/Presentation/SteamBacklogPicker.Linux/Styles/AppStyles.axaml",
+        "src/Presentation/SteamBacklogPicker.Linux/Views/MainWindow.axaml",
+        "src/Presentation/SteamBacklogPicker.Linux/Views/MainWindow.axaml.cs",
+        "src/Presentation/SteamBacklogPicker.Mac/App/SteamBacklogPickerMacApp.swift",
+        "src/Presentation/SteamBacklogPicker.Mac/Models/GameModels.swift",
+        "src/Presentation/SteamBacklogPicker.Mac/Models/SelectionModels.swift",
+        "src/Presentation/SteamBacklogPicker.Mac/Services/AppUpdateService.swift",
+        "src/Presentation/SteamBacklogPicker.Mac/Services/DiagnosticLogService.swift",
+        "src/Presentation/SteamBacklogPicker.Mac/Services/GameNotificationService.swift",
+        "src/Presentation/SteamBacklogPicker.Mac/Services/SteamAppInfoParser.swift",
+        "src/Presentation/SteamBacklogPicker.Mac/Services/SteamAppNameResolver.swift",
+        "src/Presentation/SteamBacklogPicker.Mac/Services/SteamLibraryService.swift",
+        "src/Presentation/SteamBacklogPicker.Mac/Services/VDFParser.swift",
+        "src/Presentation/SteamBacklogPicker.Mac/Stores/AppStore.swift",
+        "src/Presentation/SteamBacklogPicker.Mac/Support/Localization.swift",
+        "src/Presentation/SteamBacklogPicker.Mac/Views/ContentView.swift",
+        "src/Presentation/SteamBacklogPicker.Mac/Views/FlowLayout.swift",
+        "src/Presentation/SteamBacklogPicker.UI/App.xaml",
+        "src/Presentation/SteamBacklogPicker.UI/App.xaml.cs",
+        "src/Presentation/SteamBacklogPicker.UI/Composition/ServiceCollectionExtensions.cs",
+        "src/Presentation/SteamBacklogPicker.UI/MainWindow.xaml",
+        "src/Presentation/SteamBacklogPicker.UI/MainWindow.xaml.cs",
+        "src/Presentation/SteamBacklogPicker.UI/Services/Notifications/ToastNotificationService.cs",
+        "src/Presentation/SteamBacklogPicker.UI/Services/Updates/SquirrelUpdateService.cs",
+        "src/Presentation/SteamBacklogPicker.UI/SteamBacklogPicker.UI.csproj",
+        "src/Presentation/SteamBacklogPicker.UI/Themes/Controls.xaml",
+        "src/Presentation/SteamBacklogPicker.UI/Themes/Flags.xaml",
+        "src/Presentation/SteamBacklogPicker.UI/Themes/Icons.xaml",
+        "src/Presentation/SteamBacklogPicker.UI/Themes/Palette.xaml",
+        "src/Presentation/SteamBacklogPicker.UI/Themes/Typography.xaml",
+        "src/Presentation/SteamBacklogPicker.UI/appsettings.json",
+        "tests/Domain/Domain.Tests/Domain.Tests.csproj",
+        "tests/Domain/Domain.Tests/SelectionEngineTests.cs",
+        "tests/Infrastructure/SteamDiscovery.Tests/PlatformPathComparisonStrategyTests.cs",
+        "tests/Infrastructure/SteamDiscovery.Tests/SteamAppManifestCacheTests.cs",
+        "tests/Infrastructure/SteamDiscovery.Tests/SteamDiscovery.Tests.csproj",
+        "tests/Infrastructure/SteamDiscovery.Tests/SteamInstallPathProviderTests.cs",
+        "tests/Infrastructure/SteamDiscovery.Tests/SteamLibraryFoldersParserTests.cs",
+        "tests/Infrastructure/SteamDiscovery.Tests/WindowsSteamInstallPathProviderTests.cs",
+        "tests/Integration/SteamClientAdapter.Tests/SteamClientAdapter.Tests.csproj",
+        "tests/Integration/SteamClientAdapter.Tests/SteamClientAdapterTests.cs",
+        "tests/Integration/SteamClientAdapter.Tests/SteamVdfFallbackTests.cs",
+        "tests/Integration/SteamClientAdapter.Tests/ValveBinaryVdfParserTests.cs",
+        "tests/Integration/SteamHooks.Tests/SteamHookClientFactoryTests.cs",
+        "tests/Integration/SteamHooks.Tests/SteamHooks.Tests.csproj",
+        "tests/Integration/SteamHooks.Tests/SteamMemoryPollingHookClientTests.cs",
+        "tests/Presentation/SteamBacklogPicker.Linux.Tests/LegacyWindowsUpdatePolicyTests.cs",
+        "tests/Presentation/SteamBacklogPicker.Linux.Tests/LinuxAppImageUpdateServiceTests.cs",
+        "tests/Presentation/SteamBacklogPicker.Linux.Tests/LinuxBootstrapServiceRegistrationTests.cs",
+        "tests/Presentation/SteamBacklogPicker.Linux.Tests/LinuxToastNotificationServiceTests.cs",
+        "tests/Presentation/SteamBacklogPicker.Linux.Tests/MainWindowPresentationTests.cs",
+        "tests/Presentation/SteamBacklogPicker.Linux.Tests/ServiceCollectionExtensionsTests.cs",
+        "tests/Presentation/SteamBacklogPicker.Linux.Tests/SteamBacklogPicker.Linux.Tests.csproj",
+        "tests/Presentation/SteamBacklogPicker.Mac.Tests/AppInfoFixtureFactory.swift",
+        "tests/Presentation/SteamBacklogPicker.Mac.Tests/ContentViewRenderingTests.swift",
+        "tests/Presentation/SteamBacklogPicker.Mac.Tests/LocalizationTests.swift",
+        "tests/Presentation/SteamBacklogPicker.Mac.Tests/SelectionFilterTests.swift",
+        "tests/Presentation/SteamBacklogPicker.Mac.Tests/SteamAppInfoParserTests.swift",
+        "tests/Presentation/SteamBacklogPicker.Mac.Tests/SteamAppNameResolverTests.swift",
+        "tests/Presentation/SteamBacklogPicker.Mac.Tests/SteamLibraryServiceTests.swift",
+        "tests/Presentation/SteamBacklogPicker.Mac.Tests/VDFParserTests.swift",
+        "tests/Presentation/SteamBacklogPicker.UI.Tests/AccessibilityChecklistTests.cs",
+        "tests/Presentation/SteamBacklogPicker.UI.Tests/CombinedGameLibraryServiceTests.cs",
+        "tests/Presentation/SteamBacklogPicker.UI.Tests/Fakes/FakeLocalizationService.cs",
+        "tests/Presentation/SteamBacklogPicker.UI.Tests/GameDetailsViewModelTests.cs",
+        "tests/Presentation/SteamBacklogPicker.UI.Tests/GameLaunchServiceTests.cs",
+        "tests/Presentation/SteamBacklogPicker.UI.Tests/MainViewModelTests.cs",
+        "tests/Presentation/SteamBacklogPicker.UI.Tests/MainWindowAccessibilityTests.cs",
+        "tests/Presentation/SteamBacklogPicker.UI.Tests/SelectionPreferencesViewModelTests.cs",
+        "tests/Presentation/SteamBacklogPicker.UI.Tests/SteamBacklogPicker.UI.Tests.csproj",
+        "tests/Presentation/SteamBacklogPicker.UI.Tests/SteamEnvironmentTests.cs",
+        "tests/Presentation/SteamBacklogPicker.UI.Tests/SteamLibraryProviderTests.cs",
+        "tests/Presentation/SteamBacklogPicker.UI.Tests/SteamNativeLibraryCandidatesTests.cs",
+        "tests/TestUtilities/SteamTestUtilities/Fixtures/appmanifest_480.acf",
+        "tests/TestUtilities/SteamTestUtilities/Fixtures/libraryfolders.vdf",
+        "tests/TestUtilities/SteamTestUtilities/Fixtures/steam/appcache/appinfo.vdf",
+        "tests/TestUtilities/SteamTestUtilities/Fixtures/steam/config/loginusers.vdf",
+        "tests/TestUtilities/SteamTestUtilities/Fixtures/steam/userdata/76561198000000000/7/remote/sharedconfig.vdf",
+        "tests/TestUtilities/SteamTestUtilities/Fixtures/steam/userdata/76561198000000000/config/localconfig.vdf",
+        "tests/TestUtilities/SteamTestUtilities/SteamTestUtilities.csproj",
+        "tests/TestUtilities/SteamTestUtilities/Steamworks/SteamApiMocks.cs",
+        "tests/TestUtilities/SteamTestUtilities/ValveFormat/VdfFixtureLoader.cs"
+      ],
+      "id": "complete_source_review",
+      "label": "All 217 tracked repository files",
+      "notes": "Independent baseline and focused parser review reconciled against git ls-files at c45eb915f63b0855988eca9d9c1bcb01dc42b86e; 217/217 fully reviewed, no excluded tracked files. Parent validated material trust-boundary conclusions against consumers. Complete refers to source coverage, not all-platform runtime assurance.",
+      "receiptRefs": [],
+      "resolvedQuestions": [
+        {
+          "question": "Was the complete tracked scope reviewed, and what does the result establish?",
+          "resolution": "Fully reviewed all 217 tracked files at c45eb915f63b0855988eca9d9c1bcb01dc42b86e: 133 production source/resource/project files, 51 test/support/fixture files, 2 scripts, 2 workflows, and 29 documentation/root configuration files. The single binary fixture was inspected completely as 359 bytes of data. SECURITY.md resolution across all 62 tracked-file directories found no applicable guidance. Final tracked diff was empty. No defensible source-backed vulnerability with a meaningful attacker-controlled boundary crossing was established. This is a static analysis result, not a guarantee of absence; this worker did not run the application, tests, dependency scanners, network requests, or exploit probes."
+        },
+        {
+          "evidence": [
+            "src/Presentation/SteamBacklogPicker.AppCore/Services/Launch/GameLaunchService.cs:37-52",
+            "src/Presentation/SteamBacklogPicker.AppCore/Services/Launch/GameLaunchAction.cs:66-71",
+            "src/Presentation/SteamBacklogPicker.AppCore/ViewModels/MainViewModel.cs:186-253",
+            "src/Presentation/SteamBacklogPicker.Mac/Stores/AppStore.swift:206-260",
+            "tests/Presentation/SteamBacklogPicker.Mac.Tests/SelectionFilterTests.swift:192-257"
+          ],
+          "question": "Can Steam metadata inject arbitrary commands through game launch or installation?",
+          "resolution": "No attacker-controlled command path was established. Production launch options require a uint Steam app ID and construct fixed steam://run/{id} or steam://install/{id} URLs. User-selected titles, collection names, manifest install directories, and downloaded app names do not become shell commands. WPF/Avalonia and Swift require an explicit launch/install action. Family-sharing classification affects selection and presentation; it does not bypass Steam's license enforcement."
+        },
+        {
+          "evidence": [
+            "src/Presentation/SteamBacklogPicker.Linux/Services/Updates/LinuxAppImageUpdateService.cs:42-89",
+            "src/Presentation/SteamBacklogPicker.Linux/Services/Updates/LinuxAppImageUpdateService.cs:101-126",
+            "src/Presentation/SteamBacklogPicker.Linux/Services/Updates/LinuxAppImageUpdateService.cs:201-204",
+            "src/Presentation/SteamBacklogPicker.Linux/Services/Updates/LinuxAppImageUpdateService.cs:286-318",
+            "src/Presentation/SteamBacklogPicker.AppCore/Services/Updates/LegacyWindowsUpdatePolicy.cs:1-14",
+            "src/Presentation/SteamBacklogPicker.UI/Services/Updates/SquirrelUpdateService.cs:24-30",
+            "src/Presentation/SteamBacklogPicker.UI/App.xaml.cs",
+            "src/Presentation/SteamBacklogPicker.Mac/Services/AppUpdateService.swift",
+            "TODO.md:3-8"
+          ],
+          "question": "Do the automatic update paths accept an unauthenticated replacement binary by default?",
+          "resolution": "Linux checks a configured RSA public key against a signature binding version, download URL, and SHA-256, then verifies the downloaded binary hash. Missing keys reject updates unless unsigned feeds are explicitly enabled through a local environment setting. HTTPS is required except loopback HTTP. The pending marker is not authenticated again before application, but resides in the user's own application data directory; no lower-trust write route was found, so same-user marker manipulation is not a reportable vulnerability. Reverification at application time and constrained pending paths would strengthen future update work. Windows legacy Squirrel updates are disabled by default, and WPF startup does not call the updater. macOS updates are no-op. Official key provisioning and end-to-end release verification remain operational work."
+        },
+        {
+          "evidence": [
+            "src/Integration/ValveFormatParser/ValveBinaryVdfParser.cs:137-142",
+            "src/Integration/ValveFormatParser/ValveBinaryVdfParser.cs:290-296",
+            "src/Integration/ValveFormatParser/ValveBinaryVdfParser.cs:489-507",
+            "src/Integration/ValveFormatParser/ValveTextVdfParser.cs:69",
+            "src/Presentation/SteamBacklogPicker.Mac/Services/SteamAppInfoParser.swift:57-65",
+            "src/Presentation/SteamBacklogPicker.Mac/Services/SteamAppInfoParser.swift:217-223",
+            "src/Presentation/SteamBacklogPicker.Mac/Services/SteamAppInfoParser.swift:310-321",
+            "src/Presentation/SteamBacklogPicker.Mac/Services/SteamLibraryService.swift:597-600",
+            "src/Integration/SteamClientAdapter/SteamVdfFallback.cs:900-1023"
+          ],
+          "question": "Are malformed Steam caches adequately bounded?",
+          "resolution": "There are concrete robustness and hardening gaps. C# binary parsing trusts string counts and decompressed-size declarations and lacks nesting limits; Swift numeric readers can slice past truncated buffers, and string-table offset arithmetic lacks complete bounds checks. Recursive text/metadata parsing also lacks explicit depth limits. These can produce allocation pressure or process failure on malformed inputs. Current production sources are the local Steam installation/cache; no repository-backed route lets a distinct lower-trust attacker supply arbitrary cache bytes. Consequently these are not promoted to security vulnerabilities. Add size/depth limits, checked numeric reads, type checks for cloud JSON, and malformed modern-format fixtures before introducing downloaded or imported cache sources."
+        },
+        {
+          "evidence": [
+            "src/Presentation/SteamBacklogPicker.AppCore/Services/Runtime/SteamEnvironment.cs",
+            "src/Presentation/SteamBacklogPicker.AppCore/Services/Runtime/SteamNativeLibraryCandidates.cs",
+            "src/Infrastructure/SteamDiscovery/WindowsSteamInstallPathProvider.cs",
+            "src/Infrastructure/SteamDiscovery/LinuxSteamInstallPathProvider.cs",
+            "src/Integration/SteamClientAdapter/SteamClientAdapter.cs:53-80",
+            "src/Integration/SteamClientAdapter/SteamClientAdapter.cs:183-204",
+            "tests/Presentation/SteamBacklogPicker.UI.Tests/SteamEnvironmentTests.cs",
+            "tests/Presentation/SteamBacklogPicker.UI.Tests/SteamNativeLibraryCandidatesTests.cs"
+          ],
+          "question": "Does native library loading introduce an attacker-controlled execution path?",
+          "resolution": "Native candidates are explicitly constructed beneath the locally resolved Steam installation. Windows resolution reads the current user's Steam registry key; Linux uses validated local environment/home installation candidates. No remote metadata field supplies a native library path. Attacks requiring modification of the user's environment or trusted Steam installation were not treated as independent vulnerabilities. Native handles are reset and freed; successful Steam API initialization is tracked for shutdown."
+        },
+        {
+          "evidence": [
+            "src/Integration/SteamHooks/SteamNamedPipeHookClient.cs:62",
+            "src/Integration/SteamHooks/SteamNamedPipeHookClient.cs:112-116",
+            "src/Integration/SteamHooks/SteamMemoryPollingHookClient.Windows.cs",
+            "src/Integration/SteamHooks/LinuxProcMemReader.cs",
+            "src/Integration/SteamHooks/SteamHookClientFactory.cs",
+            "src/Presentation/SteamBacklogPicker.AppCore/Composition/ApplicationCoreServiceCollectionExtensions.cs",
+            "src/Presentation/SteamBacklogPicker.AppCore/SteamBacklogPicker.AppCore.csproj",
+            "docs/advanced-integration.md:18-36"
+          ],
+          "question": "Are the experimental pipe and process-memory hooks active attack surfaces in the shipped clients?",
+          "resolution": "No production composition or client project references activate SteamHooks. The hooks are prototype library code. Windows memory access is read-only; Linux process-memory access additionally requires the explicit unsafe-read option and otherwise degrades to no-op. The named-pipe implementation lacks explicit message-size bounds, but there is no current shipped consumer connecting pipe events to privileged operations or game launching. Keep hooks outside normal discovery; reassess pipe authentication, message limits, lifecycle, and process identity if integrating them."
+        },
+        {
+          "evidence": [
+            "src/Infrastructure/Telemetry/TelemetryOptions.cs",
+            "src/Infrastructure/Telemetry/SerilogTelemetryClient.cs",
+            "src/Infrastructure/Telemetry/TelemetryBootstrapper.cs",
+            "src/Presentation/SteamBacklogPicker.UI/App.xaml.cs:109",
+            "src/Presentation/SteamBacklogPicker.Mac/Services/DiagnosticLogService.swift",
+            "src/Presentation/SteamBacklogPicker.Mac/Services/SteamAppNameResolver.swift",
+            "src/Presentation/SteamBacklogPicker.Mac/Services/SteamLibraryService.swift:308-313",
+            "src/Domain/SelectionEngine/SelectionEngine.cs:144-170",
+            "docs/user-guide.md:7",
+            "docs/user-guide.md:22"
+          ],
+          "question": "Do telemetry, caches, or UI rendering expose secrets or executable content?",
+          "resolution": "No hardcoded credentials or source-backed secret exfiltration path was found. .NET telemetry defaults to disabled and uses consent checks with local file/debug sinks; the declared telemetry endpoint is unused. macOS diagnostics use local unified logging. Remote artwork uses fixed Steam/SteamDB URLs containing numeric app IDs; missing macOS names use the fixed Steam Store endpoint. Returned names and local metadata are rendered as text, without WebView/HTML execution. Persisted preferences and names use typed JSON or UserDefaults. Documentation describing privacy settings and onboarding is ahead of the actual UI and should be corrected; this is a product/documentation gap."
+        },
+        {
+          "evidence": [
+            ".github/workflows/dotnet.yml",
+            ".github/workflows/linux-release.yml:1-17",
+            ".github/workflows/linux-release.yml:36-48",
+            "scripts/package-linux-appimage.sh",
+            "src/Presentation/SteamBacklogPicker.Linux/Services/Updates/LinuxAppImageUpdateService.cs:128-204"
+          ],
+          "question": "Do CI and release scripts expose an untrusted pull request to publishing credentials?",
+          "resolution": "The ordinary pull-request workflow uses pull_request, not pull_request_target, and requests contents:read. Publishing occurs in the separate release/workflow-dispatch workflow. No source-backed PR-to-release credential crossing was found. The Linux release workflow downloads and executes a moving appimagetool continuous artifact without a pinned digest; pinning the tool and action revisions would reduce supply-chain exposure, but an upstream compromise was not assumed as an existing vulnerability. Shell packaging arguments and generated update paths are quoted. Release version input is passed through environment values rather than inserted directly into shell source."
+        },
+        {
+          "evidence": [
+            "tests/Presentation/SteamBacklogPicker.Linux.Tests/LinuxAppImageUpdateServiceTests.cs",
+            "tests/Integration/SteamClientAdapter.Tests/ValveBinaryVdfParserTests.cs:11-45",
+            "tests/Presentation/SteamBacklogPicker.Mac.Tests/SteamAppInfoParserTests.swift",
+            "tests/Presentation/SteamBacklogPicker.Mac.Tests/AppInfoFixtureFactory.swift",
+            "improvements.md",
+            "docs/testing/macos-port-checklist.md"
+          ],
+          "question": "What security validation gaps remain despite the existing tests?",
+          "resolution": "Linux update tests include signed-feed success, invalid-key rejection, unsigned-feed rejection, and checksum failures, but return early on non-Linux systems. A Windows test-run pass count therefore does not execute those update assertions. C# binary parser coverage contains one legacy truncated-entry case; Swift parser tests use valid modern fixtures and do not exercise malformed offsets, truncated numeric values, nesting limits, or allocation bounds. Historical success claims in improvements.md and macOS checklists were treated as documentation, not current execution evidence."
+        }
+      ]
+    },
+    {
+      "disposition": "no_issue_found",
+      "fullyReviewedFiles": [
+        {
+          "evidence": "Reviewed modern/legacy headers, sizes, metadata, primitive types, string handling, zstd envelope/decompression, recursion, and recovery.",
+          "lines": "1-645",
+          "path": "src/Integration/ValveFormatParser/ValveBinaryVdfParser.cs"
+        },
+        {
+          "evidence": "Reviewed stream/string entrypoints, token advancement, escapes, object nesting, and failures.",
+          "lines": "1-154",
+          "path": "src/Integration/ValveFormatParser/ValveTextVdfParser.cs"
+        },
+        {
+          "evidence": "Reviewed dictionary storage, replacement semantics, path traversal, boolean conversion, and output formatting; no executable behavior.",
+          "lines": "1-86",
+          "path": "src/Integration/ValveFormatParser/ValveKeyValueNode.cs"
+        },
+        {
+          "evidence": "Reviewed parser dependencies and target framework; no advisory or external dependency-source analysis performed.",
+          "lines": "1-12",
+          "path": "src/Integration/ValveFormatParser/ValveFormatParser.csproj"
+        },
+        {
+          "evidence": "Reviewed complete decode, field mapping, numeric parsing, and event construction.",
+          "lines": "1-57",
+          "path": "src/Integration/SteamHooks/SteamSnapshotParser.cs"
+        },
+        {
+          "evidence": "Reviewed snapshot source, size clamp, polling and app filters, platform selection, and process selection.",
+          "lines": "1-154",
+          "path": "src/Integration/SteamHooks/SteamMemoryPollingHookClient.cs"
+        },
+        {
+          "evidence": "Reviewed complete tokenizer, parser, path collection, normalization and deduplication.",
+          "lines": "1-337",
+          "path": "src/Infrastructure/SteamDiscovery/SteamLibraryFoldersParser.cs"
+        },
+        {
+          "evidence": "Reviewed local-file loading, watcher routing, path matching, parser recovery, and cache lifecycle.",
+          "lines": "1-297",
+          "path": "src/Infrastructure/SteamDiscovery/SteamLibraryLocator.cs"
+        },
+        {
+          "evidence": "Reviewed manifest source, parser recovery, numeric/date conversions, local ownership metadata, cache updates, and watcher paths.",
+          "lines": "1-595",
+          "path": "src/Infrastructure/SteamDiscovery/SteamAppManifestCache.cs"
+        },
+        {
+          "evidence": "Reviewed complete binary parser, Data primitives, string table, metadata extraction, and recursive model.",
+          "lines": "1-355",
+          "path": "src/Presentation/SteamBacklogPicker.Mac/Services/SteamAppInfoParser.swift"
+        },
+        {
+          "evidence": "Reviewed complete node model, parser, tokenizer, comment handling, and escapes.",
+          "lines": "1-184",
+          "path": "src/Presentation/SteamBacklogPicker.Mac/Services/VDFParser.swift"
+        },
+        {
+          "evidence": "Verified production parser and local Steam fallback wiring.",
+          "lines": "1-63",
+          "path": "src/Presentation/SteamBacklogPicker.AppCore/Composition/ApplicationCoreServiceCollectionExtensions.cs"
+        },
+        {
+          "evidence": "Reviewed the legacy truncated-entry regression test.",
+          "lines": "1-46",
+          "path": "tests/Integration/SteamClientAdapter.Tests/ValveBinaryVdfParserTests.cs"
+        },
+        {
+          "evidence": "Reviewed all fallback cases, fixture generation, filesystem helpers, and cleanup.",
+          "lines": "1-375",
+          "path": "tests/Integration/SteamClientAdapter.Tests/SteamVdfFallbackTests.cs"
+        },
+        {
+          "evidence": "Reviewed snapshot valid/invalid-line and empty-input tests.",
+          "lines": "1-33",
+          "path": "tests/Integration/SteamHooks.Tests/SteamMemoryPollingHookClientTests.cs"
+        },
+        {
+          "evidence": "Reviewed all libraryfolder parser behavior tests.",
+          "lines": "1-206",
+          "path": "tests/Infrastructure/SteamDiscovery.Tests/SteamLibraryFoldersParserTests.cs"
+        },
+        {
+          "evidence": "Reviewed the two successful modern metadata cases.",
+          "lines": "1-50",
+          "path": "tests/Presentation/SteamBacklogPicker.Mac.Tests/SteamAppInfoParserTests.swift"
+        },
+        {
+          "evidence": "Reviewed escaped strings/comments and object-notation cases.",
+          "lines": "1-48",
+          "path": "tests/Presentation/SteamBacklogPicker.Mac.Tests/VDFParserTests.swift"
+        },
+        {
+          "evidence": "Reviewed generated version-41 headers, string tables, entry metadata, and payload primitives.",
+          "lines": "1-201",
+          "path": "tests/Presentation/SteamBacklogPicker.Mac.Tests/AppInfoFixtureFactory.swift"
+        }
+      ],
+      "id": "parser_boundaries",
+      "label": "Local Steam VDF, binary appinfo, decompression and Swift parsing",
+      "notes": "Missing allocation/depth/truncation bounds are robustness improvements. No distinct lower-trust attacker route to Steam-managed local bytes was established. Parent reproduced correct parsing of 3,073 entries in the actual v41 appinfo; no exploit was executed.",
+      "partiallyReviewedFiles": [
+        {
+          "evidence": "Traced text/binary file entrypoints, local user selection, path construction, tree traversal, and exception containment; not claiming full-file coverage.",
+          "lines": "1-476, 469-519, 549-599, 643-680, 742-756, 807-899",
+          "path": "src/Integration/SteamClientAdapter/SteamVdfFallback.cs"
+        },
+        {
+          "evidence": "Traced local Steam discovery, manifest/config reads, user-directory inputs, and appinfo caller; not claiming full-file coverage.",
+          "lines": "1-221, 466-520, 590-620",
+          "path": "src/Presentation/SteamBacklogPicker.Mac/Services/SteamLibraryService.swift"
+        },
+        {
+          "evidence": "Confirmed independent 16 KiB read-buffer clamp.",
+          "lines": "37-43",
+          "path": "src/Integration/SteamHooks/LinuxProcMemReader.cs"
+        }
+      ],
+      "receiptRefs": [],
+      "resolvedQuestions": [
+        {
+          "answer": "Yes. TryReadHeader only checks eight remaining bytes before reading the additional eight-byte offset for versions 41/42. It then seeks to the supplied signed offset and allocates string[stringCount] without validating the offset, count against remaining bytes, or a resource budget. A negative offset can throw an ArgumentOutOfRangeException that the production fallback does not catch. A huge count can allocate excessive memory; EOF becomes an empty string and does not stop the count loop.",
+          "caller_evidence": [
+            "src/Integration/SteamClientAdapter/SteamVdfFallback.cs:469-479 reads the fixed appcache/appinfo.vdf path",
+            "src/Integration/SteamClientAdapter/SteamVdfFallback.cs:517-519 catches IO, format, access, ValveKeyValue and Zstd failures but not allocation or argument failures",
+            "src/Presentation/SteamBacklogPicker.AppCore/Composition/ApplicationCoreServiceCollectionExtensions.cs:33-40 obtains the Steam directory from ISteamEnvironment"
+          ],
+          "id": "dotnet-modern-header",
+          "question": "Can a malformed modern appinfo string table exhaust resources or escape error recovery?",
+          "root_locations": [
+            "src/Integration/ValveFormatParser/ValveBinaryVdfParser.cs:113-149",
+            "src/Integration/ValveFormatParser/ValveBinaryVdfParser.cs:611-643"
+          ],
+          "security_boundary_resolution": "No repository evidence that another principal can supply raw appinfo headers without already controlling the local Steam cache or process configuration. Same-user edits are not classified as an exploit.",
+          "status": "informational_robustness",
+          "suggested_improvement": "Validate the complete version-specific header, require an in-range nonnegative table offset, cap counts and bytes, require each declared string to terminate, and reject malformed data as InvalidDataException before allocation."
+        },
+        {
+          "answer": "Entry end positions are checked against the stream length, malformed entry exceptions are skipped, and buffers are returned in finally blocks. The zstd envelope checks its minimum size, checksum agreement, footer marker, nonnegative decompressed size, exact decompression output length, and actual CRC. However, it rents the advertised decompressed-size buffer before validating the compressed frame or checksum contents, with no output cap. A small malformed envelope can therefore request an enormous allocation. CRC is an integrity check rather than authentication, but this code does not use it as authorization. No executable deserialization or input-selected code-loading sink was found.",
+          "counterevidence": [
+            "Modern entry payload reads are bounded by the actual enclosing stream.",
+            "Legacy entries reject sizes greater than Int32.MaxValue and sizes exceeding remaining bytes at lines 398-412.",
+            "Decompressor.TryUnwrap writes into a supplied bounded destination; no raw attacker-controlled pointer is present.",
+            "The only production ParseAppInfo caller located is SteamVdfFallback's local cache load."
+          ],
+          "id": "dotnet-entry-zstd",
+          "question": "Do entry and zstd safeguards prevent size-based exhaustion or code access?",
+          "root_locations": [
+            "src/Integration/ValveFormatParser/ValveBinaryVdfParser.cs:166-226",
+            "src/Integration/ValveFormatParser/ValveBinaryVdfParser.cs:267-307",
+            "src/Integration/ValveFormatParser/ValveBinaryVdfParser.cs:310-350"
+          ],
+          "status": "informational_robustness",
+          "suggested_improvement": "Apply explicit per-entry, decompressed-output, and aggregate parsing budgets before renting memory."
+        },
+        {
+          "answer": "Yes. Text VDF, legacy binary VDF, modern KVObject conversion, the separate libraryfolders parser, and Mac text/binary parsing recursively descend without a depth limit. Mac text parsing and the separate .NET libraryfolders tokenizer also recurse for consecutive comments. A sufficiently deep local file can exhaust the stack; the surrounding catches or Swift try? do not contain stack exhaustion. Input advancement otherwise prevents a simple zero-progress parsing loop.",
+          "caller_evidence": [
+            "SteamVdfFallback.cs:108-114,154-160,250-256,849-866 reads loginusers/localconfig/sharedconfig from the selected local Steam directory.",
+            "SteamAppManifestCache.cs:108-131,191-202 reads local steamapps/appmanifest_*.acf files.",
+            "SteamLibraryLocator.cs:78-88,206-232 reads local steamapps/libraryfolders.vdf.",
+            "SteamLibraryService.swift:81-118,146-183,466-488 reads local Steam files; environment paths are converted to file URLs."
+          ],
+          "id": "recursive-parser-family",
+          "question": "Can deeply nested input defeat parser recovery?",
+          "root_locations": [
+            "src/Integration/ValveFormatParser/ValveTextVdfParser.cs:39-79",
+            "src/Integration/ValveFormatParser/ValveBinaryVdfParser.cs:489-563",
+            "src/Integration/ValveFormatParser/ValveBinaryVdfParser.cs:565-579",
+            "src/Infrastructure/SteamDiscovery/SteamLibraryFoldersParser.cs:45-75",
+            "src/Infrastructure/SteamDiscovery/SteamLibraryFoldersParser.cs:128-158",
+            "src/Infrastructure/SteamDiscovery/SteamLibraryFoldersParser.cs:248-256",
+            "src/Presentation/SteamBacklogPicker.Mac/Services/VDFParser.swift:43-73",
+            "src/Presentation/SteamBacklogPicker.Mac/Services/VDFParser.swift:120-122",
+            "src/Presentation/SteamBacklogPicker.Mac/Services/SteamAppInfoParser.swift:196-257"
+          ],
+          "security_boundary_resolution": "The public parsing APIs accept caller-supplied content, but no shipped deployment exposing them to a distinct untrusted principal was identified. Upstream Steam-publisher control over arbitrary serialized nesting was not established and is not assumed.",
+          "status": "informational_robustness",
+          "suggested_improvement": "Add a shared depth/node budget; replace comment recursion with iteration and consider iterative tree traversal."
+        },
+        {
+          "answer": "Not consistently. readStringTable checks only offset + 4 <= data.count: a negative offset passes and reaches an invalid Data range, while Int.max can overflow the addition. It reserves the unbounded declared count before reading. parseObject validates the four-byte key index but reads a four-byte UInt32 value without checking that another four bytes remain, so a truncated scalar can trap despite valid outer entry lengths. These are process-crash robustness defects; Swift try? does not catch bounds/overflow traps.",
+          "caller_evidence": "SteamLibraryService.swift:597-599 passes the fixed local appcache/appinfo.vdf file URL.",
+          "counterevidence": [
+            "Top-level reads require at least 16 bytes and a supported magic/version.",
+            "Outer entries validate entryEnd against data.count and metadataLength against entryEnd.",
+            "String table indices are validated before lookup at line 213.",
+            "Binary blob-length reads have an additional four-byte check at lines 237-242."
+          ],
+          "id": "mac-appinfo-bounds",
+          "question": "Does Mac malformed appinfo handling fail safely?",
+          "root_locations": [
+            "src/Presentation/SteamBacklogPicker.Mac/Services/SteamAppInfoParser.swift:21-24",
+            "src/Presentation/SteamBacklogPicker.Mac/Services/SteamAppInfoParser.swift:57-74",
+            "src/Presentation/SteamBacklogPicker.Mac/Services/SteamAppInfoParser.swift:207-225",
+            "src/Presentation/SteamBacklogPicker.Mac/Services/SteamAppInfoParser.swift:308-325"
+          ],
+          "status": "informational_robustness",
+          "suggested_improvement": "Use checked nonnegative ranges expressed as offset <= count - width; validate each primitive value read and bound table allocation."
+        },
+        {
+          "answer": "Windows/Linux share the .NET implementation, which supports and validates the Valve zstd envelope. Mac explicitly skips zstd payloads at SteamAppInfoParser.swift:84-85, so the .NET zstd allocation issue does not apply there. Mac instead has direct Data-range/overflow traps. Both implementations lack overall size/depth budgets. The separate .NET libraryfolders parser and Mac text parser support comments; ValveTextVdfParser does not implement comment skipping.",
+          "id": "platform-comparison",
+          "question": "Are the parsing protections equivalent across platforms?",
+          "status": "resolved"
+        },
+        {
+          "answer": "The parser decodes UTF-8, splits lines/tabs, and uses TryParse for numeric fields. Its production caller clamps each snapshot read to 32\u201316384 bytes before parsing. LinuxProcMemReader independently applies the same clamp. Watched app IDs are filtered after parsing. No remote ingestion path or dangerous sink was found, so missing per-field limits are not a demonstrated denial-of-service vulnerability.",
+          "evidence": [
+            "src/Integration/SteamHooks/SteamSnapshotParser.cs:10-55",
+            "src/Integration/SteamHooks/SteamMemoryPollingHookClient.cs:43-47",
+            "src/Integration/SteamHooks/SteamMemoryPollingHookClient.cs:84-101",
+            "src/Integration/SteamHooks/LinuxProcMemReader.cs:37-43"
+          ],
+          "id": "snapshot-boundary",
+          "question": "Can SteamSnapshotParser's unbounded-looking splits be abused through its production caller?",
+          "status": "resolved_no_finding"
+        },
+        {
+          "answer": "No relevant hostile-count, invalid-offset, oversized-zstd, deep-nesting, or truncated-Mac-scalar test was found. The .NET binary parser test covers a truncated legacy entry; fallback tests cover ordinary local fixtures, malformed loginusers, account-ID fallback, metadata, and family sharing. Mac appinfo tests cover valid version-41 string-table metadata and family-sharing flags. Mac VDF tests cover comments, escaped strings, and libraryfolder objects. Libraryfolders tests cover ordinary paths, comments, escapes, and case behavior. Snapshot tests cover valid/invalid lines and empty input.",
+          "id": "test-coverage",
+          "question": "Do existing tests cover the identified failure cases?",
+          "status": "resolved"
+        }
+      ]
+    },
+    {
+      "disposition": "no_issue_found",
+      "effectiveResources": [
+        {
+          "configurationChain": "HKCU SteamPath, Registry64 then Registry32 -> SteamEnvironment -> candidate existence -> adapter.Initialize -> NativeLibrary.Load",
+          "consumer": "Steam root/native loader",
+          "deployment": "WPF Windows",
+          "discrepancy": null,
+          "effectiveValue": "<SteamRoot>/steamclient.dll; steam_api64.dll; steam_api.dll",
+          "enforcingControl": "Registry read-only access, file existence, native initialization failure handling; installation integrity relies on host permissions",
+          "evidence": [
+            "src/Infrastructure/SteamDiscovery/WindowsSteamInstallPathProvider.cs:27",
+            "src/Infrastructure/SteamDiscovery/WindowsSteamInstallPathProvider.cs:49",
+            "src/Presentation/SteamBacklogPicker.AppCore/Services/Runtime/SteamNativeLibraryCandidates.cs:33",
+            "src/Integration/SteamClientAdapter/INativeLibraryLoader.cs:24"
+          ],
+          "recipients": "Application process under desktop user"
+        },
+        {
+          "configurationChain": "STEAM_PATH -> XDG_DATA_HOME/Steam -> ~/.steam/steam -> ~/.steam/debian-installation -> ~/.local/share/Steam -> Flatpak/Snap candidates; accept libraryfolders.vdf; append native candidates",
+          "consumer": "Steam root/native loader",
+          "deployment": "Avalonia Linux",
+          "discrepancy": null,
+          "effectiveValue": "<SteamRoot>/{libsteam_api.so,steamclient.so}; same names under linux64, linux32, ubuntu12_64, ubuntu12_32, steamapps/common/SteamLinuxRuntime_sniper and SteamLinuxRuntime_soldier",
+          "enforcingControl": "Directory/libraryfolders existence, candidate existence and adapter reset on initialization failure",
+          "evidence": [
+            "src/Infrastructure/SteamDiscovery/LinuxSteamInstallPathProvider.cs:24",
+            "src/Infrastructure/SteamDiscovery/LinuxSteamInstallPathProvider.cs:49",
+            "src/Presentation/SteamBacklogPicker.AppCore/Services/Runtime/SteamNativeLibraryCandidates.cs:41",
+            "src/Integration/SteamClientAdapter/SteamClientAdapter.cs:53"
+          ],
+          "recipients": "Application process under desktop user"
+        },
+        {
+          "configurationChain": "Resolved Steam root -> steamapps/libraryfolders.vdf -> library roots -> steamapps children",
+          "consumer": "Local manifests",
+          "deployment": "Windows/Linux",
+          "discrepancy": null,
+          "effectiveValue": "<SteamRoot>/steamapps/libraryfolders.vdf and <LibraryRoot>/steamapps/appmanifest_*.acf",
+          "enforcingControl": "Typed VDF/app-ID parsing, refresh/watchers and file-system permissions",
+          "evidence": [
+            "src/Infrastructure/SteamDiscovery/SteamLibraryLocator.cs:86",
+            "src/Infrastructure/SteamDiscovery/SteamAppManifestCache.cs:112",
+            "src/Infrastructure/SteamDiscovery/SteamAppManifestCache.cs:201"
+          ],
+          "recipients": "SteamLibraryLocator, SteamAppManifestCache, domain library and UI"
+        },
+        {
+          "configurationChain": "Steam root -> loginusers MostRecent/highest Timestamp -> SteamID64 plus account-ID candidates -> profile/cache files",
+          "consumer": "Local identity and metadata",
+          "deployment": "Windows/Linux",
+          "discrepancy": "librarycache JSON names populate app IDs without reading their JSON contents in the .NET path.",
+          "effectiveValue": "<SteamRoot>/config/loginusers.vdf; userdata/<candidate>/config/localconfig.vdf; userdata/<candidate>/7/remote/sharedconfig.vdf; userdata/<candidate>/config/librarycache/*.json; userdata/<candidate>/config/cloudstorage/cloud-storage-namespace-1.json; <SteamRoot>/appcache/appinfo.vdf",
+          "enforcingControl": "Host file permissions and parser/type checks; identity is metadata selection, not authentication",
+          "evidence": [
+            "src/Integration/SteamClientAdapter/SteamVdfFallback.cs:108",
+            "src/Integration/SteamClientAdapter/SteamVdfFallback.cs:154",
+            "src/Integration/SteamClientAdapter/SteamVdfFallback.cs:220",
+            "src/Integration/SteamClientAdapter/SteamVdfFallback.cs:250",
+            "src/Integration/SteamClientAdapter/SteamVdfFallback.cs:469",
+            "src/Integration/SteamClientAdapter/SteamVdfFallback.cs:643",
+            "src/Integration/SteamClientAdapter/SteamVdfFallback.cs:742",
+            "src/Integration/SteamClientAdapter/SteamVdfFallback.cs:877"
+          ],
+          "recipients": "SteamVdfFallback, SteamLibraryProvider, selection UI"
+        },
+        {
+          "configurationChain": "STEAM_PATH -> ~/Library/Application Support/Steam -> ~/.steam/steam; libraryfolders; loginusers MostRecent/highest Timestamp; SteamID64 and low-32-bit account ID",
+          "consumer": "Steam local identity/manifests/metadata",
+          "deployment": "SwiftUI macOS",
+          "discrepancy": null,
+          "effectiveValue": "Same Steam-relative manifest/profile/appinfo/cloudstorage resources as .NET; librarycache JSON contents are parsed",
+          "enforcingControl": "Candidate libraryfolders existence; local file read permissions; typed app-ID parsing",
+          "evidence": [
+            "src/Presentation/SteamBacklogPicker.Mac/Services/SteamLibraryService.swift:81",
+            "src/Presentation/SteamBacklogPicker.Mac/Services/SteamLibraryService.swift:104",
+            "src/Presentation/SteamBacklogPicker.Mac/Services/SteamLibraryService.swift:466",
+            "src/Presentation/SteamBacklogPicker.Mac/Services/SteamLibraryService.swift:506",
+            "src/Presentation/SteamBacklogPicker.Mac/Services/SteamLibraryService.swift:575",
+            "src/Presentation/SteamBacklogPicker.Mac/Services/SteamLibraryService.swift:642"
+          ],
+          "recipients": "Swift SteamLibraryService and AppStore"
+        },
+        {
+          "configurationChain": "Default SteamLibraryService -> resolveMissingNames -> cache misses -> default SteamAppNameResolver endpoint",
+          "consumer": "Missing-name lookup",
+          "deployment": "SwiftUI macOS",
+          "discrepancy": "Automatic network completion on missing names must be distinguished from offline-first discovery.",
+          "effectiveValue": "https://store.steampowered.com/api/appdetails?appids=<UInt32>&filters=basic",
+          "enforcingControl": "Fixed HTTPS endpoint, UInt32 query values, ephemeral session and timeouts; successful structured response/name required",
+          "evidence": [
+            "src/Presentation/SteamBacklogPicker.Mac/Services/SteamLibraryService.swift:19",
+            "src/Presentation/SteamBacklogPicker.Mac/Services/SteamAppNameResolver.swift:12",
+            "src/Presentation/SteamBacklogPicker.Mac/Services/SteamAppNameResolver.swift:99",
+            "src/Presentation/SteamBacklogPicker.Mac/Services/SteamAppNameResolver.swift:131"
+          ],
+          "recipients": "Steam store receives unresolved app IDs"
+        },
+        {
+          "configurationChain": "User Application Support directory, fallback ~/Library/Application Support -> SteamBacklogPicker -> steam-app-names.json",
+          "consumer": "Resolved-name cache",
+          "deployment": "SwiftUI macOS",
+          "discrepancy": null,
+          "effectiveValue": "~/Library/Application Support/SteamBacklogPicker/steam-app-names.json",
+          "enforcingControl": "Atomic file write; failures treated as optional cache failures; host permissions",
+          "evidence": [
+            "src/Presentation/SteamBacklogPicker.Mac/Services/SteamAppNameResolver.swift:23",
+            "src/Presentation/SteamBacklogPicker.Mac/Services/SteamAppNameResolver.swift:64",
+            "src/Presentation/SteamBacklogPicker.Mac/Services/SteamAppNameResolver.swift:77"
+          ],
+          "recipients": "SteamAppNameResolver reads/writes app-ID-to-name mapping"
+        },
+        {
+          "configurationChain": "Library appcache/librarycache candidate files -> Steam CDN header; ImageFailed -> header/capsule/SteamDB/portrait",
+          "consumer": "Selected-game artwork",
+          "deployment": "WPF Windows",
+          "discrepancy": null,
+          "effectiveValue": "<LibraryRoot>/appcache/librarycache/<appId> artwork variants; https://cdn.cloudflare.steamstatic.com/steam/apps/<appId>/{header.jpg,capsule_616x353.jpg,library_600x900.jpg}; https://steamdb.info/static/cdn/steam/apps/<appId>/header.jpg",
+          "enforcingControl": "Fixed generated HTTPS paths with numeric app ID; image failure fallback",
+          "evidence": [
+            "src/Presentation/SteamBacklogPicker.AppCore/Services/GameArt/SteamGameArtLocator.cs:35",
+            "src/Presentation/SteamBacklogPicker.AppCore/Services/GameArt/SteamGameArtLocator.cs:59",
+            "src/Presentation/SteamBacklogPicker.UI/MainWindow.xaml.cs:123",
+            "src/Presentation/SteamBacklogPicker.UI/MainWindow.xaml.cs:132",
+            "src/Presentation/SteamBacklogPicker.UI/Services/Notifications/ToastNotificationService.cs:24"
+          ],
+          "recipients": "WPF BitmapImage, Steam CDN, conditionally SteamDB and Windows toast service"
+        },
+        {
+          "configurationChain": "Shared SteamGameArtLocator -> SelectedGame.CoverImagePath -> Image.Source",
+          "consumer": "Selected-game artwork",
+          "deployment": "Avalonia Linux",
+          "discrepancy": "A returned remote URL alone does not prove successful Avalonia HTTP image rendering.",
+          "effectiveValue": "<LibraryRoot>/appcache/librarycache/<appId> artwork variants or https://cdn.cloudflare.steamstatic.com/steam/apps/<appId>/header.jpg",
+          "enforcingControl": "Fixed generated paths; actual network bitmap loading remains a runtime/dependency question",
+          "evidence": [
+            "src/Presentation/SteamBacklogPicker.AppCore/Services/GameArt/SteamGameArtLocator.cs:59",
+            "src/Presentation/SteamBacklogPicker.AppCore/Services/GameArt/SteamGameArtLocator.cs:70",
+            "src/Presentation/SteamBacklogPicker.Linux/Views/MainWindow.axaml:210",
+            "src/Presentation/SteamBacklogPicker.Linux/Services/Notifications/LinuxToastNotificationService.cs:52"
+          ],
+          "recipients": "Avalonia Image and session D-Bus notification service"
+        },
+        {
+          "configurationChain": "Steam/library roots -> existing local artwork -> fixed remote fallback candidates -> NSImage/AsyncImage",
+          "consumer": "Selected-game artwork",
+          "deployment": "SwiftUI macOS",
+          "discrepancy": null,
+          "effectiveValue": "<SteamRoot or LibraryRoot>/appcache/librarycache/<appId> artwork variants; Steam CDN header/capsule/portrait and SteamDB header URLs",
+          "enforcingControl": "File URL distinction and fixed HTTPS candidates with numeric app IDs",
+          "evidence": [
+            "src/Presentation/SteamBacklogPicker.Mac/Services/SteamLibraryService.swift:284",
+            "src/Presentation/SteamBacklogPicker.Mac/Services/SteamLibraryService.swift:308",
+            "src/Presentation/SteamBacklogPicker.Mac/Views/ContentView.swift:484"
+          ],
+          "recipients": "SwiftUI decoder, Steam CDN, conditionally SteamDB"
+        },
+        {
+          "configurationChain": "new SelectionEngine() -> ApplicationData special folder or temp fallback -> SteamBacklogPicker/settings.json",
+          "consumer": "Selection settings",
+          "deployment": "Windows/Linux",
+          "discrepancy": "Settings use ApplicationData, whereas WPF telemetry uses LocalApplicationData.",
+          "effectiveValue": "<ApplicationData>/SteamBacklogPicker/settings.json; fallback <Temp>/SteamBacklogPicker/settings.json; sibling settings.json.<GUID>.tmp during writes",
+          "enforcingControl": "Deserialization normalization, flushed sibling temporary file and replace move; host permissions",
+          "evidence": [
+            "src/Presentation/SteamBacklogPicker.AppCore/Composition/ApplicationCoreServiceCollectionExtensions.cs:53",
+            "src/Domain/SelectionEngine/SelectionEngine.cs:115",
+            "src/Domain/SelectionEngine/SelectionEngine.cs:144",
+            "src/Domain/SelectionEngine/SelectionEngine.cs:172"
+          ],
+          "recipients": "Domain SelectionEngine"
+        },
+        {
+          "configurationChain": "AppStore defaults persistState=true and UserDefaults.standard -> three explicit keys",
+          "consumer": "Selection preferences/history/language",
+          "deployment": "SwiftUI macOS",
+          "discrepancy": "Physical plist location depends on executable/bundle deployment and is not established by this source.",
+          "effectiveValue": "UserDefaults.standard: SteamBacklogPicker.SelectionPreferences, SteamBacklogPicker.SelectionHistory, SteamBacklogPicker.Language",
+          "enforcingControl": "JSON encoding/decoding and preference normalization; OS user domain",
+          "evidence": [
+            "src/Presentation/SteamBacklogPicker.Mac/Stores/AppStore.swift:40",
+            "src/Presentation/SteamBacklogPicker.Mac/Stores/AppStore.swift:71",
+            "src/Presentation/SteamBacklogPicker.Mac/Stores/AppStore.swift:558"
+          ],
+          "recipients": "AppStore and OS preferences storage"
+        },
+        {
+          "configurationChain": "App startup disables telemetry by default -> default TelemetryStoreDirectory -> LocalApplicationData or temp fallback",
+          "consumer": "Telemetry consent",
+          "deployment": "WPF Windows",
+          "discrepancy": null,
+          "effectiveValue": "<LocalApplicationData>/SteamBacklogPicker/telemetry-consent.json; fallback <Temp>/SteamBacklogPicker/telemetry-consent.json",
+          "enforcingControl": "Default false; missing/invalid state falls back to configured default",
+          "evidence": [
+            "src/Presentation/SteamBacklogPicker.UI/App.xaml.cs:105",
+            "src/Infrastructure/Telemetry/TelemetryOptions.cs:53",
+            "src/Infrastructure/Telemetry/FileTelemetryConsentStore.cs:13",
+            "src/Infrastructure/Telemetry/FileTelemetryConsentStore.cs:20"
+          ],
+          "recipients": "FileTelemetryConsentStore and TelemetryConsentService"
+        },
+        {
+          "configurationChain": "Default LogsDirectory = DefaultDataDirectory/logs -> GetLogFilePath -> daily rolling Serilog file sink",
+          "consumer": "Telemetry log sink",
+          "deployment": "WPF Windows",
+          "discrepancy": "README.md:50 describes anonymous events, but SteamEnvironment records libraryPath and attemptedCandidates at src/Presentation/SteamBacklogPicker.AppCore/Services/Runtime/SteamEnvironment.cs:59 and :78.",
+          "effectiveValue": "<LocalApplicationData>/SteamBacklogPicker/logs/SteamBacklogPicker-<UTC yyyyMMdd>.log passed to Serilog rolling sink; temp fallback if necessary",
+          "enforcingControl": "TelemetryClient consent gate, Information minimum, 7-file retention; host file permissions",
+          "evidence": [
+            "src/Infrastructure/Telemetry/TelemetryOptions.cs:34",
+            "src/Infrastructure/Telemetry/TelemetryOptions.cs:51",
+            "src/Infrastructure/Telemetry/TelemetryOptions.cs:69",
+            "src/Infrastructure/Telemetry/SerilogTelemetryClient.cs:19",
+            "src/Infrastructure/Telemetry/TelemetryBootstrapper.cs:41"
+          ],
+          "recipients": "Local Serilog files; no configured remote telemetry consumer"
+        },
+        {
+          "configurationChain": "AppStore default MacDiagnosticLogger -> OSLog",
+          "consumer": "Diagnostics",
+          "deployment": "SwiftUI macOS",
+          "discrepancy": "Mac diagnostics differ materially from the optional WPF telemetry subsystem.",
+          "effectiveValue": "OSLog subsystem com.steambacklogpicker.mac, category app; message privacy public",
+          "enforcingControl": "OS logging access; no .NET telemetry-consent gate",
+          "evidence": [
+            "src/Presentation/SteamBacklogPicker.Mac/Stores/AppStore.swift:71",
+            "src/Presentation/SteamBacklogPicker.Mac/Services/DiagnosticLogService.swift:14",
+            "src/Presentation/SteamBacklogPicker.Mac/Stores/AppStore.swift:359"
+          ],
+          "recipients": "Host logging system and authorized log readers"
+        },
+        {
+          "configurationChain": "SBP_LINUX_UPDATE_FEED_URL or fixed GitHub latest feed -> JSON -> env public-key verification or explicit unsigned opt-in",
+          "consumer": "Update feed verification",
+          "deployment": "Avalonia Linux startup",
+          "discrepancy": "README.md:65 calls unsigned mode local testing; code does not limit that mode to local endpoints.",
+          "effectiveValue": "https://github.com/Jpkovas/SteamBacklogPicker/releases/latest/download/linux-appimage-update.json by default; trust anchor reference SBP_LINUX_UPDATE_PUBLIC_KEY",
+          "enforcingControl": "RSA SHA-256 PKCS#1 signature binds version/URL/hash; no key defaults to rejection unless unsigned=true",
+          "evidence": [
+            "src/Presentation/SteamBacklogPicker.Linux/App.axaml.cs:51",
+            "src/Presentation/SteamBacklogPicker.Linux/Services/Updates/LinuxAppImageUpdateService.cs:18",
+            "src/Presentation/SteamBacklogPicker.Linux/Services/Updates/LinuxAppImageUpdateService.cs:42",
+            "src/Presentation/SteamBacklogPicker.Linux/Services/Updates/LinuxAppImageUpdateService.cs:286",
+            "src/Presentation/SteamBacklogPicker.Linux/Services/Updates/LinuxAppImageUpdateService.cs:317"
+          ],
+          "recipients": "Configured feed host and Linux update service"
+        },
+        {
+          "configurationChain": "Accepted newer feed -> allowed download URI -> fixed update-state directory -> SHA-256 validation -> marker",
+          "consumer": "Update download/staging",
+          "deployment": "Avalonia Linux",
+          "discrepancy": "Update state ignores XDG_DATA_HOME; it is explicitly under UserProfile/.local/share.",
+          "effectiveValue": "~/.local/share/SteamBacklogPicker/updates/SteamBacklogPicker.pending and ~/.local/share/SteamBacklogPicker/updates/pending-update.json",
+          "enforcingControl": "HTTPS or loopback HTTP, newer version, required 64-hex SHA-256 and hash comparison",
+          "evidence": [
+            "src/Presentation/SteamBacklogPicker.Linux/Services/Updates/LinuxAppImageUpdateService.cs:60",
+            "src/Presentation/SteamBacklogPicker.Linux/Services/Updates/LinuxAppImageUpdateService.cs:71",
+            "src/Presentation/SteamBacklogPicker.Linux/Services/Updates/LinuxAppImageUpdateService.cs:81",
+            "src/Presentation/SteamBacklogPicker.Linux/Services/Updates/LinuxAppImageUpdateService.cs:87",
+            "src/Presentation/SteamBacklogPicker.Linux/Services/Updates/LinuxAppImageUpdateService.cs:209",
+            "src/Presentation/SteamBacklogPicker.Linux/Services/Updates/LinuxAppImageUpdateService.cs:235"
+          ],
+          "recipients": "Signed/opted-in download host and application-owned staging directory"
+        },
+        {
+          "configurationChain": "Read fixed pending-update.json -> consume marker paths -> generate quoted shell script -> /usr/bin/env bash",
+          "consumer": "Pending update application",
+          "deployment": "Avalonia Linux next startup",
+          "discrepancy": "Pending consumption precedes fresh feed verification and does not repeat the downloaded payload hash/signature check.",
+          "effectiveValue": "~/.local/share/SteamBacklogPicker/updates/apply-pending-update.sh; marker.TargetBinaryPath; marker.PendingBinaryPath; <target>.bak",
+          "enforcingControl": "Required/existing/distinct paths, shell literal escaping, backup/rollback; same user's filesystem integrity",
+          "evidence": [
+            "src/Presentation/SteamBacklogPicker.Linux/Services/Updates/LinuxAppImageUpdateService.cs:101",
+            "src/Presentation/SteamBacklogPicker.Linux/Services/Updates/LinuxAppImageUpdateService.cs:128",
+            "src/Presentation/SteamBacklogPicker.Linux/Services/Updates/LinuxAppImageUpdateService.cs:175",
+            "src/Presentation/SteamBacklogPicker.Linux/Services/Updates/LinuxAppImageUpdateService.cs:189",
+            "src/Presentation/SteamBacklogPicker.Linux/Services/Updates/LinuxAppImageUpdateService.cs:201",
+            "src/Presentation/SteamBacklogPicker.Linux/Services/Updates/LinuxAppImageUpdateService.cs:215"
+          ],
+          "missingImpactPrerequisite": "A narrower attacker permission allowing marker/payload modification without already equivalent desktop-user execution authority has not been established.",
+          "recipients": "Bash subprocess and target executable filesystem"
+        },
+        {
+          "configurationChain": "Explicit legacy opt-in -> ../Update.exe exists -> optional SBP_GITHUB_TOKEN -> GithubSource fixed repository -> download/apply/restart",
+          "consumer": "Legacy Windows updater/token",
+          "deployment": "Conditional WPF service invocation",
+          "discrepancy": "No WPF startup call was found; environment opt-in alone does not activate this registered service.",
+          "effectiveValue": "https://github.com/Jpkovas/SteamBacklogPicker; optional environment secret reference SBP_GITHUB_TOKEN; <AppContext.BaseDirectory>/../Update.exe",
+          "enforcingControl": "Default disabled policy and installation-format check",
+          "evidence": [
+            "src/Presentation/SteamBacklogPicker.UI/Services/Updates/SquirrelUpdateService.cs:22",
+            "src/Presentation/SteamBacklogPicker.UI/Services/Updates/SquirrelUpdateService.cs:37",
+            "src/Presentation/SteamBacklogPicker.UI/Services/Updates/SquirrelUpdateService.cs:74",
+            "src/Presentation/SteamBacklogPicker.AppCore/Services/Updates/LegacyWindowsUpdatePolicy.cs:5",
+            "src/Presentation/SteamBacklogPicker.UI/App.xaml.cs:23"
+          ],
+          "recipients": "Squirrel/GitHub client and installed application"
+        },
+        {
+          "configurationChain": "Actions secret SBP_LINUX_UPDATE_PRIVATE_KEY -> step env -> RUNNER_TEMP file -> SBP_LINUX_UPDATE_PRIVATE_KEY_PATH -> openssl",
+          "consumer": "Release signing private key",
+          "deployment": "Linux GitHub release workflow",
+          "discrepancy": "Signing is conditional; packaging emits an unsigned feed when no key is configured.",
+          "effectiveValue": "${RUNNER_TEMP}/sbp-linux-update-private.pem; credential contents not inspected",
+          "enforcingControl": "Secret availability controlled by GitHub workflow context; chmod 600 on key file",
+          "evidence": [
+            ".github/workflows/linux-release.yml:46",
+            ".github/workflows/linux-release.yml:59",
+            "scripts/package-linux-appimage.sh:93"
+          ],
+          "recipients": "Packaging step and openssl signing process"
+        },
+        {
+          "configurationChain": "Download AppImage/appimagetool continuous -> RUNNER_TEMP executable -> extract -> APPIMAGETOOL_PATH -> packaging",
+          "consumer": "Release packaging tool",
+          "deployment": "Linux GitHub release workflow",
+          "discrepancy": "The inspected download step executes a mutable continuous-release artifact without a source-visible digest/signature verification step.",
+          "effectiveValue": "${RUNNER_TEMP}/appimagetool-x86_64.AppImage and ${RUNNER_TEMP}/squashfs-root/AppRun",
+          "enforcingControl": "curl --fail over HTTPS and executable/path checks; upstream/release integrity remains external",
+          "evidence": [
+            ".github/workflows/linux-release.yml:36",
+            "scripts/package-linux-appimage.sh:33",
+            "scripts/package-linux-appimage.sh:77"
+          ],
+          "recipients": "CI runner process with workflow authority"
+        },
+        {
+          "configurationChain": "Published-release event -> contents:write -> github.token as GH_TOKEN -> gh release upload --clobber",
+          "consumer": "Release publication token/artifacts",
+          "deployment": "Linux GitHub release workflow",
+          "discrepancy": null,
+          "effectiveValue": "Top-level files from artifacts/linux/ uploaded to ${GITHUB_REF_NAME}; optional workflow artifact includes artifacts/linux/",
+          "enforcingControl": "Publication step limited to release event; GitHub token permissions and repository protection",
+          "evidence": [
+            ".github/workflows/linux-release.yml:3",
+            ".github/workflows/linux-release.yml:12",
+            ".github/workflows/linux-release.yml:68",
+            ".github/workflows/linux-release.yml:74"
+          ],
+          "recipients": "GitHub release and workflow-artifact storage"
+        },
+        {
+          "configurationChain": "Selected typed Steam app ID -> supported action checks -> OS URI activation",
+          "consumer": "Steam game launch/install",
+          "deployment": "Windows/Linux/macOS user action",
+          "discrepancy": null,
+          "effectiveValue": "steam://run/<numeric appId> or steam://install/<numeric appId>",
+          "enforcingControl": "Storefront/numeric-ID/action-state checks; Steam owns entitlement enforcement",
+          "evidence": [
+            "src/Presentation/SteamBacklogPicker.AppCore/Services/Launch/GameLaunchService.cs:35",
+            "src/Presentation/SteamBacklogPicker.AppCore/Services/Launch/GameLaunchAction.cs:66",
+            "src/Presentation/SteamBacklogPicker.AppCore/ViewModels/MainViewModel.cs:244",
+            "src/Presentation/SteamBacklogPicker.Mac/Stores/AppStore.swift:206",
+            "src/Presentation/SteamBacklogPicker.Mac/Stores/AppStore.swift:359"
+          ],
+          "recipients": "Registered Steam protocol handler"
+        },
+        {
+          "configurationChain": "SteamHookOptions.Mode=NamedPipe -> local NamedPipeClientStream -> handshake/event parsing",
+          "consumer": "Steam hook IPC",
+          "deployment": "Conditional prototype caller only",
+          "discrepancy": "Off by default describes application wiring; the options record itself defaults to NamedPipe when a caller explicitly constructs the prototype.",
+          "effectiveValue": "Local machine pipe steam.ipc by default; configurable pipe name",
+          "enforcingControl": "OS pipe permissions, connect timeout and cancellation; no normal app registration",
+          "evidence": [
+            "src/Integration/SteamHooks/SteamHookOptions.cs:13",
+            "src/Integration/SteamHooks/SteamHookOptions.cs:23",
+            "src/Integration/SteamHooks/SteamHookClientFactory.cs:14",
+            "src/Integration/SteamHooks/SteamNamedPipeHookClient.cs:112"
+          ],
+          "recipients": "Local pipe peer and hook subscriber"
+        },
+        {
+          "configurationChain": "MemoryInspection mode -> selected steam process -> Windows read handle or explicit Linux unsafe opt-in -> /proc/<pid>/mem",
+          "consumer": "Steam process-memory reader",
+          "deployment": "Conditional prototype Windows/Linux",
+          "discrepancy": "No default application startup wiring or new elevated privilege grant was found.",
+          "effectiveValue": "Configured process-memory addresses; /proc/<pid>/mem on Linux",
+          "enforcingControl": "OS read permissions, Linux opt-in, no-op unsupported-platform degradation",
+          "evidence": [
+            "src/Integration/SteamHooks/SteamHookOptions.cs:49",
+            "src/Integration/SteamHooks/SteamHookOptions.cs:68",
+            "src/Integration/SteamHooks/SteamHookClientFactory.cs:23",
+            "src/Integration/SteamHooks/LinuxProcMemReader.cs:14",
+            "src/Integration/SteamHooks/SteamMemoryPollingHookClient.Windows.cs:16"
+          ],
+          "recipients": "Hook memory reader and subscriber"
+        }
+      ],
+      "id": "effective_resources",
+      "label": "Architecture, account state, updates, native loading, persistence and network recipients",
+      "notes": "Canonical architecture threat model preserved with resource tracing. Launch uses numeric app IDs; updater feed verification and same-user persisted marker integrity are distinct controls; hooks are not active in production composition.",
+      "receiptRefs": [],
+      "resolvedQuestions": [
+        {
+          "answer": "No invocation is present in the inspected WPF startup. The service is registered, and its method additionally requires explicit opt-in plus a Squirrel installation marker.",
+          "documentationDisagreement": "README.md:34 and docs/architecture.md:6 describe conditional Squirrel operation, but registration is not a call site.",
+          "evidence": [
+            "src/Presentation/SteamBacklogPicker.UI/App.xaml.cs:23",
+            "src/Presentation/SteamBacklogPicker.UI/Services/Updates/SquirrelUpdateService.cs:22"
+          ],
+          "question": "Does normal Windows startup actually run Squirrel updates?"
+        },
+        {
+          "answer": "No bundled key is established. The feed is fetched at startup, then accepted only using the environment public key or explicit unsigned opt-in. Public-key deployment remains an operator prerequisite.",
+          "evidence": [
+            "src/Presentation/SteamBacklogPicker.Linux/Services/Updates/LinuxAppImageUpdateService.cs:42",
+            "src/Presentation/SteamBacklogPicker.Linux/Services/Updates/LinuxAppImageUpdateService.cs:286",
+            "README.md:65"
+          ],
+          "question": "Are Linux updates authenticated by default with a bundled key?"
+        },
+        {
+          "answer": "The controls are distinct. Staging verifies feed and hash; later marker application checks paths/existence and schedules replacement without repeating authenticity/hash validation. No lower-authority attacker prerequisite was established.",
+          "evidence": [
+            "src/Presentation/SteamBacklogPicker.Linux/Services/Updates/LinuxAppImageUpdateService.cs:81",
+            "src/Presentation/SteamBacklogPicker.Linux/Services/Updates/LinuxAppImageUpdateService.cs:101",
+            "src/Presentation/SteamBacklogPicker.Linux/Services/Updates/LinuxAppImageUpdateService.cs:128"
+          ],
+          "question": "Does feed authenticity enforcement also validate persisted pending state at application time?"
+        },
+        {
+          "answer": "No. The opt-in is explicit, but any HTTPS download host is permitted after acceptance; the local-testing restriction is documented operator intent rather than that host control.",
+          "evidence": [
+            "README.md:65",
+            "src/Presentation/SteamBacklogPicker.Linux/Services/Updates/LinuxAppImageUpdateService.cs:235",
+            "src/Presentation/SteamBacklogPicker.Linux/Services/Updates/LinuxAppImageUpdateService.cs:286"
+          ],
+          "question": "Is unsigned Linux update mode technically confined to local test hosts?"
+        },
+        {
+          "answer": "Local files are the primary source, but macOS automatically fetches missing names from public appdetails and persists a separate app-owned name cache. WPF/macOS artwork can contact Steam CDN and SteamDB. No general full-library cache-population service was established.",
+          "evidence": [
+            "README.md:3",
+            "docs/architecture.md:10",
+            "src/Presentation/SteamBacklogPicker.Mac/Services/SteamLibraryService.swift:19",
+            "src/Presentation/SteamBacklogPicker.Mac/Services/SteamAppNameResolver.swift:77",
+            "src/Presentation/SteamBacklogPicker.UI/MainWindow.xaml.cs:123"
+          ],
+          "question": "Is library discovery fully offline, and is there already automated cache population?"
+        },
+        {
+          "answer": "The inspected discovery uses local identity/cache evidence and optional native installed/family-sharing queries. Steam URI handlers retain final installation/run authority. Complete Steam Families member/entitlement enumeration is not demonstrated.",
+          "evidence": [
+            "src/Integration/SteamClientAdapter/SteamVdfFallback.cs:108",
+            "src/Integration/SteamClientAdapter/SteamClientAdapter.cs:99",
+            "src/Integration/SteamClientAdapter/SteamClientAdapter.cs:158",
+            "src/Infrastructure/SteamDiscovery/SteamAppManifestCache.cs:332",
+            "src/Presentation/SteamBacklogPicker.AppCore/Services/Launch/GameLaunchService.cs:35"
+          ],
+          "question": "Does the app authenticate to Steam or enumerate complete Steam Families entitlements?"
+        },
+        {
+          "answer": "No. Windows registers consent-gated local Serilog telemetry. Linux startup does not register it. macOS uses public OSLog diagnostics. No remote TelemetryEndpoint consumer was found; anonymous-event language does not accurately describe path-bearing Windows diagnostics.",
+          "evidence": [
+            "README.md:50",
+            "src/Presentation/SteamBacklogPicker.UI/App.xaml.cs:105",
+            "src/Presentation/SteamBacklogPicker.Linux/Composition/LinuxServiceCollectionExtensions.cs:8",
+            "src/Infrastructure/Telemetry/TelemetryOptions.cs:49",
+            "src/Presentation/SteamBacklogPicker.AppCore/Services/Runtime/SteamEnvironment.cs:59",
+            "src/Presentation/SteamBacklogPicker.Mac/Services/DiagnosticLogService.swift:14"
+          ],
+          "question": "Are telemetry resources and privacy controls identical on every platform?"
+        },
+        {
+          "answer": "They are separate prototypes without inspected application composition wiring. Explicit prototype callers can select IPC or memory modes; Linux memory access additionally requires unsafe opt-in and host permission.",
+          "evidence": [
+            "docs/advanced-integration.md:3",
+            "src/Presentation/SteamBacklogPicker.AppCore/Composition/ApplicationCoreServiceCollectionExtensions.cs:33",
+            "src/Integration/SteamHooks/SteamHookClientFactory.cs:14",
+            "src/Integration/SteamHooks/SteamHookClientFactory.cs:23"
+          ],
+          "question": "Are optional Steam hooks a production startup attack surface?"
+        },
+        {
+          "answer": "Filesystem permissions/symlinks, protocol-handler ownership, public-key provisioning, actual release signatures, CI secret/protection configuration and loaded native-library provenance require deployment evidence. macOS UserDefaults physical location and Avalonia remote-image behavior also remain unverified.",
+          "question": "Which controls remain deployment-dependent?"
+        }
+      ]
+    },
+    {
+      "disposition": "no_issue_found",
+      "fullyReviewedFiles": [
+        ".claude/settings.local.json",
+        ".gitattributes",
+        ".github/ISSUE_TEMPLATE/portability-divergence.yml",
+        ".github/workflows/dotnet.yml",
+        ".github/workflows/linux-release.yml",
+        ".gitignore",
+        "AGENTS.md",
+        "CHANGES.md",
+        "CLAUDE.md",
+        "Directory.Build.props",
+        "Directory.Build.targets",
+        "Package.swift",
+        "README.md",
+        "SteamBacklogPicker.sln",
+        "TODO.md",
+        "docs/accessibility-checklist.md",
+        "docs/advanced-integration.md",
+        "docs/appinfo-bool-type.md",
+        "docs/architecture.md",
+        "docs/notes/selection-engine-improvement.md",
+        "docs/requirements.md",
+        "docs/testing/journey-parity-checklist.md",
+        "docs/testing/macos-port-checklist.md",
+        "docs/testing/manual-test-cases.md",
+        "docs/testing/performance-report.md",
+        "docs/testing/regression-checklist.md",
+        "docs/testing/runbook-installacao-windows-linux.md",
+        "docs/testing/runbook-jornadas-paridade-windows-linux.md",
+        "docs/testing/test-parity-report.md",
+        "docs/user-guide.md",
+        "improvements.md",
+        "scripts/local-pipeline.sh",
+        "scripts/package-linux-appimage.sh",
+        "src/Domain/Domain.csproj",
+        "src/Domain/GameEntry.cs",
+        "src/Domain/GameIdentifier.cs",
+        "src/Domain/SelectionEngine/ISelectionEngine.cs",
+        "src/Domain/SelectionEngine/SelectionEngine.cs",
+        "src/Domain/SelectionEngine/SelectionFilters.cs",
+        "src/Domain/SelectionEngine/SelectionHistoryEntry.cs",
+        "src/Domain/SelectionEngine/SelectionPreferences.cs",
+        "src/Domain/SelectionEngine/SelectionSettings.cs",
+        "src/Domain/SteamDeckCompatibility.cs",
+        "src/Domain/SteamPlatform.cs",
+        "src/Domain/Storefront.cs",
+        "src/Infrastructure/SteamDiscovery/DefaultSteamInstallPathProvider.cs",
+        "src/Infrastructure/SteamDiscovery/ISteamInstallPathProvider.cs",
+        "src/Infrastructure/SteamDiscovery/ISteamLibraryFoldersParser.cs",
+        "src/Infrastructure/SteamDiscovery/LinuxSteamInstallPathProvider.cs",
+        "src/Infrastructure/SteamDiscovery/PlatformPathComparisonStrategy.cs",
+        "src/Infrastructure/SteamDiscovery/SteamAppManifestCache.cs",
+        "src/Infrastructure/SteamDiscovery/SteamDiscovery.csproj",
+        "src/Infrastructure/SteamDiscovery/SteamLibraryFoldersParser.cs",
+        "src/Infrastructure/SteamDiscovery/SteamLibraryLocator.cs",
+        "src/Infrastructure/SteamDiscovery/SteamPathResolutionAbstractions.cs",
+        "src/Infrastructure/SteamDiscovery/WindowsSteamInstallPathProvider.NonWindows.cs",
+        "src/Infrastructure/SteamDiscovery/WindowsSteamInstallPathProvider.cs",
+        "src/Infrastructure/Telemetry/FileTelemetryConsentStore.cs",
+        "src/Infrastructure/Telemetry/ITelemetryClient.cs",
+        "src/Infrastructure/Telemetry/ITelemetryConsentService.cs",
+        "src/Infrastructure/Telemetry/ITelemetryConsentStore.cs",
+        "src/Infrastructure/Telemetry/SerilogTelemetryClient.cs",
+        "src/Infrastructure/Telemetry/ServiceCollectionExtensions.cs",
+        "src/Infrastructure/Telemetry/Telemetry.csproj",
+        "src/Infrastructure/Telemetry/TelemetryBootstrapper.cs",
+        "src/Infrastructure/Telemetry/TelemetryConsentService.cs",
+        "src/Infrastructure/Telemetry/TelemetryConsentState.cs",
+        "src/Infrastructure/Telemetry/TelemetryOptions.cs",
+        "src/Integration/SteamClientAdapter/IFileAccessor.cs",
+        "src/Integration/SteamClientAdapter/INativeLibraryLoader.cs",
+        "src/Integration/SteamClientAdapter/Properties/AssemblyInfo.cs",
+        "src/Integration/SteamClientAdapter/SteamAppDefinition.cs",
+        "src/Integration/SteamClientAdapter/SteamClientAdapter.cs",
+        "src/Integration/SteamClientAdapter/SteamClientAdapter.csproj",
+        "src/Integration/SteamClientAdapter/SteamCollectionDefinition.cs",
+        "src/Integration/SteamClientAdapter/SteamVdfFallback.cs",
+        "src/Integration/SteamHooks/ISteamHookClient.cs",
+        "src/Integration/SteamHooks/ISteamProcessMemoryReader.cs",
+        "src/Integration/SteamHooks/LinuxProcMemReader.cs",
+        "src/Integration/SteamHooks/SteamDownloadEvent.cs",
+        "src/Integration/SteamHooks/SteamHookClientFactory.cs",
+        "src/Integration/SteamHooks/SteamHookDiagnostic.cs",
+        "src/Integration/SteamHooks/SteamHookMode.cs",
+        "src/Integration/SteamHooks/SteamHookOptions.cs",
+        "src/Integration/SteamHooks/SteamHooks.csproj",
+        "src/Integration/SteamHooks/SteamMemoryPollingHookClient.Windows.cs",
+        "src/Integration/SteamHooks/SteamMemoryPollingHookClient.cs",
+        "src/Integration/SteamHooks/SteamNamedPipeHookClient.cs",
+        "src/Integration/SteamHooks/SteamSnapshotParser.cs",
+        "src/Integration/ValveFormatParser/ValveBinaryVdfParser.cs",
+        "src/Integration/ValveFormatParser/ValveFormatParser.csproj",
+        "src/Integration/ValveFormatParser/ValveKeyValueNode.cs",
+        "src/Integration/ValveFormatParser/ValveTextVdfParser.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Composition/ApplicationCoreServiceCollectionExtensions.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Composition/PlatformUserExperienceServiceRegistrar.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Journey/JourneyParityChecklist.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Journey/JourneyStep.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/GameArt/IGameArtLocator.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/GameArt/SteamGameArtLocator.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/Launch/GameLaunchAction.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/Launch/GameLaunchOptions.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/Launch/GameLaunchService.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/Launch/IGameLaunchService.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/Library/CombinedGameLibraryService.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/Library/IGameLibraryProvider.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/Library/IGameLibraryService.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/Library/SteamLibraryProvider.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/Localization/ILocalizationService.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/Localization/LocalizationService.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/Notifications/IToastNotificationService.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/Notifications/NullToastNotificationService.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/Runtime/ISteamEnvironment.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/Runtime/SteamEnvironment.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/Runtime/SteamNativeLibraryCandidates.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/Updates/IAppUpdateService.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/Updates/LegacyWindowsUpdatePolicy.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/Services/Updates/NoOpAppUpdateService.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/SteamBacklogPicker.AppCore.csproj",
+        "src/Presentation/SteamBacklogPicker.AppCore/ViewModels/AsyncRelayCommand.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/ViewModels/GameDetailsViewModel.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/ViewModels/MainViewModel.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/ViewModels/ObservableObject.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/ViewModels/RelayCommand.cs",
+        "src/Presentation/SteamBacklogPicker.AppCore/ViewModels/SelectionPreferencesViewModel.cs",
+        "src/Presentation/SteamBacklogPicker.Linux/App.axaml",
+        "src/Presentation/SteamBacklogPicker.Linux/App.axaml.cs",
+        "src/Presentation/SteamBacklogPicker.Linux/Assets/Flags.axaml",
+        "src/Presentation/SteamBacklogPicker.Linux/Assets/Icons.axaml",
+        "src/Presentation/SteamBacklogPicker.Linux/Composition/LinuxServiceCollectionExtensions.cs",
+        "src/Presentation/SteamBacklogPicker.Linux/Composition/ServiceCollectionExtensions.cs",
+        "src/Presentation/SteamBacklogPicker.Linux/Converters/StringEqualsConverter.cs",
+        "src/Presentation/SteamBacklogPicker.Linux/Program.cs",
+        "src/Presentation/SteamBacklogPicker.Linux/Services/Notifications/LinuxToastNotificationService.cs",
+        "src/Presentation/SteamBacklogPicker.Linux/Services/Updates/LinuxAppImageUpdateService.cs",
+        "src/Presentation/SteamBacklogPicker.Linux/SteamBacklogPicker.Linux.csproj",
+        "src/Presentation/SteamBacklogPicker.Linux/Styles/AppStyles.axaml",
+        "src/Presentation/SteamBacklogPicker.Linux/Views/MainWindow.axaml",
+        "src/Presentation/SteamBacklogPicker.Linux/Views/MainWindow.axaml.cs",
+        "src/Presentation/SteamBacklogPicker.Mac/App/SteamBacklogPickerMacApp.swift",
+        "src/Presentation/SteamBacklogPicker.Mac/Models/GameModels.swift",
+        "src/Presentation/SteamBacklogPicker.Mac/Models/SelectionModels.swift",
+        "src/Presentation/SteamBacklogPicker.Mac/Services/AppUpdateService.swift",
+        "src/Presentation/SteamBacklogPicker.Mac/Services/DiagnosticLogService.swift",
+        "src/Presentation/SteamBacklogPicker.Mac/Services/GameNotificationService.swift",
+        "src/Presentation/SteamBacklogPicker.Mac/Services/SteamAppInfoParser.swift",
+        "src/Presentation/SteamBacklogPicker.Mac/Services/SteamAppNameResolver.swift",
+        "src/Presentation/SteamBacklogPicker.Mac/Services/SteamLibraryService.swift",
+        "src/Presentation/SteamBacklogPicker.Mac/Services/VDFParser.swift",
+        "src/Presentation/SteamBacklogPicker.Mac/Stores/AppStore.swift",
+        "src/Presentation/SteamBacklogPicker.Mac/Support/Localization.swift",
+        "src/Presentation/SteamBacklogPicker.Mac/Views/ContentView.swift",
+        "src/Presentation/SteamBacklogPicker.Mac/Views/FlowLayout.swift",
+        "src/Presentation/SteamBacklogPicker.UI/App.xaml",
+        "src/Presentation/SteamBacklogPicker.UI/App.xaml.cs",
+        "src/Presentation/SteamBacklogPicker.UI/Composition/ServiceCollectionExtensions.cs",
+        "src/Presentation/SteamBacklogPicker.UI/MainWindow.xaml",
+        "src/Presentation/SteamBacklogPicker.UI/MainWindow.xaml.cs",
+        "src/Presentation/SteamBacklogPicker.UI/Services/Notifications/ToastNotificationService.cs",
+        "src/Presentation/SteamBacklogPicker.UI/Services/Updates/SquirrelUpdateService.cs",
+        "src/Presentation/SteamBacklogPicker.UI/SteamBacklogPicker.UI.csproj",
+        "src/Presentation/SteamBacklogPicker.UI/Themes/Controls.xaml",
+        "src/Presentation/SteamBacklogPicker.UI/Themes/Flags.xaml",
+        "src/Presentation/SteamBacklogPicker.UI/Themes/Icons.xaml",
+        "src/Presentation/SteamBacklogPicker.UI/Themes/Palette.xaml",
+        "src/Presentation/SteamBacklogPicker.UI/Themes/Typography.xaml",
+        "src/Presentation/SteamBacklogPicker.UI/appsettings.json",
+        "tests/Domain/Domain.Tests/Domain.Tests.csproj",
+        "tests/Domain/Domain.Tests/SelectionEngineTests.cs",
+        "tests/Infrastructure/SteamDiscovery.Tests/PlatformPathComparisonStrategyTests.cs",
+        "tests/Infrastructure/SteamDiscovery.Tests/SteamAppManifestCacheTests.cs",
+        "tests/Infrastructure/SteamDiscovery.Tests/SteamDiscovery.Tests.csproj",
+        "tests/Infrastructure/SteamDiscovery.Tests/SteamInstallPathProviderTests.cs",
+        "tests/Infrastructure/SteamDiscovery.Tests/SteamLibraryFoldersParserTests.cs",
+        "tests/Infrastructure/SteamDiscovery.Tests/WindowsSteamInstallPathProviderTests.cs",
+        "tests/Integration/SteamClientAdapter.Tests/SteamClientAdapter.Tests.csproj",
+        "tests/Integration/SteamClientAdapter.Tests/SteamClientAdapterTests.cs",
+        "tests/Integration/SteamClientAdapter.Tests/SteamVdfFallbackTests.cs",
+        "tests/Integration/SteamClientAdapter.Tests/ValveBinaryVdfParserTests.cs",
+        "tests/Integration/SteamHooks.Tests/SteamHookClientFactoryTests.cs",
+        "tests/Integration/SteamHooks.Tests/SteamHooks.Tests.csproj",
+        "tests/Integration/SteamHooks.Tests/SteamMemoryPollingHookClientTests.cs",
+        "tests/Presentation/SteamBacklogPicker.Linux.Tests/LegacyWindowsUpdatePolicyTests.cs",
+        "tests/Presentation/SteamBacklogPicker.Linux.Tests/LinuxAppImageUpdateServiceTests.cs",
+        "tests/Presentation/SteamBacklogPicker.Linux.Tests/LinuxBootstrapServiceRegistrationTests.cs",
+        "tests/Presentation/SteamBacklogPicker.Linux.Tests/LinuxToastNotificationServiceTests.cs",
+        "tests/Presentation/SteamBacklogPicker.Linux.Tests/MainWindowPresentationTests.cs",
+        "tests/Presentation/SteamBacklogPicker.Linux.Tests/ServiceCollectionExtensionsTests.cs",
+        "tests/Presentation/SteamBacklogPicker.Linux.Tests/SteamBacklogPicker.Linux.Tests.csproj",
+        "tests/Presentation/SteamBacklogPicker.Mac.Tests/AppInfoFixtureFactory.swift",
+        "tests/Presentation/SteamBacklogPicker.Mac.Tests/ContentViewRenderingTests.swift",
+        "tests/Presentation/SteamBacklogPicker.Mac.Tests/LocalizationTests.swift",
+        "tests/Presentation/SteamBacklogPicker.Mac.Tests/SelectionFilterTests.swift",
+        "tests/Presentation/SteamBacklogPicker.Mac.Tests/SteamAppInfoParserTests.swift",
+        "tests/Presentation/SteamBacklogPicker.Mac.Tests/SteamAppNameResolverTests.swift",
+        "tests/Presentation/SteamBacklogPicker.Mac.Tests/SteamLibraryServiceTests.swift",
+        "tests/Presentation/SteamBacklogPicker.Mac.Tests/VDFParserTests.swift",
+        "tests/Presentation/SteamBacklogPicker.UI.Tests/AccessibilityChecklistTests.cs",
+        "tests/Presentation/SteamBacklogPicker.UI.Tests/CombinedGameLibraryServiceTests.cs",
+        "tests/Presentation/SteamBacklogPicker.UI.Tests/Fakes/FakeLocalizationService.cs",
+        "tests/Presentation/SteamBacklogPicker.UI.Tests/GameDetailsViewModelTests.cs",
+        "tests/Presentation/SteamBacklogPicker.UI.Tests/GameLaunchServiceTests.cs",
+        "tests/Presentation/SteamBacklogPicker.UI.Tests/MainViewModelTests.cs",
+        "tests/Presentation/SteamBacklogPicker.UI.Tests/MainWindowAccessibilityTests.cs",
+        "tests/Presentation/SteamBacklogPicker.UI.Tests/SelectionPreferencesViewModelTests.cs",
+        "tests/Presentation/SteamBacklogPicker.UI.Tests/SteamBacklogPicker.UI.Tests.csproj",
+        "tests/Presentation/SteamBacklogPicker.UI.Tests/SteamEnvironmentTests.cs",
+        "tests/Presentation/SteamBacklogPicker.UI.Tests/SteamLibraryProviderTests.cs",
+        "tests/Presentation/SteamBacklogPicker.UI.Tests/SteamNativeLibraryCandidatesTests.cs",
+        "tests/TestUtilities/SteamTestUtilities/Fixtures/appmanifest_480.acf",
+        "tests/TestUtilities/SteamTestUtilities/Fixtures/libraryfolders.vdf",
+        "tests/TestUtilities/SteamTestUtilities/Fixtures/steam/appcache/appinfo.vdf",
+        "tests/TestUtilities/SteamTestUtilities/Fixtures/steam/config/loginusers.vdf",
+        "tests/TestUtilities/SteamTestUtilities/Fixtures/steam/userdata/76561198000000000/7/remote/sharedconfig.vdf",
+        "tests/TestUtilities/SteamTestUtilities/Fixtures/steam/userdata/76561198000000000/config/localconfig.vdf",
+        "tests/TestUtilities/SteamTestUtilities/SteamTestUtilities.csproj",
+        "tests/TestUtilities/SteamTestUtilities/Steamworks/SteamApiMocks.cs",
+        "tests/TestUtilities/SteamTestUtilities/ValveFormat/VdfFixtureLoader.cs"
+      ],
+      "id": "independent_baseline",
+      "label": "Independent full tracked-repository security audit",
+      "notes": "Worker found no reportable vulnerabilities; parent reconciliation pending.",
+      "receiptRefs": [],
+      "resolvedQuestions": [
+        {
+          "question": "Was the complete tracked scope reviewed, and what does the result establish?",
+          "resolution": "Fully reviewed all 217 tracked files at c45eb915f63b0855988eca9d9c1bcb01dc42b86e: 133 production source/resource/project files, 51 test/support/fixture files, 2 scripts, 2 workflows, and 29 documentation/root configuration files. The single binary fixture was inspected completely as 359 bytes of data. SECURITY.md resolution across all 62 tracked-file directories found no applicable guidance. Final tracked diff was empty. No defensible source-backed vulnerability with a meaningful attacker-controlled boundary crossing was established. This is a static analysis result, not a guarantee of absence; this worker did not run the application, tests, dependency scanners, network requests, or exploit probes."
+        },
+        {
+          "evidence": [
+            "src/Presentation/SteamBacklogPicker.AppCore/Services/Launch/GameLaunchService.cs:37-52",
+            "src/Presentation/SteamBacklogPicker.AppCore/Services/Launch/GameLaunchAction.cs:66-71",
+            "src/Presentation/SteamBacklogPicker.AppCore/ViewModels/MainViewModel.cs:186-253",
+            "src/Presentation/SteamBacklogPicker.Mac/Stores/AppStore.swift:206-260",
+            "tests/Presentation/SteamBacklogPicker.Mac.Tests/SelectionFilterTests.swift:192-257"
+          ],
+          "question": "Can Steam metadata inject arbitrary commands through game launch or installation?",
+          "resolution": "No attacker-controlled command path was established. Production launch options require a uint Steam app ID and construct fixed steam://run/{id} or steam://install/{id} URLs. User-selected titles, collection names, manifest install directories, and downloaded app names do not become shell commands. WPF/Avalonia and Swift require an explicit launch/install action. Family-sharing classification affects selection and presentation; it does not bypass Steam's license enforcement."
+        },
+        {
+          "evidence": [
+            "src/Presentation/SteamBacklogPicker.Linux/Services/Updates/LinuxAppImageUpdateService.cs:42-89",
+            "src/Presentation/SteamBacklogPicker.Linux/Services/Updates/LinuxAppImageUpdateService.cs:101-126",
+            "src/Presentation/SteamBacklogPicker.Linux/Services/Updates/LinuxAppImageUpdateService.cs:201-204",
+            "src/Presentation/SteamBacklogPicker.Linux/Services/Updates/LinuxAppImageUpdateService.cs:286-318",
+            "src/Presentation/SteamBacklogPicker.AppCore/Services/Updates/LegacyWindowsUpdatePolicy.cs:1-14",
+            "src/Presentation/SteamBacklogPicker.UI/Services/Updates/SquirrelUpdateService.cs:24-30",
+            "src/Presentation/SteamBacklogPicker.UI/App.xaml.cs",
+            "src/Presentation/SteamBacklogPicker.Mac/Services/AppUpdateService.swift",
+            "TODO.md:3-8"
+          ],
+          "question": "Do the automatic update paths accept an unauthenticated replacement binary by default?",
+          "resolution": "Linux checks a configured RSA public key against a signature binding version, download URL, and SHA-256, then verifies the downloaded binary hash. Missing keys reject updates unless unsigned feeds are explicitly enabled through a local environment setting. HTTPS is required except loopback HTTP. The pending marker is not authenticated again before application, but resides in the user's own application data directory; no lower-trust write route was found, so same-user marker manipulation is not a reportable vulnerability. Reverification at application time and constrained pending paths would strengthen future update work. Windows legacy Squirrel updates are disabled by default, and WPF startup does not call the updater. macOS updates are no-op. Official key provisioning and end-to-end release verification remain operational work."
+        },
+        {
+          "evidence": [
+            "src/Integration/ValveFormatParser/ValveBinaryVdfParser.cs:137-142",
+            "src/Integration/ValveFormatParser/ValveBinaryVdfParser.cs:290-296",
+            "src/Integration/ValveFormatParser/ValveBinaryVdfParser.cs:489-507",
+            "src/Integration/ValveFormatParser/ValveTextVdfParser.cs:69",
+            "src/Presentation/SteamBacklogPicker.Mac/Services/SteamAppInfoParser.swift:57-65",
+            "src/Presentation/SteamBacklogPicker.Mac/Services/SteamAppInfoParser.swift:217-223",
+            "src/Presentation/SteamBacklogPicker.Mac/Services/SteamAppInfoParser.swift:310-321",
+            "src/Presentation/SteamBacklogPicker.Mac/Services/SteamLibraryService.swift:597-600",
+            "src/Integration/SteamClientAdapter/SteamVdfFallback.cs:900-1023"
+          ],
+          "question": "Are malformed Steam caches adequately bounded?",
+          "resolution": "There are concrete robustness and hardening gaps. C# binary parsing trusts string counts and decompressed-size declarations and lacks nesting limits; Swift numeric readers can slice past truncated buffers, and string-table offset arithmetic lacks complete bounds checks. Recursive text/metadata parsing also lacks explicit depth limits. These can produce allocation pressure or process failure on malformed inputs. Current production sources are the local Steam installation/cache; no repository-backed route lets a distinct lower-trust attacker supply arbitrary cache bytes. Consequently these are not promoted to security vulnerabilities. Add size/depth limits, checked numeric reads, type checks for cloud JSON, and malformed modern-format fixtures before introducing downloaded or imported cache sources."
+        },
+        {
+          "evidence": [
+            "src/Presentation/SteamBacklogPicker.AppCore/Services/Runtime/SteamEnvironment.cs",
+            "src/Presentation/SteamBacklogPicker.AppCore/Services/Runtime/SteamNativeLibraryCandidates.cs",
+            "src/Infrastructure/SteamDiscovery/WindowsSteamInstallPathProvider.cs",
+            "src/Infrastructure/SteamDiscovery/LinuxSteamInstallPathProvider.cs",
+            "src/Integration/SteamClientAdapter/SteamClientAdapter.cs:53-80",
+            "src/Integration/SteamClientAdapter/SteamClientAdapter.cs:183-204",
+            "tests/Presentation/SteamBacklogPicker.UI.Tests/SteamEnvironmentTests.cs",
+            "tests/Presentation/SteamBacklogPicker.UI.Tests/SteamNativeLibraryCandidatesTests.cs"
+          ],
+          "question": "Does native library loading introduce an attacker-controlled execution path?",
+          "resolution": "Native candidates are explicitly constructed beneath the locally resolved Steam installation. Windows resolution reads the current user's Steam registry key; Linux uses validated local environment/home installation candidates. No remote metadata field supplies a native library path. Attacks requiring modification of the user's environment or trusted Steam installation were not treated as independent vulnerabilities. Native handles are reset and freed; successful Steam API initialization is tracked for shutdown."
+        },
+        {
+          "evidence": [
+            "src/Integration/SteamHooks/SteamNamedPipeHookClient.cs:62",
+            "src/Integration/SteamHooks/SteamNamedPipeHookClient.cs:112-116",
+            "src/Integration/SteamHooks/SteamMemoryPollingHookClient.Windows.cs",
+            "src/Integration/SteamHooks/LinuxProcMemReader.cs",
+            "src/Integration/SteamHooks/SteamHookClientFactory.cs",
+            "src/Presentation/SteamBacklogPicker.AppCore/Composition/ApplicationCoreServiceCollectionExtensions.cs",
+            "src/Presentation/SteamBacklogPicker.AppCore/SteamBacklogPicker.AppCore.csproj",
+            "docs/advanced-integration.md:18-36"
+          ],
+          "question": "Are the experimental pipe and process-memory hooks active attack surfaces in the shipped clients?",
+          "resolution": "No production composition or client project references activate SteamHooks. The hooks are prototype library code. Windows memory access is read-only; Linux process-memory access additionally requires the explicit unsafe-read option and otherwise degrades to no-op. The named-pipe implementation lacks explicit message-size bounds, but there is no current shipped consumer connecting pipe events to privileged operations or game launching. Keep hooks outside normal discovery; reassess pipe authentication, message limits, lifecycle, and process identity if integrating them."
+        },
+        {
+          "evidence": [
+            "src/Infrastructure/Telemetry/TelemetryOptions.cs",
+            "src/Infrastructure/Telemetry/SerilogTelemetryClient.cs",
+            "src/Infrastructure/Telemetry/TelemetryBootstrapper.cs",
+            "src/Presentation/SteamBacklogPicker.UI/App.xaml.cs:109",
+            "src/Presentation/SteamBacklogPicker.Mac/Services/DiagnosticLogService.swift",
+            "src/Presentation/SteamBacklogPicker.Mac/Services/SteamAppNameResolver.swift",
+            "src/Presentation/SteamBacklogPicker.Mac/Services/SteamLibraryService.swift:308-313",
+            "src/Domain/SelectionEngine/SelectionEngine.cs:144-170",
+            "docs/user-guide.md:7",
+            "docs/user-guide.md:22"
+          ],
+          "question": "Do telemetry, caches, or UI rendering expose secrets or executable content?",
+          "resolution": "No hardcoded credentials or source-backed secret exfiltration path was found. .NET telemetry defaults to disabled and uses consent checks with local file/debug sinks; the declared telemetry endpoint is unused. macOS diagnostics use local unified logging. Remote artwork uses fixed Steam/SteamDB URLs containing numeric app IDs; missing macOS names use the fixed Steam Store endpoint. Returned names and local metadata are rendered as text, without WebView/HTML execution. Persisted preferences and names use typed JSON or UserDefaults. Documentation describing privacy settings and onboarding is ahead of the actual UI and should be corrected; this is a product/documentation gap."
+        },
+        {
+          "evidence": [
+            ".github/workflows/dotnet.yml",
+            ".github/workflows/linux-release.yml:1-17",
+            ".github/workflows/linux-release.yml:36-48",
+            "scripts/package-linux-appimage.sh",
+            "src/Presentation/SteamBacklogPicker.Linux/Services/Updates/LinuxAppImageUpdateService.cs:128-204"
+          ],
+          "question": "Do CI and release scripts expose an untrusted pull request to publishing credentials?",
+          "resolution": "The ordinary pull-request workflow uses pull_request, not pull_request_target, and requests contents:read. Publishing occurs in the separate release/workflow-dispatch workflow. No source-backed PR-to-release credential crossing was found. The Linux release workflow downloads and executes a moving appimagetool continuous artifact without a pinned digest; pinning the tool and action revisions would reduce supply-chain exposure, but an upstream compromise was not assumed as an existing vulnerability. Shell packaging arguments and generated update paths are quoted. Release version input is passed through environment values rather than inserted directly into shell source."
+        },
+        {
+          "evidence": [
+            "tests/Presentation/SteamBacklogPicker.Linux.Tests/LinuxAppImageUpdateServiceTests.cs",
+            "tests/Integration/SteamClientAdapter.Tests/ValveBinaryVdfParserTests.cs:11-45",
+            "tests/Presentation/SteamBacklogPicker.Mac.Tests/SteamAppInfoParserTests.swift",
+            "tests/Presentation/SteamBacklogPicker.Mac.Tests/AppInfoFixtureFactory.swift",
+            "improvements.md",
+            "docs/testing/macos-port-checklist.md"
+          ],
+          "question": "What security validation gaps remain despite the existing tests?",
+          "resolution": "Linux update tests include signed-feed success, invalid-key rejection, unsigned-feed rejection, and checksum failures, but return early on non-Linux systems. A Windows test-run pass count therefore does not execute those update assertions. C# binary parser coverage contains one legacy truncated-entry case; Swift parser tests use valid modern fixtures and do not exercise malformed offsets, truncated numeric values, nesting limits, or allocation bounds. Historical success claims in improvements.md and macOS checklists were treated as documentation, not current execution evidence."
+        }
+      ]
+    }
+  ],
+  "totalFileCount": 217
+}

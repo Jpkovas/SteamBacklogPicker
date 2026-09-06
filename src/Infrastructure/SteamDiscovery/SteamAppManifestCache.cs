@@ -22,6 +22,8 @@ public sealed class SteamAppManifestCache : IDisposable
     private HashSet<string> _knownLibraries;
     private GameEntry[] _cachedEntries = Array.Empty<GameEntry>();
     private bool _initialized;
+    private IReadOnlyDictionary<uint, SteamAppDefinition> _accountApps = new Dictionary<uint, SteamAppDefinition>();
+    private string? _accountId;
 
     public SteamAppManifestCache(
         ISteamLibraryLocator libraryLocator,
@@ -64,6 +66,7 @@ public sealed class SteamAppManifestCache : IDisposable
         {
             var libraries = GetNormalizedLibraries();
             RefreshFromLibrariesNoLock(libraries);
+            _initialized = true;
         }
     }
 
@@ -83,7 +86,7 @@ public sealed class SteamAppManifestCache : IDisposable
     private void EnsureLibrariesUpToDateNoLock()
     {
         var libraries = GetNormalizedLibraries();
-        if (!_knownLibraries.SetEquals(libraries))
+        if (!_knownLibraries.SetEquals(libraries) || _accountId != _fallback.GetCurrentUserSteamId())
         {
             RefreshFromLibrariesNoLock(libraries);
         }
@@ -115,20 +118,29 @@ public sealed class SteamAppManifestCache : IDisposable
 
         UpdateWatchersNoLock(manifestDirectories);
 
+        _accountApps = _fallback.GetKnownApps();
+        _accountId = _fallback.GetCurrentUserSteamId();
         var installedSet = GetInstalledAppIds();
         var seenPaths = new HashSet<string>(_pathComparison.Comparer);
 
         foreach (var directory in manifestDirectories)
         {
-            if (!Directory.Exists(directory))
+            var manifestPaths = EnumerateManifestFiles(directory);
+            if (manifestPaths is null)
             {
+                // A temporarily unavailable drive is not evidence that its games were removed.
+                foreach (var tracked in _idByManifestPath.Where(pair => _pathComparison.Equals(Path.GetDirectoryName(pair.Key)!, directory)))
+                {
+                    seenPaths.Add(tracked.Key);
+                    MarkInstallationUnknownNoLock(tracked.Value, installedSet);
+                }
                 continue;
             }
 
-            foreach (var manifestPath in EnumerateManifestFiles(directory))
+            foreach (var manifestPath in manifestPaths)
             {
                 seenPaths.Add(manifestPath);
-                UpdateEntryFromManifestNoLock(manifestPath, installedSet);
+                UpdateEntryFromManifestNoLock(manifestPath, installedSet, removeOnFailure: false);
             }
         }
 
@@ -155,9 +167,26 @@ public sealed class SteamAppManifestCache : IDisposable
         {
             RemoveEntryByPathNoLock(manifestPath);
         }
+        else if (_idByManifestPath.TryGetValue(manifestPath, out var existingId))
+        {
+            MarkInstallationUnknownNoLock(existingId, installedSet);
+        }
     }
 
-    private static IEnumerable<string> EnumerateManifestFiles(string directory)
+    private void MarkInstallationUnknownNoLock(GameIdentifier id, HashSet<uint> installedSet)
+    {
+        if (!_entries.TryGetValue(id, out var entry)) return;
+        var ownership = entry.SteamAppId is uint appId && _accountApps.TryGetValue(appId, out var definition)
+            ? definition.OwnershipType : OwnershipType.Unknown;
+        _entries[id] = entry with
+        {
+            InstallState = entry.SteamAppId is uint installedAppId && installedSet.Contains(installedAppId)
+                ? InstallState.Installed : InstallState.Unknown,
+            OwnershipType = ownership
+        };
+    }
+
+    private static IEnumerable<string>? EnumerateManifestFiles(string directory)
     {
         try
         {
@@ -168,11 +197,11 @@ public sealed class SteamAppManifestCache : IDisposable
         }
         catch (IOException)
         {
-            return Array.Empty<string>();
+            return null;
         }
         catch (UnauthorizedAccessException)
         {
-            return Array.Empty<string>();
+            return null;
         }
     }
 
@@ -198,15 +227,16 @@ public sealed class SteamAppManifestCache : IDisposable
                 return false;
             }
 
-            var content = File.ReadAllText(manifestPath);
-            var root = _parser.Parse(content);
+            using var stream = new FileStream(manifestPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            var root = _parser.Parse(stream);
             var appState = root.FindPath("AppState");
             if (appState is null)
             {
                 return false;
             }
 
-            if (!TryParseUInt(appState, "appid", out var appId))
+            if (!TryParseUInt(appState, "appid", out var appId) || appId == 0 ||
+                !TryGetAppIdFromPath(manifestPath, out var fileAppId) || fileAppId != appId)
             {
                 return false;
             }
@@ -216,24 +246,15 @@ public sealed class SteamAppManifestCache : IDisposable
                         $"App {appId}";
 
             var sizeOnDisk = TryParseLong(appState, "SizeOnDisk");
-            var lastOwner = GetString(appState, "LastOwner");
-            var isFamilyShared = IsFamilyShared(appId) || IsFamilySharedByOwner(lastOwner);
-
-            var ownershipType = isFamilyShared ? OwnershipType.FamilyShared : OwnershipType.Owned;
-
-            var installState = isFamilyShared ? InstallState.Shared : InstallState.Installed;
-            if (!isFamilyShared)
-            {
-                var isReportedInstalled = installedSet.Count == 0 || installedSet.Contains(appId);
-                if (!isReportedInstalled)
-                {
-                    var manifestSuggestsInstalled = sizeOnDisk.HasValue && sizeOnDisk.Value > 0;
-                    if (!manifestSuggestsInstalled)
-                    {
-                        installState = InstallState.Available;
-                    }
-                }
-            }
+            // LastOwner is installation history, not evidence of the current account's license.
+            var ownershipType = _accountApps.TryGetValue(appId, out var accountApp)
+                ? accountApp.OwnershipType
+                : OwnershipType.Unknown;
+            var stateFlags = TryParseLong(appState, "StateFlags");
+            if (stateFlags < 0) stateFlags = null;
+            var installState = installedSet.Contains(appId) || (stateFlags.HasValue && (stateFlags.Value & 4) != 0)
+                ? InstallState.Installed
+                : stateFlags.HasValue ? InstallState.Available : InstallState.Unknown;
 
             var lastPlayed = ParseLastPlayed(appState.FindPath("UserConfig", "LastPlayed"));
 
@@ -250,6 +271,10 @@ public sealed class SteamAppManifestCache : IDisposable
             return true;
         }
         catch (IOException)
+        {
+            return false;
+        }
+        catch (UnauthorizedAccessException)
         {
             return false;
         }
@@ -327,59 +352,6 @@ public sealed class SteamAppManifestCache : IDisposable
         {
             return null;
         }
-    }
-
-    private bool IsFamilySharedByOwner(string? lastOwner)
-    {
-        if (string.IsNullOrWhiteSpace(lastOwner))
-        {
-            return false;
-        }
-
-        var currentOwner = _fallback.GetCurrentUserSteamId();
-        if (string.IsNullOrWhiteSpace(currentOwner))
-        {
-            return false;
-        }
-
-        lastOwner = lastOwner.Trim();
-        currentOwner = currentOwner.Trim();
-
-        if (string.Equals(lastOwner, currentOwner, StringComparison.Ordinal))
-        {
-            return false;
-        }
-
-        if (TryNormalizeSteamId(lastOwner, out var lastOwnerId) &&
-            TryNormalizeSteamId(currentOwner, out var currentOwnerId))
-        {
-            return lastOwnerId != currentOwnerId;
-        }
-
-        return !string.Equals(lastOwner, currentOwner, StringComparison.OrdinalIgnoreCase);
-    }
-
-    private bool IsFamilyShared(uint appId)
-    {
-        try
-        {
-            return _clientAdapter.IsSubscribedFromFamilySharing(appId);
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    private static bool TryNormalizeSteamId(string value, out ulong id)
-    {
-        if (ulong.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out id))
-        {
-            return true;
-        }
-
-        id = 0;
-        return false;
     }
 
     private void RemoveEntryByPathNoLock(string manifestPath)
@@ -491,6 +463,7 @@ public sealed class SteamAppManifestCache : IDisposable
                 watcher.Created += OnManifestChanged;
                 watcher.Renamed += OnManifestRenamed;
                 watcher.Deleted += OnManifestDeleted;
+                watcher.Error += OnWatcherError;
 
                 _watchers[directory] = watcher;
             }
@@ -502,6 +475,14 @@ public sealed class SteamAppManifestCache : IDisposable
             {
                 // ignore watcher setup errors
             }
+        }
+    }
+
+    private void OnWatcherError(object sender, ErrorEventArgs e)
+    {
+        lock (_syncRoot)
+        {
+            _initialized = false;
         }
     }
 

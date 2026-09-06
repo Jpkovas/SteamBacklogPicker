@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.IO;
 using Domain;
 using SteamDiscovery;
@@ -8,6 +9,7 @@ namespace SteamBacklogPicker.UI.Services.GameArt;
 public sealed class SteamGameArtLocator : IGameArtLocator
 {
     private readonly ISteamLibraryLocator _libraryLocator;
+    private readonly ConcurrentDictionary<uint, (DateTimeOffset CheckedAt, string? Path)> _resolved = new();
 
     public SteamGameArtLocator(ISteamLibraryLocator libraryLocator)
     {
@@ -20,9 +22,20 @@ public sealed class SteamGameArtLocator : IGameArtLocator
 
         return game.Id.Storefront switch
         {
-            Storefront.Steam when game.SteamAppId is uint appId => FindSteamHeroImage(appId),
+            Storefront.Steam when game.SteamAppId is uint appId => FindCachedHeroImage(appId),
             _ => null,
         };
+    }
+
+    private string? FindCachedHeroImage(uint appId)
+    {
+        var now = DateTimeOffset.UtcNow;
+        if (_resolved.TryGetValue(appId, out var found) && now - found.CheckedAt < TimeSpan.FromMinutes(2))
+            return found.Path;
+        var path = FindSteamHeroImage(appId);
+        if (_resolved.Count > 5000) _resolved.Clear();
+        _resolved[appId] = (now, path);
+        return path;
     }
 
     private string? FindSteamHeroImage(uint appId)
@@ -35,16 +48,16 @@ public sealed class SteamGameArtLocator : IGameArtLocator
         var candidateFiles = new[]
         {
             // Old flat structure
-            $"{appId}_header.jpg",
-            $"{appId}_capsule_616x353.jpg",
             $"{appId}_library_hero.jpg",
+            $"{appId}_capsule_616x353.jpg",
+            $"{appId}_header.jpg",
             $"{appId}_library_600x900.jpg",
 
             // New subdirectory structure
-            Path.Combine(appId.ToString(), "header.jpg"),
             Path.Combine(appId.ToString(), "library_hero.jpg"),
-            Path.Combine(appId.ToString(), "library_600x900.jpg"),
-            Path.Combine(appId.ToString(), "capsule_616x353.jpg")
+            Path.Combine(appId.ToString(), "capsule_616x353.jpg"),
+            Path.Combine(appId.ToString(), "header.jpg"),
+            Path.Combine(appId.ToString(), "library_600x900.jpg")
         };
 
         foreach (var library in _libraryLocator.GetLibraryFolders())
@@ -68,5 +81,5 @@ public sealed class SteamGameArtLocator : IGameArtLocator
     }
 
     private static string BuildCdnUri(uint appId)
-        => $"https://cdn.cloudflare.steamstatic.com/steam/apps/{appId}/header.jpg";
+        => $"https://cdn.cloudflare.steamstatic.com/steam/apps/{appId}/library_hero.jpg";
 }

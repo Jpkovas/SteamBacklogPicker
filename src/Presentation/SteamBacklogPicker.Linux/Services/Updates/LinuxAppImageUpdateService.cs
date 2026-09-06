@@ -31,7 +31,10 @@ public sealed class LinuxAppImageUpdateService : IAppUpdateService
                 return;
             }
 
-            await ApplyPendingUpdateAsync(cancellationToken);
+            if (await ApplyPendingUpdateAsync(cancellationToken))
+            {
+                return;
+            }
 
             var currentExecutablePath = ResolveCurrentExecutablePath();
             if (currentExecutablePath is null)
@@ -72,21 +75,32 @@ public sealed class LinuxAppImageUpdateService : IAppUpdateService
             Directory.CreateDirectory(stateDirectory);
 
             var pendingBinaryPath = Path.Combine(stateDirectory, "SteamBacklogPicker.pending");
-            await using (var destination = File.Create(pendingBinaryPath))
-            await using (var stream = await HttpClient.GetStreamAsync(downloadUri, cancellationToken))
+            var downloadPath = pendingBinaryPath + "." + Guid.NewGuid().ToString("N");
+            try
             {
-                await stream.CopyToAsync(destination, cancellationToken);
-            }
+                await using (var destination = new FileStream(downloadPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                await using (var stream = await HttpClient.GetStreamAsync(downloadUri, cancellationToken))
+                {
+                    await stream.CopyToAsync(destination, cancellationToken);
+                }
 
-            if (!IsValidSha256(feed.Sha256, pendingBinaryPath))
-            {
-                File.Delete(pendingBinaryPath);
-                return;
-            }
+                if (!IsValidSha256(feed.Sha256, downloadPath))
+                {
+                    return;
+                }
 
-            var marker = new PendingUpdateMarker(targetVersion.ToString(), pendingBinaryPath, currentExecutablePath);
-            var markerPath = Path.Combine(stateDirectory, "pending-update.json");
-            await File.WriteAllTextAsync(markerPath, JsonSerializer.Serialize(marker), cancellationToken);
+                File.Move(downloadPath, pendingBinaryPath, overwrite: true);
+                var marker = new PendingUpdateMarker(feed.Version.Trim(), pendingBinaryPath, currentExecutablePath, feed.Sha256, feed.DownloadUrl, feed.Signature);
+                var markerPath = Path.Combine(stateDirectory, "pending-update.json");
+                var markerTemporaryPath = markerPath + "." + Guid.NewGuid().ToString("N");
+                try
+                {
+                    await File.WriteAllTextAsync(markerTemporaryPath, JsonSerializer.Serialize(marker), cancellationToken);
+                    File.Move(markerTemporaryPath, markerPath, overwrite: true);
+                }
+                finally { File.Delete(markerTemporaryPath); }
+            }
+            finally { File.Delete(downloadPath); }
         }
         catch (OperationCanceledException)
         {
@@ -98,32 +112,63 @@ public sealed class LinuxAppImageUpdateService : IAppUpdateService
         }
     }
 
-    private static async Task ApplyPendingUpdateAsync(CancellationToken cancellationToken)
+    private static async Task<bool> ApplyPendingUpdateAsync(CancellationToken cancellationToken)
     {
-        var markerPath = Path.Combine(GetUpdateStateDirectory(), "pending-update.json");
-        if (!File.Exists(markerPath))
+        var stateDirectory = GetUpdateStateDirectory();
+        var markerPath = Path.Combine(stateDirectory, "pending-update.json");
+        if (!File.Exists(markerPath)) { return false; }
+        PendingUpdateMarker? marker;
+        try
         {
-            return;
+            if (new FileInfo(markerPath).Length > 16 * 1024 || IsSymbolicLink(markerPath))
+            {
+                File.Delete(markerPath);
+                return false;
+            }
+            marker = JsonSerializer.Deserialize<PendingUpdateMarker>(await File.ReadAllTextAsync(markerPath, cancellationToken));
+        }
+        catch (JsonException)
+        {
+            File.Delete(markerPath);
+            return false;
         }
 
-        var marker = JsonSerializer.Deserialize<PendingUpdateMarker>(await File.ReadAllTextAsync(markerPath, cancellationToken));
-        if (marker is null || string.IsNullOrWhiteSpace(marker.PendingBinaryPath) || string.IsNullOrWhiteSpace(marker.TargetBinaryPath))
+        var currentPath = ResolveCurrentExecutablePath();
+        var expectedPendingPath = Path.Combine(stateDirectory, "SteamBacklogPicker.pending");
+        if (marker is null || currentPath is null ||
+            !PathsEqual(marker.PendingBinaryPath, expectedPendingPath) ||
+            !PathsEqual(marker.TargetBinaryPath, currentPath) ||
+            !Version.TryParse(marker.Version, out var targetVersion) ||
+            targetVersion <= typeof(LinuxAppImageUpdateService).Assembly.GetName().Version ||
+            string.IsNullOrWhiteSpace(marker.Sha256) || string.IsNullOrWhiteSpace(marker.DownloadUrl) ||
+            !Uri.TryCreate(marker.DownloadUrl, UriKind.Absolute, out var downloadUri) || !IsAllowedUpdateUri(downloadUri) ||
+            !IsTrustedFeed(new AppImageUpdateFeed(marker.Version, marker.DownloadUrl, marker.Sha256, marker.Signature)) ||
+            !File.Exists(expectedPendingPath) || !File.Exists(currentPath) ||
+            IsSymbolicLink(expectedPendingPath) || IsSymbolicLink(currentPath) ||
+            !IsValidSha256(marker.Sha256, expectedPendingPath))
         {
-            return;
+            // Old markers without authenticated hash metadata must be downloaded again.
+            File.Delete(markerPath);
+            return false;
         }
 
-        if (!Path.Exists(marker.PendingBinaryPath) || !File.Exists(marker.TargetBinaryPath))
+        await SchedulePostExitSwapAsync(marker with
         {
-            return;
-        }
-
-        if (string.Equals(Path.GetFullPath(marker.PendingBinaryPath), Path.GetFullPath(marker.TargetBinaryPath), StringComparison.Ordinal))
-        {
-            return;
-        }
-
-        await SchedulePostExitSwapAsync(marker, markerPath, cancellationToken);
+            PendingBinaryPath = Path.GetFullPath(expectedPendingPath),
+            TargetBinaryPath = Path.GetFullPath(currentPath)
+        }, markerPath, cancellationToken);
+        return true;
     }
+
+    private static bool PathsEqual(string? left, string right)
+    {
+        if (string.IsNullOrWhiteSpace(left)) { return false; }
+        try { return string.Equals(Path.GetFullPath(left), Path.GetFullPath(right), StringComparison.Ordinal); }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or IOException) { return false; }
+    }
+
+    private static bool IsSymbolicLink(string path)
+        => (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0;
 
     private static async Task SchedulePostExitSwapAsync(PendingUpdateMarker marker, string markerPath, CancellationToken cancellationToken)
     {
@@ -133,6 +178,7 @@ public sealed class LinuxAppImageUpdateService : IAppUpdateService
         var currentProcessId = ResolveSwapProcessId();
         var scriptPath = Path.Combine(stateDirectory, "apply-pending-update.sh");
         var backupPath = marker.TargetBinaryPath + ".bak";
+        if (File.Exists(scriptPath) && IsSymbolicLink(scriptPath)) { throw new IOException("Update script is a symbolic link."); }
         var scriptContents = $$"""
 #!/usr/bin/env bash
 set -eu
@@ -143,16 +189,20 @@ PENDING_PATH='{{EscapeForSingleQuotedShellLiteral(marker.PendingBinaryPath)}}'
 BACKUP_PATH='{{EscapeForSingleQuotedShellLiteral(backupPath)}}'
 MARKER_PATH='{{EscapeForSingleQuotedShellLiteral(markerPath)}}'
 SCRIPT_PATH='{{EscapeForSingleQuotedShellLiteral(scriptPath)}}'
+EXPECTED_SHA256='{{marker.Sha256!.ToLowerInvariant()}}'
+REPLACEMENT_PATH="$TARGET_PATH.update-$$"
+BACKUP_CREATED=0
 
 rollback_on_failure() {
   status=$?
   if [ "$status" -ne 0 ]; then
-    if [ -f "$BACKUP_PATH" ]; then
+    if [ "$BACKUP_CREATED" -eq 1 ] && [ -f "$BACKUP_PATH" ]; then
       cp -f "$BACKUP_PATH" "$TARGET_PATH" || true
     fi
     rm -f "$MARKER_PATH"
     rm -f "$BACKUP_PATH"
     rm -f "$SCRIPT_PATH"
+    rm -f "$REPLACEMENT_PATH"
   fi
 }
 
@@ -168,13 +218,25 @@ for _ in $(seq 1 300); do
   sleep 1
 done
 
-if [ ! -e "$PENDING_PATH" ]; then
+# Do not replace a process that remained alive for the entire wait budget.
+if kill -0 "$CURRENT_PID" 2>/dev/null; then
+  rm -f "$SCRIPT_PATH"
   exit 0
 fi
 
-cp -f "$TARGET_PATH" "$BACKUP_PATH" || true
-mv -f "$PENDING_PATH" "$TARGET_PATH"
-chmod 755 "$TARGET_PATH"
+[ -f "$PENDING_PATH" ] && [ ! -L "$PENDING_PATH" ]
+[ -f "$TARGET_PATH" ] && [ ! -L "$TARGET_PATH" ]
+[ ! -L "$BACKUP_PATH" ]
+# Copy beside the executable for an atomic rename even across filesystems.
+# Recheck the copied bytes immediately before applying; staging verification can be stale.
+(umask 077; set -C; cat "$PENDING_PATH" > "$REPLACEMENT_PATH")
+ACTUAL_SHA256=$(sha256sum < "$REPLACEMENT_PATH")
+[ "${ACTUAL_SHA256%% *}" = "$EXPECTED_SHA256" ]
+chmod 755 "$REPLACEMENT_PATH"
+cp -f "$TARGET_PATH" "$BACKUP_PATH"
+BACKUP_CREATED=1
+mv -f "$REPLACEMENT_PATH" "$TARGET_PATH"
+rm -f "$PENDING_PATH"
 rm -f "$MARKER_PATH"
 rm -f "$BACKUP_PATH"
 rm -f "$SCRIPT_PATH"
@@ -183,7 +245,7 @@ rm -f "$SCRIPT_PATH"
         await File.WriteAllTextAsync(scriptPath, NormalizeShellScriptLineEndings(scriptContents), cancellationToken);
         if (OperatingSystem.IsLinux())
         {
-            File.SetUnixFileMode(scriptPath, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute | UnixFileMode.GroupRead | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
+            File.SetUnixFileMode(scriptPath, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         }
 
         Process.Start(new ProcessStartInfo
@@ -334,5 +396,6 @@ rm -f "$SCRIPT_PATH"
         [property: JsonPropertyName("sha256")] string? Sha256,
         [property: JsonPropertyName("signature")] string? Signature = null);
 
-    private sealed record PendingUpdateMarker(string Version, string PendingBinaryPath, string TargetBinaryPath);
+    private sealed record PendingUpdateMarker(string Version, string PendingBinaryPath, string TargetBinaryPath,
+        string? Sha256 = null, string? DownloadUrl = null, string? Signature = null);
 }

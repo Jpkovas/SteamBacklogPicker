@@ -11,7 +11,7 @@ public sealed class TelemetryConsentState
 
     public static TelemetryConsentState CreateDefault(bool enabledByDefault) => new()
     {
-        HasResponded = enabledByDefault,
-        IsTelemetryEnabled = enabledByDefault
+        HasResponded = false,
+        IsTelemetryEnabled = false
     };
 }

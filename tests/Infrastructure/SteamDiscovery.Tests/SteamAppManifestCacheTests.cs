@@ -26,14 +26,14 @@ public sealed class SteamAppManifestCacheTests
         Assert.Equal(GameIdentifier.ForSteam(42), game.Id);
         Assert.Equal(42u, game.SteamAppId);
         Assert.Equal("Test Game", game.Title);
-        Assert.Equal(OwnershipType.Owned, game.OwnershipType);
+        Assert.Equal(OwnershipType.Unknown, game.OwnershipType);
         Assert.Equal(InstallState.Installed, game.InstallState);
         Assert.Equal(1_500_000_000, game.SizeOnDisk);
         Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(1700000000), game.LastPlayed);
     }
 
     [Fact]
-    public void GetInstalledGames_TreatsManifestAsInstalled_WhenAdapterReturnsEmptySet()
+    public void GetInstalledGames_ShouldUseFullyInstalledFlag_WhenAdapterReturnsEmptySet()
     {
         using var environment = new ManifestTestEnvironment();
         environment.WriteManifest(101, "Offline Game", 2_000_000_000, 0);
@@ -56,11 +56,11 @@ public sealed class SteamAppManifestCacheTests
 
         var game = Assert.Single(games);
         Assert.Equal(OwnershipType.FamilyShared, game.OwnershipType);
-        Assert.Equal(InstallState.Shared, game.InstallState);
+        Assert.Equal(InstallState.Installed, game.InstallState);
     }
 
     [Fact]
-    public void GetInstalledGames_ClassifiesFamilySharing_ByManifestOwner()
+    public void GetInstalledGames_ShouldNotInferFamilySharing_FromLastOwner()
     {
         using var environment = new ManifestTestEnvironment();
         environment.WriteManifest(150, "Borrowed Game", 200, 0, lastOwner: "76561198000009999");
@@ -69,21 +69,21 @@ public sealed class SteamAppManifestCacheTests
         var games = cache.GetInstalledGames();
 
         var game = Assert.Single(games);
-        Assert.Equal(OwnershipType.FamilyShared, game.OwnershipType);
-        Assert.Equal(InstallState.Shared, game.InstallState);
+        Assert.Equal(OwnershipType.Unknown, game.OwnershipType);
+        Assert.Equal(InstallState.Installed, game.InstallState);
     }
 
     [Fact]
-    public void GetInstalledGames_MarksInstalled_WhenManifestIndicatesSize()
+    public void GetInstalledGames_ShouldNotTreatSizeAsInstallationEvidence()
     {
         using var environment = new ManifestTestEnvironment();
-        environment.WriteManifest(123, "Sized Game", 1_000_000_000, 0);
+        environment.WriteManifest(123, "Sized Game", 1_000_000_000, 0, stateFlags: null);
 
         using var cache = environment.CreateCache(Array.Empty<uint>(), Array.Empty<uint>());
         var games = cache.GetInstalledGames();
 
         var game = Assert.Single(games);
-        Assert.Equal(InstallState.Installed, game.InstallState);
+        Assert.Equal(InstallState.Unknown, game.InstallState);
         Assert.Equal(1_000_000_000, game.SizeOnDisk);
     }
 
@@ -173,6 +173,73 @@ public sealed class SteamAppManifestCacheTests
         Assert.True(removed, "Cache did not remove entry after manifest deletion.");
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1024)]
+    public void GetInstalledGames_ShouldExcludeIncompleteDownloads(int stateFlags)
+    {
+        using var environment = new ManifestTestEnvironment();
+        environment.WriteManifest(33, "Partial download", 5_000_000, 0, stateFlags: stateFlags);
+        using var cache = environment.CreateCache(Array.Empty<uint>(), Array.Empty<uint>());
+        Assert.Equal(InstallState.Available, Assert.Single(cache.GetInstalledGames()).InstallState);
+    }
+
+    [Fact]
+    public void Refresh_ShouldKeepMetadataButClearInstallation_WhenManifestBecomesTruncated()
+    {
+        using var environment = new ManifestTestEnvironment();
+        environment.WriteManifest(34, "Valid title", 5_000_000, 0);
+        using var cache = environment.CreateCache(Array.Empty<uint>(), Array.Empty<uint>());
+        Assert.Equal(InstallState.Installed, Assert.Single(cache.GetInstalledGames()).InstallState);
+        File.WriteAllText(environment.GetManifestPath(34), "\"AppState\" {");
+        cache.Refresh();
+        var game = Assert.Single(cache.GetInstalledGames());
+        Assert.Equal("Valid title", game.Title);
+        Assert.Equal(InstallState.Unknown, game.InstallState);
+    }
+
+    [Fact]
+    public void GetInstalledGames_ShouldRejectManifestWithMismatchedAppId()
+    {
+        using var environment = new ManifestTestEnvironment();
+        environment.WriteManifest(35, "Wrong identity", 10, 0);
+        File.Move(environment.GetManifestPath(35), environment.GetManifestPath(36));
+        using var cache = environment.CreateCache(Array.Empty<uint>(), Array.Empty<uint>());
+        Assert.Empty(cache.GetInstalledGames());
+    }
+
+    [Fact]
+    public void Refresh_ShouldInitializeCacheWithoutScanningAgainOnFirstRead()
+    {
+        using var environment = new ManifestTestEnvironment();
+        environment.WriteManifest(10, "Game", 10, 0);
+        var adapter = new FakeSteamClientAdapter(Array.Empty<uint>(), Array.Empty<uint>());
+        using var cache = new SteamAppManifestCache(
+            new FakeLibraryLocator(Path.GetDirectoryName(environment.SteamAppsPath)!), adapter,
+            new FakeSteamVdfFallback("76561198000000000", Array.Empty<uint>()), new ValveTextVdfParser());
+        cache.Refresh();
+        Assert.Single(cache.GetInstalledGames());
+        Assert.Single(cache.GetInstalledGames());
+        Assert.Equal(1, adapter.InstalledQueryCount);
+    }
+
+    [Fact]
+    public void GetInstalledGames_ShouldRefreshAccountOwnershipOnUserSwitch()
+    {
+        using var environment = new ManifestTestEnvironment();
+        environment.WriteManifest(10, "Game", 10, 0);
+        var fallback = new FakeSteamVdfFallback("76561198000000000", new[] { 10u });
+        using var cache = new SteamAppManifestCache(
+            new FakeLibraryLocator(Path.GetDirectoryName(environment.SteamAppsPath)!),
+            new FakeSteamClientAdapter(Array.Empty<uint>(), Array.Empty<uint>()), fallback, new ValveTextVdfParser());
+        Assert.Equal(OwnershipType.FamilyShared, Assert.Single(cache.GetInstalledGames()).OwnershipType);
+        fallback.SteamId = "76561198000000001";
+        fallback.Shared = Array.Empty<uint>();
+        var entry = Assert.Single(cache.GetInstalledGames());
+        Assert.Equal(OwnershipType.Unknown, entry.OwnershipType);
+        Assert.Equal(InstallState.Installed, entry.InstallState);
+    }
+
     private sealed class ManifestTestEnvironment : IDisposable
     {
         private readonly string _root;
@@ -189,7 +256,7 @@ public sealed class SteamAppManifestCacheTests
 
         public string SteamAppsPath => Path.Combine(_root, "steamapps");
 
-        public void WriteManifest(uint appId, string title, long sizeOnDisk, long lastPlayedSeconds, string? lastOwner = null)
+        public void WriteManifest(uint appId, string title, long sizeOnDisk, long lastPlayedSeconds, string? lastOwner = null, int? stateFlags = 4)
         {
             var manifestPath = GetManifestPath(appId);
             Directory.CreateDirectory(Path.GetDirectoryName(manifestPath)!);
@@ -207,6 +274,7 @@ public sealed class SteamAppManifestCacheTests
                           "\n    }" +
                           "\n}";
 
+            if (stateFlags.HasValue) content = content.Insert(content.LastIndexOf('}'), $"\n    \"StateFlags\" \"{stateFlags}\"\n");
             File.WriteAllText(manifestPath, content);
         }
 
@@ -216,7 +284,7 @@ public sealed class SteamAppManifestCacheTests
         public SteamAppManifestCache CreateCache(IEnumerable<uint> installed, IEnumerable<uint> shared, IPathComparisonStrategy? pathComparison = null)
         {
             var adapter = new FakeSteamClientAdapter(installed, shared);
-            var fallback = new FakeSteamVdfFallback(_steamId);
+            var fallback = new FakeSteamVdfFallback(_steamId, shared);
             return pathComparison is null
                 ? new SteamAppManifestCache(_locator, adapter, fallback, _parser)
                 : new SteamAppManifestCache(_locator, adapter, fallback, _parser, pathComparison);
@@ -240,20 +308,23 @@ public sealed class SteamAppManifestCacheTests
 
     private sealed class FakeSteamVdfFallback : ISteamVdfFallback
     {
-        private readonly string steamId;
+        public string SteamId { get; set; }
 
-        public FakeSteamVdfFallback(string steamId)
+        public uint[] Shared { get; set; }
+
+        public FakeSteamVdfFallback(string steamId, IEnumerable<uint> shared)
         {
-            this.steamId = steamId;
+            SteamId = steamId;
+            Shared = shared.ToArray();
         }
 
         public IReadOnlyCollection<uint> GetInstalledAppIds() => Array.Empty<uint>();
 
         public bool IsSubscribedFromFamilySharing(uint appId) => false;
 
-        public IReadOnlyDictionary<uint, SteamAppDefinition> GetKnownApps() => new Dictionary<uint, SteamAppDefinition>();
+        public IReadOnlyDictionary<uint, SteamAppDefinition> GetKnownApps() => Shared.ToDictionary(id => id, id => new SteamAppDefinition(id, null, false, null, Array.Empty<string>()) { OwnershipType = OwnershipType.FamilyShared });
 
-        public string? GetCurrentUserSteamId() => steamId;
+        public string? GetCurrentUserSteamId() => SteamId;
 
         public IReadOnlyList<SteamCollectionDefinition> GetCollections() => Array.Empty<SteamCollectionDefinition>();
     }
@@ -303,7 +374,13 @@ public sealed class SteamAppManifestCacheTests
 
         public bool Initialize(string libraryPath) => true;
 
-        public IReadOnlyCollection<uint> GetInstalledAppIds() => _installed;
+        public int InstalledQueryCount { get; private set; }
+
+        public IReadOnlyCollection<uint> GetInstalledAppIds()
+        {
+            InstalledQueryCount++;
+            return _installed;
+        }
 
         public bool IsSubscribedFromFamilySharing(uint appId) => _shared.Contains(appId);
 

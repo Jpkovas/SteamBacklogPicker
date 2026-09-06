@@ -1,0 +1,88 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      value: ${{ steps.version.outputs.value }}
+    steps:
+      - name: Validate version tag
+        id: version
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          if [[ ! "$RELEASE_TAG" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            echo 'Release tags must use vMAJOR.MINOR.PATCH.' >&2
+            exit 1
+          fi
+          echo "value=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
+
+  checks:
+    needs: version
+    uses: ./.github/workflows/dotnet.yml
+    with:
+      version: ${{ needs.version.outputs.value }}
+
+  linux-package:
+    needs: version
+    uses: ./.github/workflows/linux-release.yml
+    with:
+      version: ${{ needs.version.outputs.value }}
+      download_url: https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/SteamBacklogPicker-${{ needs.version.outputs.value }}-linux-x64.AppImage
+    secrets:
+      SBP_LINUX_UPDATE_PRIVATE_KEY: ${{ secrets.SBP_LINUX_UPDATE_PRIVATE_KEY }}
+
+  publish:
+    needs: [version, checks, linux-package]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: steambacklogpicker-windows-x64-portable
+          path: packages/windows
+      - uses: actions/download-artifact@v4
+        with:
+          name: steambacklogpicker-macos
+          path: packages/macos
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-release-artifacts
+          path: packages/linux
+      - name: Verify packages and publish complete release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_VERSION: ${{ needs.version.outputs.value }}
+        run: |
+          set -euo pipefail
+          for platform in windows macos linux; do
+            (cd "packages/$platform" && sha256sum --check *.sha256)
+          done
+          test -f "packages/windows/SteamBacklogPicker-$RELEASE_VERSION-win-x64.zip"
+          test -f "packages/linux/SteamBacklogPicker-$RELEASE_VERSION-linux-x64.AppImage"
+          test -f packages/linux/linux-appimage-update.json
+          test -f "docs/releases/$RELEASE_TAG.md"
+          mapfile -d '' assets < <(find packages -type f \( -name '*.zip' -o -name '*.AppImage' -o -name '*.sha256' -o -name 'linux-appimage-update.json' \) -print0)
+          # Assemble all assets in a draft; public releases are never overwritten on rerun.
+          if gh release view "$RELEASE_TAG" --json isDraft --jq '.isDraft' > draft-state; then
+            test "$(cat draft-state)" = true || { echo 'Release is already public; refusing to replace its assets.' >&2; exit 1; }
+            gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber
+          else
+            gh release create "$RELEASE_TAG" "${assets[@]}" --verify-tag --draft \
+              --title "Steam Backlog Picker $RELEASE_VERSION" --notes-file "docs/releases/$RELEASE_TAG.md"
+          fi
+          gh release edit "$RELEASE_TAG" --draft=false --latest

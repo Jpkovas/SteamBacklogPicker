@@ -1,168 +1,95 @@
-using System;
+using System.ComponentModel;
+using System.IO;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 using System.Windows.Interop;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using QRCoder;
+using QRCoder.Exceptions;
 using SteamBacklogPicker.UI.ViewModels;
 
 namespace SteamBacklogPicker.UI;
 
 public partial class MainWindow : Window
 {
-    private const int DwmwaUseImmersiveDarkMode = 20;
-
     private readonly MainViewModel _viewModel;
-
     public MainWindow(MainViewModel viewModel)
     {
         InitializeComponent();
-        _viewModel = viewModel;
-        DataContext = _viewModel;
+        _viewModel = viewModel; DataContext = viewModel;
         Loaded += OnLoaded;
+        viewModel.PropertyChanged += OnViewModelChanged;
+        PreviewKeyDown += OnKeyDown;
     }
-
     protected override void OnSourceInitialized(EventArgs e)
     {
         base.OnSourceInitialized(e);
-
-        // Unsupported before Windows 10 20H1; failure leaves the default light title bar.
         var enabled = 1;
-        _ = DwmSetWindowAttribute(
-            new WindowInteropHelper(this).Handle,
-            DwmwaUseImmersiveDarkMode,
-            ref enabled,
-            sizeof(int));
+        _ = DwmSetWindowAttribute(new WindowInteropHelper(this).Handle, 20, ref enabled, sizeof(int));
     }
-
     [DllImport("dwmapi.dll")]
     private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
-
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
         Loaded -= OnLoaded;
-        await InitializeAsync();
+        try { await _viewModel.InitializeAsync(); }
+        catch (Exception ex) { _viewModel.StatusMessage = ex.Message; }
     }
-
-    private async Task InitializeAsync()
+    private void OnViewModelChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName != nameof(MainViewModel.QrChallengeUrl)) return;
+        LoginQrImage.Source = CreateLoginQrImage(_viewModel.QrChallengeUrl);
+    }
+    internal static BitmapSource? CreateLoginQrImage(string? url)
+    {
+        if (url is not { Length: > 0 and < 4096 }) return null;
+        // The ephemeral challenge is rendered in memory and never written to disk or diagnostics.
         try
         {
-            await _viewModel.InitializeAsync();
+            using var generator = new QRCodeGenerator();
+            using var data = generator.CreateQrCode(url, QRCodeGenerator.ECCLevel.Q);
+            using var qr = new PngByteQRCode(data);
+            using var input = new MemoryStream(qr.GetGraphic(8));
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit(); bitmap.CacheOption = BitmapCacheOption.OnLoad; bitmap.StreamSource = input; bitmap.EndInit();
+            bitmap.Freeze(); return bitmap;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is DataTooLongException or ArgumentException or IOException or NotSupportedException)
+        { return null; }
+    }
+    private void OnKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.F && Keyboard.Modifiers == ModifierKeys.Control)
         {
-            _viewModel.StatusMessage = ex.Message;
+            _viewModel.NavigateCommand.Execute("library"); SearchBox.Focus(); SearchBox.SelectAll(); e.Handled = true;
+        }
+        else if (e.Key == Key.F5)
+        {
+            if (_viewModel.RefreshCommand.CanExecute(null)) _viewModel.RefreshCommand.Execute(null); e.Handled = true;
+        }
+        else if (e.Key == Key.Escape)
+        {
+            var hadFilters = _viewModel.AdvancedFilters;
+            _viewModel.AdvancedFilters = false;
+            if (_viewModel.IsConnecting) _viewModel.CancelSyncCommand.Execute(null);
+            if (hadFilters) { FiltersButton.Focus(); e.Handled = true; }
         }
     }
-
-    private void OnCoverImageTargetUpdated(object sender, DataTransferEventArgs e)
+    private void OnBacklogMenuClick(object sender, RoutedEventArgs e)
     {
-        if (sender is not Image image)
-        {
-            return;
-        }
-
-        image.Tag = null;
-        image.Visibility = Visibility.Visible;
-        ApplyRoundedClip(image.Parent as Border);
+        if (sender is not Button { ContextMenu: { } menu } button) return;
+        menu.PlacementTarget = button;
+        menu.Placement = PlacementMode.Bottom;
+        menu.IsOpen = true;
     }
-
-    private void OnCoverImageFailed(object sender, ExceptionRoutedEventArgs e)
+    protected override void OnClosed(EventArgs e)
     {
-        if (sender is not Image image)
-        {
-            return;
-        }
-
-        var steamAppId = _viewModel.SelectedGame.SteamAppId;
-        if (steamAppId is null or 0)
-        {
-            image.Source = null;
-            image.Visibility = Visibility.Collapsed;
-            return;
-        }
-
-        var nextStage = GetNextFallbackStage(image.Tag as string);
-        if (nextStage is null)
-        {
-            image.Tag = "exhausted";
-            image.Source = null;
-            image.Visibility = Visibility.Collapsed;
-            return;
-        }
-
-        var nextUri = BuildCoverUri(nextStage, steamAppId.Value);
-        if (!Uri.TryCreate(nextUri, UriKind.Absolute, out var uri))
-        {
-            image.Tag = "exhausted";
-            image.Source = null;
-            image.Visibility = Visibility.Collapsed;
-            return;
-        }
-
-        image.Tag = nextStage;
-        image.Source = CreateBitmap(uri);
-        image.Visibility = Visibility.Visible;
-        ApplyRoundedClip(image.Parent as Border);
-        e.Handled = true;
-    }
-
-    private static string? GetNextFallbackStage(string? currentStage) => currentStage switch
-    {
-        null => "header",
-        "header" => "capsule",
-        "capsule" => "steamdb",
-        "steamdb" => "portrait",
-        _ => null,
-    };
-
-    private static string BuildCoverUri(string stage, uint appId) => stage switch
-    {
-        "header" => $"https://cdn.cloudflare.steamstatic.com/steam/apps/{appId}/header.jpg",
-        "capsule" => $"https://cdn.cloudflare.steamstatic.com/steam/apps/{appId}/capsule_616x353.jpg",
-        "steamdb" => $"https://steamdb.info/static/cdn/steam/apps/{appId}/header.jpg",
-        "portrait" => $"https://cdn.cloudflare.steamstatic.com/steam/apps/{appId}/library_600x900.jpg",
-        _ => string.Empty,
-    };
-
-    private static BitmapImage CreateBitmap(Uri uri)
-    {
-        var bitmap = new BitmapImage();
-        bitmap.BeginInit();
-        bitmap.UriSource = uri;
-        bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
-        bitmap.EndInit();
-        return bitmap;
-    }
-
-    private void OnCoverContainerSizeChanged(object sender, SizeChangedEventArgs e)
-    {
-        if (sender is Border border)
-        {
-            ApplyRoundedClip(border);
-        }
-    }
-
-    private static void ApplyRoundedClip(Border? border)
-    {
-        if (border is null)
-        {
-            return;
-        }
-
-        var width = border.ActualWidth;
-        var height = border.ActualHeight;
-
-        if (width <= 0 || height <= 0)
-        {
-            border.Clip = null;
-            return;
-        }
-
-        border.Clip = new RectangleGeometry(new Rect(0, 0, width, height), 16, 16);
+        _viewModel.PropertyChanged -= OnViewModelChanged;
+        _viewModel.Dispose();
+        LoginQrImage.Source = null;
+        base.OnClosed(e);
     }
 }

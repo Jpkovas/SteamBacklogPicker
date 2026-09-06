@@ -24,6 +24,19 @@ final class VDFParserTests: XCTestCase {
         XCTAssertEqual(appState.path("UserConfig", "LastPlayed")?.value, "1710000000")
     }
 
+    func testParseRejectsTruncatedAndExcessivelyNestedObjects() {
+        XCTAssertThrowsError(try VDFParser().parse("\"root\" { \"key\" \"value\""))
+        let nested = String(repeating: "\"child\" { ", count: 100) + String(repeating: "}", count: 100)
+        XCTAssertThrowsError(try VDFParser().parse(nested))
+        XCTAssertThrowsError(try VDFParser().parse("}"))
+    }
+
+    func testParseManyCommentsWithoutRecursion() throws {
+        let comments = String(repeating: "// ignored\n", count: 10_000)
+        let root = try VDFParser().parse(comments + "\"key\" \"value\"")
+        XCTAssertEqual(root.child("key")?.value, "value")
+    }
+
     func testParseLibraryFoldersObjectNotation() throws {
         let content = #"""
         "LibraryFolders"

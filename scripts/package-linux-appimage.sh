@@ -7,6 +7,10 @@ if [[ $# -lt 2 ]]; then
 fi
 
 VERSION="$1"
+if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
+  echo "Version must contain three or four numeric components." >&2
+  exit 1
+fi
 OUTPUT_DIR="$2"
 PROJECT="src/Presentation/SteamBacklogPicker.Linux/SteamBacklogPicker.Linux.csproj"
 PUBLISH_DIR="$OUTPUT_DIR/publish"
@@ -41,7 +45,10 @@ if [[ -n "$APPIMAGETOOL" ]]; then
     exit 1
   fi
 
-  rm -rf "$APPDIR"
+  if [[ -e "$APPDIR" ]]; then
+    echo "Use a clean output directory; AppDir already exists: $APPDIR" >&2
+    exit 1
+  fi
   mkdir -p "$APPDIR/usr/bin"
 
   cp "$PUBLISH_DIR/SteamBacklogPicker.Linux" "$APPDIR/usr/bin/SteamBacklogPicker.Linux"
@@ -74,7 +81,11 @@ EOF
 </svg>
 EOF
 
-  ARCH=x86_64 "$APPIMAGETOOL" "$APPDIR" "$APPIMAGE_PATH"
+  RUNTIME_ARGS=()
+  if [[ -n "${APPIMAGE_RUNTIME_PATH:-}" ]]; then
+    RUNTIME_ARGS=(--runtime-file "$APPIMAGE_RUNTIME_PATH")
+  fi
+  ARCH=x86_64 "$APPIMAGETOOL" "${RUNTIME_ARGS[@]}" "$APPDIR" "$APPIMAGE_PATH"
   chmod +x "$APPIMAGE_PATH"
   PACKAGE_PATH="$APPIMAGE_PATH"
   PACKAGE_LABEL="Native AppImage"
@@ -86,8 +97,17 @@ else
 fi
 
 SHA256=$(sha256sum "$PACKAGE_PATH" | awk '{print $1}')
+printf '%s  %s\n' "$SHA256" "$(basename "$PACKAGE_PATH")" > "$PACKAGE_PATH.sha256"
 
-DOWNLOAD_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/$(basename "$PACKAGE_PATH")"
+DOWNLOAD_URL="${SBP_LINUX_DOWNLOAD_URL:-}"
+if [[ -z "$DOWNLOAD_URL" && -n "${GITHUB_REPOSITORY:-}" && -n "${GITHUB_REF_NAME:-}" && "${GITHUB_EVENT_NAME:-}" == "release" ]]; then
+  DOWNLOAD_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/$(basename "$PACKAGE_PATH")"
+fi
+if [[ -z "$DOWNLOAD_URL" ]]; then
+  echo "$PACKAGE_LABEL generated at: $PACKAGE_PATH"
+  echo "No published download URL supplied; no update feed was generated."
+  exit 0
+fi
 SIGNATURE=""
 
 if [[ -n "${SBP_LINUX_UPDATE_PRIVATE_KEY_PATH:-}" ]]; then
@@ -107,24 +127,16 @@ if [[ -n "${SBP_LINUX_UPDATE_PRIVATE_KEY_PATH:-}" ]]; then
     | tr -d '\n')
 fi
 
-if [[ -n "$SIGNATURE" ]]; then
-  cat > "$FEED_PATH" <<JSON
-{
-  "version": "${VERSION}",
-  "downloadUrl": "${DOWNLOAD_URL}",
-  "sha256": "${SHA256}",
-  "signature": "${SIGNATURE}"
-}
-JSON
-else
-  cat > "$FEED_PATH" <<JSON
-{
-  "version": "${VERSION}",
-  "downloadUrl": "${DOWNLOAD_URL}",
-  "sha256": "${SHA256}"
-}
-JSON
-fi
+python3 - "$FEED_PATH" "$VERSION" "$DOWNLOAD_URL" "$SHA256" "$SIGNATURE" <<'PY'
+import json, sys
+path, version, url, checksum, signature = sys.argv[1:]
+feed = {"version": version, "downloadUrl": url, "sha256": checksum}
+if signature:
+    feed["signature"] = signature
+with open(path, "w", encoding="utf-8") as stream:
+    json.dump(feed, stream, indent=2)
+    stream.write("\n")
+PY
 
 echo "$PACKAGE_LABEL generated at: $PACKAGE_PATH"
 echo "Feed generated at: $FEED_PATH"

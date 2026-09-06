@@ -208,7 +208,7 @@ public sealed class SelectionEngineTests
                 {
                     Id = GameIdentifier.ForSteam(3),
                     Title = "Shared InstallState",
-                    InstallState = InstallState.Shared,
+                    InstallState = (InstallState)3, // Persisted legacy Shared must not imply installation.
                     OwnershipType = OwnershipType.Owned,
                     ProductCategory = ProductCategory.Game,
                 },
@@ -228,7 +228,6 @@ public sealed class SelectionEngineTests
             {
                 GameIdentifier.ForSteam(1),
                 GameIdentifier.ForSteam(2),
-                GameIdentifier.ForSteam(3),
             });
         }
         finally

@@ -138,6 +138,17 @@ final class SelectionFilterTests: XCTestCase {
         XCTAssertEqual(store.statusMessage, "1 game available after applying filters (of 2 games).")
     }
 
+    func testInstalledFilterRejectsLegacySharedAndAvailableFamilyEntries() {
+        let store = makeStore()
+        store.library = [
+            makeGame(appId: 10, installState: .installed, ownershipType: .familyShared),
+            makeGame(appId: 20, installState: .available, ownershipType: .familyShared),
+            makeGame(appId: 30, installState: .shared)
+        ]
+        store.preferences.filters.requireInstalled = true
+        XCTAssertEqual(store.eligibleGames().compactMap(\.steamAppId), [10])
+    }
+
     func testLaunchAndInstallAvailabilityMatchesSteamInstallStateRules() {
         let store = makeStore()
 
@@ -361,6 +372,28 @@ final class SelectionFilterTests: XCTestCase {
         XCTAssertTrue(store.canRefresh)
         XCTAssertEqual(gate.callCount, 1)
         XCTAssertEqual(store.library.map(\.title), ["Loaded Once"])
+    }
+
+    func testCancelledRefreshPreservesCollectionAndDoesNotPublishLateResult() async {
+        let gate = RefreshGate()
+        let loadedGame = makeGame(appId: 10, title: "Late result", installState: .available)
+        var preferences = SelectionPreferences()
+        preferences.filters.requiredCollection = "Favorites"
+        let diagnostics = FakeDiagnosticLogger()
+        let store = makeStore(loadLibrary: {
+            gate.recordCallAndWait()
+            return [loadedGame]
+        }, diagnosticLogger: diagnostics, initialPreferences: preferences)
+        let refresh = Task { await store.refreshLibrary() }
+        while !store.isRefreshing { await Task.yield() }
+        refresh.cancel()
+        gate.release()
+        await refresh.value
+
+        XCTAssertEqual(store.preferences.filters.requiredCollection, "Favorites")
+        XCTAssertTrue(store.library.isEmpty)
+        XCTAssertFalse(store.isRefreshing)
+        XCTAssertTrue(diagnostics.errorMessages.isEmpty)
     }
 
     func testDrawIsDisabledAndIgnoredWhileRefreshing() async {

@@ -1,16 +1,28 @@
-name: Linux Release
+name: Package Linux
 
 on:
-  release:
-    types: [published]
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+      download_url:
+        required: false
+        type: string
+        default: ''
+    secrets:
+      SBP_LINUX_UPDATE_PRIVATE_KEY:
+        required: false
   workflow_dispatch:
     inputs:
       version:
-        description: "Version to package (defaults to release tag or 0.0.0-local)"
-        required: false
+        description: Version to package
+        type: string
+        required: true
+        default: '0.0.0'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   linux-release:
@@ -25,7 +37,9 @@ jobs:
           dotnet-version: 8.0.x
 
       - name: Restore
-        run: dotnet restore SteamBacklogPicker.sln
+        run: |
+          dotnet restore SteamBacklogPicker.sln
+          dotnet restore tests/Presentation/SteamBacklogPicker.Linux.Tests/SteamBacklogPicker.Linux.Tests.csproj
 
       - name: Build Linux project
         run: dotnet build src/Presentation/SteamBacklogPicker.Linux/SteamBacklogPicker.Linux.csproj -c Release --no-restore -f net8.0
@@ -38,28 +52,32 @@ jobs:
           APPIMAGETOOL_DOWNLOAD="${RUNNER_TEMP}/appimagetool-x86_64.AppImage"
           curl --fail --location \
             --output "${APPIMAGETOOL_DOWNLOAD}" \
-            "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage"
+            "https://github.com/AppImage/appimagetool/releases/download/1.9.1/appimagetool-x86_64.AppImage"
+          # Digests from the official GitHub release asset metadata (1.9.1 and 20251108).
+          echo "ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0  ${APPIMAGETOOL_DOWNLOAD}" | sha256sum --check
+          RUNTIME_DOWNLOAD="${RUNNER_TEMP}/runtime-x86_64"
+          curl --fail --location --output "${RUNTIME_DOWNLOAD}" \
+            "https://github.com/AppImage/type2-runtime/releases/download/20251108/runtime-x86_64"
+          echo "2fca8b443c92510f1483a883f60061ad09b46b978b2631c807cd873a47ec260d  ${RUNTIME_DOWNLOAD}" | sha256sum --check
+          echo "APPIMAGE_RUNTIME_PATH=${RUNTIME_DOWNLOAD}" >> "${GITHUB_ENV}"
           chmod +x "${APPIMAGETOOL_DOWNLOAD}"
           (cd "${RUNNER_TEMP}" && "${APPIMAGETOOL_DOWNLOAD}" --appimage-extract)
           echo "APPIMAGETOOL_PATH=${RUNNER_TEMP}/squashfs-root/AppRun" >> "${GITHUB_ENV}"
 
       - name: Package Linux artifact and feed
         env:
-          VERSION_INPUT: ${{ github.event.inputs.version }}
+          VERSION_INPUT: ${{ inputs.version }}
+          SBP_LINUX_DOWNLOAD_URL: ${{ inputs.download_url }}
           SBP_LINUX_UPDATE_PRIVATE_KEY: ${{ secrets.SBP_LINUX_UPDATE_PRIVATE_KEY }}
         run: |
           VERSION="${VERSION_INPUT}"
-          if [[ -z "$VERSION" ]]; then
-            VERSION="${GITHUB_REF_NAME#v}"
-          fi
-          if [[ -z "$VERSION" ]]; then
-            VERSION="0.0.0-local"
-          fi
+          VERSION="${VERSION:-0.0.0}"
 
           if [[ -n "${SBP_LINUX_UPDATE_PRIVATE_KEY}" ]]; then
             UPDATE_PRIVATE_KEY_PATH="${RUNNER_TEMP}/sbp-linux-update-private.pem"
             printf '%s' "${SBP_LINUX_UPDATE_PRIVATE_KEY}" > "${UPDATE_PRIVATE_KEY_PATH}"
             chmod 600 "${UPDATE_PRIVATE_KEY_PATH}"
+            trap 'rm -f "$UPDATE_PRIVATE_KEY_PATH"' EXIT
             export SBP_LINUX_UPDATE_PRIVATE_KEY_PATH="${UPDATE_PRIVATE_KEY_PATH}"
           fi
 
@@ -69,12 +87,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: linux-release-artifacts
-          path: artifacts/linux/
-
-      - name: Publish assets to GitHub Release
-        if: github.event_name == 'release'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          find artifacts/linux -maxdepth 1 -type f -print0 \
-            | xargs -0 gh release upload "${GITHUB_REF_NAME}" --clobber
+          path: |
+            artifacts/linux/*.AppImage
+            artifacts/linux/*.sha256
+            artifacts/linux/linux-appimage-update.json
+          if-no-files-found: error

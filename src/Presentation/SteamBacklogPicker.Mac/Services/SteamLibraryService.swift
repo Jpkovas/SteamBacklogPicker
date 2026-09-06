@@ -104,8 +104,7 @@ struct SteamLibraryService {
         let libraryFoldersURL = steamDirectory.appendingPathComponent("steamapps/libraryfolders.vdf")
 
         guard
-            let content = try? String(contentsOf: libraryFoldersURL, encoding: .utf8),
-            let root = try? parser.parse(content),
+            let root = try? parser.parseFile(libraryFoldersURL),
             let libraryFolders = root.child("LibraryFolders")
         else {
             return libraries
@@ -174,8 +173,7 @@ struct SteamLibraryService {
         metadata: SteamMetadata
     ) -> GameEntry? {
         guard
-            let content = try? String(contentsOf: manifestURL, encoding: .utf8),
-            let root = try? parser.parse(content),
+            let root = try? parser.parseFile(manifestURL),
             let appState = root.child("AppState"),
             let appIdText = appState.child("appid")?.value,
             let appId = UInt32(appIdText)
@@ -192,9 +190,9 @@ struct SteamLibraryService {
         let lastPlayed = appState.path("UserConfig", "LastPlayed")?.value
             .flatMap(Int64.init)
             .flatMap { $0 > 0 ? Date(timeIntervalSince1970: TimeInterval($0)) : nil }
-        let lastOwner = appState.child("LastOwner")?.value
-        let isFamilyShared = appMetadata?.isFamilyShared == true || isFamilySharedByOwner(lastOwner, currentUserId: metadata.currentUserId)
-        let installState = isFamilyShared ? InstallState.shared : InstallState.installed
+        let ownership = appMetadata?.ownershipType ?? .unknown
+        let stateFlags = appState.child("StateFlags")?.value.flatMap(UInt32.init)
+        let installState: InstallState = stateFlags.map { ($0 & 4) != 0 ? .installed : .available } ?? .unknown
         let tags = Array(metadata.collections[appId] ?? []).sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
         let artworkURLs = findHeroImages(appId: appId, steamDirectory: steamDirectory, library: library)
 
@@ -202,7 +200,7 @@ struct SteamLibraryService {
             storefront: .steam,
             steamAppId: appId,
             title: title,
-            ownershipType: isFamilyShared ? .familyShared : .owned,
+            ownershipType: ownership,
             installState: installState,
             productCategory: appMetadata?.category ?? .game,
             sizeOnDisk: sizeOnDisk,
@@ -230,8 +228,8 @@ struct SteamLibraryService {
             storefront: .steam,
             steamAppId: app.appId,
             title: app.name ?? "App \(app.appId)",
-            ownershipType: app.isFamilyShared ? .familyShared : .owned,
-            installState: app.isFamilyShared ? .shared : .available,
+            ownershipType: app.ownershipType,
+            installState: .available,
             productCategory: app.category,
             sizeOnDisk: nil,
             lastPlayed: nil,
@@ -251,7 +249,7 @@ struct SteamLibraryService {
         }
 
         if app == nil {
-            app = SteamAppMetadata(appId: appId, name: nil, isInstalled: false, type: nil, isFamilyShared: false)
+            app = SteamAppMetadata(appId: appId, name: nil, type: nil, isFamilyShared: false)
         }
         if info.name?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false {
             app?.name = info.name
@@ -268,17 +266,7 @@ struct SteamLibraryService {
         if !info.supportedPlatforms.isEmpty {
             app?.supportedPlatforms = info.supportedPlatforms
         }
-        if info.isFamilyShared {
-            app?.isFamilyShared = true
-        }
         return app
-    }
-
-    private func isFamilySharedByOwner(_ lastOwner: String?, currentUserId: String?) -> Bool {
-        guard let lastOwner, !lastOwner.isEmpty, let currentUserId, !currentUserId.isEmpty else {
-            return false
-        }
-        return lastOwner != currentUserId
     }
 
     private func findHeroImages(appId: UInt32, steamDirectory: URL, library: URL) -> [URL] {
@@ -378,7 +366,7 @@ struct SteamLibraryService {
     private func matchesFilterOption(entry: GameEntry, option: Int) -> Bool {
         switch option {
         case 1:
-            return entry.installState == .installed || entry.installState == .shared
+            return entry.installState == .installed
         case 3:
             return supportsVr(entry.storeCategoryIds)
         case 7:
@@ -395,7 +383,7 @@ struct SteamLibraryService {
     private func supportsVr(_ categoryIds: [Int]) -> Bool {
         categoryIds.contains { categoryId in
             switch categoryId {
-            case 31, 32, 33, 34, 35, 36, 37, 38, 39, 52, 53, 54:
+            case 31, 52, 53, 54:
                 return true
             default:
                 return false
@@ -433,9 +421,9 @@ private struct SteamMetadata {
 private struct SteamAppMetadata {
     var appId: UInt32
     var name: String?
-    var isInstalled: Bool
     var type: String?
     var isFamilyShared: Bool
+    var ownershipType: OwnershipType = .unknown
     var storeCategoryIds: [Int] = []
     var deckCompatibility: SteamDeckCompatibility = .unknown
     var supportedPlatforms: Set<SteamPlatform> = []
@@ -484,19 +472,18 @@ private extension SteamLibraryService {
     }
 
     func parseFile(_ url: URL) -> VDFNode? {
-        guard let content = try? String(contentsOf: url, encoding: .utf8) else { return nil }
-        return try? parser.parse(content)
+        return try? parser.parseFile(url)
     }
 
     func findMostRecentUser(in users: VDFNode) -> String? {
         let explicit = users.allChildren.first { user in
-            user.child("MostRecent")?.value == "1"
+            UInt64(user.name) != nil && user.child("MostRecent")?.value == "1"
         }
         if let explicit {
             return explicit.name
         }
 
-        return users.allChildren.max { left, right in
+        return users.allChildren.filter { UInt64($0.name) != nil }.max { left, right in
             let leftTimestamp = Int(left.child("Timestamp")?.value ?? "") ?? 0
             let rightTimestamp = Int(right.child("Timestamp")?.value ?? "") ?? 0
             return leftTimestamp < rightTimestamp
@@ -522,11 +509,14 @@ private extension SteamLibraryService {
 
         for appNode in apps.allChildren {
             guard let appId = UInt32(appNode.name) else { continue }
-            var app = metadata.apps[appId] ?? SteamAppMetadata(appId: appId, name: nil, isInstalled: false, type: nil, isFamilyShared: false)
+            var app = metadata.apps[appId] ?? SteamAppMetadata(appId: appId, name: nil, type: nil, isFamilyShared: false)
             app.name = appNode.child("name")?.value ?? app.name
             app.type = appNode.child("AppType")?.value ?? appNode.child("type")?.value ?? app.type
-            app.isInstalled = appNode.child("Installed")?.value.flatMap(parseBool) ?? appNode.child("installed")?.value.flatMap(parseBool) ?? app.isInstalled
-            app.isFamilyShared = appNode.child("IsSubscribedFromFamilySharing")?.value.flatMap(parseBool) ?? app.isFamilyShared
+            app.isFamilyShared = appNode.child("IsSubscribedFromFamilySharing")?.value.flatMap(parseBool) ?? false
+            let owned = ["is_owned", "owned", "IsSubscribed"].contains { key in
+                appNode.child(key)?.value.flatMap(parseBool) == true
+            }
+            app.ownershipType = app.isFamilyShared ? .familyShared : (owned ? .owned : .unknown)
             metadata.apps[appId] = app
         }
     }
@@ -583,12 +573,15 @@ private extension SteamLibraryService {
                 continue
             }
 
-            var app = metadata.apps[appId] ?? SteamAppMetadata(appId: appId, name: nil, isInstalled: false, type: nil, isFamilyShared: false)
+            var app = metadata.apps[appId] ?? SteamAppMetadata(appId: appId, name: nil, type: nil, isFamilyShared: false)
             if let data = try? Data(contentsOf: file),
                let json = try? JSONSerialization.jsonObject(with: data) {
                 app.name = findString(in: json, keys: ["name", "strName", "app_name", "display_name"]) ?? app.name
                 app.type = findString(in: json, keys: ["app_type", "AppType", "type"]) ?? app.type
-                app.isInstalled = findBool(in: json, keys: ["is_installed", "installed", "Installed"]) ?? app.isInstalled
+                let family = findBool(in: json, keys: ["IsSubscribedFromFamilySharing"])
+                let owned = findBool(in: json, keys: ["is_owned", "owned", "IsSubscribed"])
+                if family == true { app.ownershipType = .familyShared }
+                else if owned == true, app.ownershipType == .unknown { app.ownershipType = .owned }
             }
             metadata.apps[appId] = app
         }
@@ -598,19 +591,6 @@ private extension SteamLibraryService {
         let appInfoURL = steamDirectory.appendingPathComponent("appcache/appinfo.vdf")
         let appInfo = SteamAppInfoParser().parseAppMetadata(from: appInfoURL)
         metadata.appInfo = appInfo
-
-        for info in appInfo.values where info.isFamilyShared && metadata.apps[info.appId] == nil {
-            metadata.apps[info.appId] = SteamAppMetadata(
-                appId: info.appId,
-                name: info.name,
-                isInstalled: false,
-                type: info.type,
-                isFamilyShared: true,
-                storeCategoryIds: info.storeCategoryIds,
-                deckCompatibility: info.deckCompatibility,
-                supportedPlatforms: info.supportedPlatforms
-            )
-        }
 
         for appId in metadata.apps.keys {
             guard let info = appInfo[appId], var app = metadata.apps[appId] else {
@@ -631,9 +611,6 @@ private extension SteamLibraryService {
             }
             if !info.supportedPlatforms.isEmpty {
                 app.supportedPlatforms = info.supportedPlatforms
-            }
-            if info.isFamilyShared {
-                app.isFamilyShared = true
             }
             metadata.apps[appId] = app
         }
@@ -696,7 +673,7 @@ private extension SteamLibraryService {
 
     func upsertApp(_ appId: UInt32, metadata: inout SteamMetadata) {
         if metadata.apps[appId] == nil {
-            metadata.apps[appId] = SteamAppMetadata(appId: appId, name: nil, isInstalled: false, type: nil, isFamilyShared: false)
+            metadata.apps[appId] = SteamAppMetadata(appId: appId, name: nil, type: nil, isFamilyShared: false)
         }
     }
 

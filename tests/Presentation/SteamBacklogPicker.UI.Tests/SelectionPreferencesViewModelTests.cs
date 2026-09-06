@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using Domain;
 using Domain.Selection;
 using FluentAssertions;
@@ -11,6 +12,24 @@ namespace SteamBacklogPicker.UI.Tests;
 
 public sealed class SelectionPreferencesViewModelTests
 {
+    [Fact]
+    public void FailedPreferenceWrite_ShouldRestoreEffectiveFilterAndReportError()
+    {
+        var engine = new FakeSelectionEngine(new SelectionPreferences()) { WriteError = new System.IO.IOException("Fixture disk unavailable") };
+        using var viewModel = new SelectionPreferencesViewModel(engine, new FakeLocalizationService());
+        var notifications = 0;
+        viewModel.PreferencesChanged += (_, _) => notifications++;
+        viewModel.RequireInstalled = true;
+        viewModel.RequireInstalled.Should().BeFalse();
+        viewModel.LastSaveError.Should().Be("Fixture disk unavailable");
+        engine.GetPreferences().Filters.RequireInstalled.Should().BeFalse();
+        notifications.Should().Be(1);
+        engine.WriteError = null;
+        viewModel.RequireInstalled = true;
+        viewModel.RequireInstalled.Should().BeTrue();
+        viewModel.LastSaveError.Should().BeNull();
+    }
+
     [Fact]
     public void SelectedCollection_ShouldUpdatePreferences()
     {
@@ -53,6 +72,63 @@ public sealed class SelectionPreferencesViewModelTests
         viewModel.CollectionOptions.Should().Contain("Nenhuma coleção");
         viewModel.CollectionOptions.Should().Contain("VR");
         viewModel.CollectionOptions.Should().Contain("Multijogador");
+    }
+
+    [Fact]
+    public void CollectionRefresh_ShouldIgnoreTransientTwoWayNullAndAvoidUnchangedWrites()
+    {
+        var engine = new FakeSelectionEngine(new SelectionPreferences());
+        var localization = new LocalizationService();
+        localization.SetLanguage("en-US");
+        var viewModel = new SelectionPreferencesViewModel(engine, localization);
+        viewModel.UpdateCollections(new[] { "Favorites", "VR" });
+        engine.UpdateCount.Should().Be(0);
+        viewModel.SelectedCollection = "Favorites";
+
+        var collectionChanges = 0;
+        var selectionNotifications = 0;
+        ((INotifyCollectionChanged)viewModel.CollectionOptions).CollectionChanged += (_, _) =>
+        {
+            collectionChanges++;
+            // WPF may return a cleared selection while its ItemsSource processes Reset/Replace.
+            viewModel.SelectedCollection = null!;
+        };
+        viewModel.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(viewModel.SelectedCollection)) selectionNotifications++;
+        };
+
+        viewModel.UpdateCollections(new[] { "VR", "Favorites" });
+        collectionChanges.Should().Be(0);
+        selectionNotifications.Should().Be(0);
+        viewModel.UpdateCollections(new[] { "Co-op" });
+        collectionChanges.Should().Be(1, "the replacement should publish a single reset");
+        viewModel.CollectionOptions.Should().Contain("Favorites");
+        viewModel.SelectedCollection.Should().Be("Favorites");
+        selectionNotifications.Should().BeGreaterThan(0, "the control must reapply its selection after a reset");
+        localization.SetLanguage("pt-BR");
+        viewModel.SelectedCollection.Should().Be("Favorites");
+        engine.UpdateCount.Should().Be(1);
+        engine.LastUpdatedPreferences.Filters.RequiredCollection.Should().Be("Favorites");
+
+        viewModel.SelectedCollection = viewModel.CollectionOptions[0];
+        localization.SetLanguage("en-US");
+        viewModel.UpdateCollections(Array.Empty<string>());
+        viewModel.SelectedCollection.Should().Be(localization.GetString("Filters_NoCollection"));
+        engine.UpdateCount.Should().Be(2);
+        engine.LastUpdatedPreferences.Filters.RequiredCollection.Should().BeNull();
+    }
+
+    [Fact]
+    public void Dispose_ShouldDetachLocalizationSubscription()
+    {
+        var localization = new FakeLocalizationService();
+        var viewModel = new SelectionPreferencesViewModel(new FakeSelectionEngine(new SelectionPreferences()), localization);
+        viewModel.Dispose();
+        var notifications = 0;
+        viewModel.PropertyChanged += (_, _) => notifications++;
+        localization.SetLanguage("en-US");
+        notifications.Should().Be(0);
     }
 
     [Fact]
@@ -138,10 +214,15 @@ public sealed class SelectionPreferencesViewModelTests
 
         public SelectionPreferences LastUpdatedPreferences { get; private set; }
 
+        public int UpdateCount { get; private set; }
+        public Exception? WriteError { get; set; }
+
         public SelectionPreferences GetPreferences() => _preferences.Clone();
 
         public void UpdatePreferences(SelectionPreferences preferences)
         {
+            if (WriteError is not null) throw WriteError;
+            UpdateCount++;
             LastUpdatedPreferences = preferences.Clone();
             _preferences = preferences.Clone();
         }

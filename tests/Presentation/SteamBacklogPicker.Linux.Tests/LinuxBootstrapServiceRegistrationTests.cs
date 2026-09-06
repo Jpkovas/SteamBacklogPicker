@@ -13,7 +13,7 @@ namespace SteamBacklogPicker.Linux.Tests;
 public sealed class LinuxBootstrapServiceRegistrationTests
 {
     [Fact]
-    public void AddLinuxApplicationServices_ShouldAttemptToInitializeSteamApi_WhenSteamClientAdapterIsResolved()
+    public void AddLinuxApplicationServices_ShouldResolveAdapterWithoutLoadingSteamGameLibraries()
     {
         var services = new ServiceCollection();
         var environment = new SpySteamEnvironment();
@@ -24,28 +24,31 @@ public sealed class LinuxBootstrapServiceRegistrationTests
         using var provider = services.BuildServiceProvider();
         var adapter = provider.GetRequiredService<ISteamClientAdapter>();
 
-        environment.TryInitializeCallCount.Should().Be(1);
-        environment.ReceivedAdapter.Should().BeSameAs(adapter);
+        adapter.Should().NotBeNull();
+        environment.TryInitializeCallCount.Should().Be(0);
+        environment.ReceivedAdapter.Should().BeNull();
     }
 
     [Fact]
-    public void AddLinuxApplicationServices_ShouldUseVdfFallback_WhenNativeLibraryInitializationFails()
+    public void AddLinuxApplicationServices_ShouldReadLocalVdfWithoutNativeLibraryInitialization()
     {
         var services = new ServiceCollection();
-        var environment = new FailingInitSteamEnvironment();
+        var environment = new SpySteamEnvironment();
         var fallback = new FakeSteamVdfFallback(new uint[] { 10, 20, 30 });
+        var loader = new ThrowingNativeLibraryLoader();
 
         services.AddLinuxApplicationServices();
         services.Replace(ServiceDescriptor.Singleton<ISteamEnvironment>(environment));
         services.Replace(ServiceDescriptor.Singleton<ISteamVdfFallback>(fallback));
-        services.Replace(ServiceDescriptor.Singleton<INativeLibraryLoader>(new ThrowingNativeLibraryLoader()));
+        services.Replace(ServiceDescriptor.Singleton<INativeLibraryLoader>(loader));
 
         using var provider = services.BuildServiceProvider();
         var adapter = provider.GetRequiredService<ISteamClientAdapter>();
 
         var installedAppIds = adapter.GetInstalledAppIds();
 
-        environment.TryInitializeCallCount.Should().Be(1);
+        environment.TryInitializeCallCount.Should().Be(0);
+        loader.LoadCallCount.Should().Be(0);
         installedAppIds.Should().BeEquivalentTo(new uint[] { 10, 20, 30 });
         fallback.GetInstalledAppIdsCallCount.Should().BeGreaterThan(0);
     }
@@ -65,22 +68,15 @@ public sealed class LinuxBootstrapServiceRegistrationTests
         }
     }
 
-    private sealed class FailingInitSteamEnvironment : ISteamEnvironment
-    {
-        public int TryInitializeCallCount { get; private set; }
-
-        public string GetSteamDirectory() => string.Empty;
-
-        public void TryInitializeSteamApi(ISteamClientAdapter adapter)
-        {
-            TryInitializeCallCount++;
-            adapter.Initialize("/path/that/does/not/exist/libsteam_api.so");
-        }
-    }
-
     private sealed class ThrowingNativeLibraryLoader : INativeLibraryLoader
     {
-        public IntPtr Load(string path) => throw new DllNotFoundException($"Missing native library: {path}");
+        public int LoadCallCount { get; private set; }
+
+        public IntPtr Load(string path)
+        {
+            LoadCallCount++;
+            throw new DllNotFoundException($"Missing native library: {path}");
+        }
 
         public T GetDelegate<T>(IntPtr handle, string export) where T : Delegate => throw new NotSupportedException();
 

@@ -13,7 +13,6 @@ public sealed class FileTelemetryConsentStore : ITelemetryConsentStore
     public FileTelemetryConsentStore(TelemetryOptions options)
     {
         _options = options;
-        Directory.CreateDirectory(options.TelemetryStoreDirectory);
         _storePath = Path.Combine(options.TelemetryStoreDirectory, "telemetry-consent.json");
     }
 
@@ -38,16 +37,24 @@ public sealed class FileTelemetryConsentStore : ITelemetryConsentStore
 
     public void Save(TelemetryConsentState state)
     {
-        var directory = Path.GetDirectoryName(_storePath);
-        if (!string.IsNullOrEmpty(directory))
+        try
         {
-            Directory.CreateDirectory(directory);
-        }
+            var directory = Path.GetDirectoryName(_storePath);
+            if (!string.IsNullOrEmpty(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
 
-        using var stream = File.Create(_storePath);
-        JsonSerializer.Serialize(stream, state, new JsonSerializerOptions
+            var temporaryPath = _storePath + ".tmp";
+            File.WriteAllText(temporaryPath, JsonSerializer.Serialize(state, new JsonSerializerOptions
+            {
+                WriteIndented = true
+            }));
+            File.Move(temporaryPath, _storePath, overwrite: true);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            WriteIndented = true
-        });
+            // The current in-memory choice still applies when persistence is unavailable.
+        }
     }
 }

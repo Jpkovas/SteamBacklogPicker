@@ -1,13 +1,19 @@
 name: CI Build and Test
 
 on:
+  workflow_call:
+    inputs:
+      version:
+        description: Version for release packages
+        type: string
+        default: '0.0.0'
   push:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.ref }}-${{ inputs.version || 'development' }}
   cancel-in-progress: true
 
 permissions:
@@ -39,7 +45,9 @@ jobs:
             ${{ runner.os }}-nuget-
 
       - name: Restore dependencies
-        run: dotnet restore SteamBacklogPicker.sln
+        run: |
+          dotnet restore SteamBacklogPicker.sln
+          dotnet restore tests/Presentation/SteamBacklogPicker.Linux.Tests/SteamBacklogPicker.Linux.Tests.csproj
 
       - name: Build common projects
         shell: bash
@@ -59,6 +67,7 @@ jobs:
         run: |
           set -euo pipefail
           dotnet test tests/Domain/Domain.Tests/Domain.Tests.csproj -c Release --no-restore -f net8.0 --logger "trx;LogFileName=Domain.Tests.${{ runner.os }}.trx" --results-directory ./TestResults
+          dotnet test tests/Integration/SteamCatalog.Tests/SteamCatalog.Tests.csproj -c Release --no-restore -f net8.0 --logger "trx;LogFileName=SteamCatalog.Tests.${{ runner.os }}.trx" --results-directory ./TestResults
           dotnet test tests/Integration/SteamClientAdapter.Tests/SteamClientAdapter.Tests.csproj -c Release --no-restore -f net8.0 --logger "trx;LogFileName=SteamClientAdapter.Tests.${{ runner.os }}.trx" --results-directory ./TestResults
           dotnet test tests/Integration/SteamHooks.Tests/SteamHooks.Tests.csproj -c Release --no-restore -f net8.0 --logger "trx;LogFileName=SteamHooks.Tests.${{ runner.os }}.trx" --results-directory ./TestResults
           dotnet test tests/Infrastructure/SteamDiscovery.Tests/SteamDiscovery.Tests.csproj -c Release --no-restore -f net8.0 --logger "trx;LogFileName=SteamDiscovery.Tests.${{ runner.os }}.trx" --results-directory ./TestResults
@@ -67,6 +76,7 @@ jobs:
       - name: Publish Linux package candidate
         if: runner.os == 'Linux'
         run: |
+          dotnet restore src/Presentation/SteamBacklogPicker.Linux/SteamBacklogPicker.Linux.csproj --runtime linux-x64 -p:SelfContained=true
           dotnet publish src/Presentation/SteamBacklogPicker.Linux/SteamBacklogPicker.Linux.csproj \
             --configuration Release \
             --no-restore \
@@ -77,10 +87,6 @@ jobs:
             /p:IncludeNativeLibrariesForSelfExtract=true \
             --output ./publish/linux
 
-      - name: Validate Linux checksum and pending update flow
-        if: runner.os == 'Linux'
-        run: dotnet test tests/Presentation/SteamBacklogPicker.Linux.Tests/SteamBacklogPicker.Linux.Tests.csproj -c Release --no-restore -f net8.0 --filter "FullyQualifiedName~LinuxAppImageUpdateServiceTests" --logger "trx;LogFileName=LinuxUpdateFlow.Validation.trx" --results-directory ./TestResults
-
       - name: Upload common test results
         uses: actions/upload-artifact@v4
         if: always()
@@ -88,6 +94,35 @@ jobs:
           name: test-results-common-${{ runner.os }}
           path: TestResults/**/*.trx
           retention-days: 30
+
+  macos-suite:
+    name: macOS Swift package
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Resolve pinned Swift dependencies
+        run: swift package resolve
+      - name: Build and test Swift package
+        run: |
+          set -euo pipefail
+          swift build
+          swift test 2>&1 | tee swift-test.log
+      - name: Package macOS development app
+        env:
+          PACKAGE_VERSION: ${{ inputs.version || '0.0.0' }}
+        run: bash ./scripts/package-macos-app.sh "$PACKAGE_VERSION" ./artifacts/macos
+      - uses: actions/upload-artifact@v4
+        with:
+          name: steambacklogpicker-macos
+          path: |
+            artifacts/macos/*.zip
+            artifacts/macos/*.sha256
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: macos-swift-test-log
+          path: swift-test.log
 
   windows-suite:
     name: Windows-only suite
@@ -158,7 +193,7 @@ jobs:
                   return "Domain"
               if name.startswith("SteamDiscovery."):
                   return "Infrastructure"
-              if name.startswith(("SteamClientAdapter.", "SteamHooks.")):
+              if name.startswith(("SteamCatalog.", "SteamClientAdapter.", "SteamHooks.")):
                   return "Integration"
               if name.startswith("SteamBacklogPicker."):
                   return "Presentation"
@@ -184,12 +219,15 @@ jobs:
               counters = root.find(".//{*}Counters")
               total = counters.attrib.get("total", "0") if counters is not None else "0"
               failed = counters.attrib.get("failed", "0") if counters is not None else "0"
+              # VSTest can leave counters.notExecuted=0 while xUnit emits skipped result records.
+              skipped = str(sum(result.attrib.get("outcome") == "NotExecuted"
+                                for result in root.findall(".//{*}UnitTestResult")))
               name = path.stem.split(".LinuxUpdateFlow", 1)[0]
               name = re.sub(r"\.(Linux|Windows|WindowsOnly)$", "", name)
               suite = suite_for(path.name)
               layer = layer_for(name)
               framework = framework_for(path)
-              cell = f"`{name}` ({framework}, {total} tests, {failed} failed)"
+              cell = f"`{name}` ({framework}, {total} tests, {failed} failed, {skipped} skipped)"
               rows.setdefault(layer, {}).setdefault(suite, []).append(cell)
 
           suites = ["Linux (common suite)", "Windows (common suite)", "Windows-only suite"]
@@ -230,8 +268,8 @@ jobs:
     name: Build Release Artifacts
     runs-on: windows-latest
     timeout-minutes: 10
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [common-suite, windows-suite]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    needs: [common-suite, windows-suite, macos-suite]
 
     steps:
     - name: Checkout code
@@ -250,22 +288,18 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-nuget-
 
-    - name: Restore and build
-      run: |
-        dotnet restore SteamBacklogPicker.sln
-        dotnet build src/Presentation/SteamBacklogPicker.UI/SteamBacklogPicker.UI.csproj --configuration Release --no-restore --framework net8.0-windows10.0.18362.0
-
-    - name: Publish application
-      run: |
-        dotnet publish src/Presentation/SteamBacklogPicker.UI/SteamBacklogPicker.UI.csproj `
-          --configuration Release `
-          --no-build `
-          --framework net8.0-windows10.0.18362.0 `
-          --output ./publish
+    - name: Package self-contained Windows x64 portable app
+      shell: pwsh
+      env:
+        PACKAGE_VERSION: ${{ inputs.version || '0.0.0' }}
+      run: ./scripts/package-windows.ps1 -Version $env:PACKAGE_VERSION -OutputDirectory ./artifacts/windows
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: steambacklogpicker-release
-        path: publish/
+        name: steambacklogpicker-windows-x64-portable
+        path: |
+          artifacts/windows/*.zip
+          artifacts/windows/*.sha256
+        if-no-files-found: error
         retention-days: 7

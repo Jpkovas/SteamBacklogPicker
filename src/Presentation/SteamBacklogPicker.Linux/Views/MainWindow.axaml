@@ -1,310 +1,318 @@
-<Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:conv="using:SteamBacklogPicker.Linux.Converters"
-        x:Class="SteamBacklogPicker.Linux.Views.MainWindow"
-        Width="1280"
-        Height="800"
-        MinWidth="900"
-        MinHeight="650"
-        WindowStartupLocation="CenterScreen"
-        Background="{DynamicResource AppBackgroundBrush}"
-        Foreground="{DynamicResource TextPrimaryBrush}"
-        Title="Steam Backlog Picker"
-        mc:Ignorable="d">
-  <Grid RowDefinitions="Auto,*">
-
-    <!-- ============ Header bar ============ -->
-    <Border Grid.Row="0" Classes="headerBar">
-      <Grid ColumnDefinitions="Auto,*,Auto">
-        <!-- Brand -->
-        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="14">
-          <Border Width="42"
-                  Height="42"
-                  CornerRadius="11"
-                  Background="{DynamicResource AccentGradientBrush}">
-            <!-- Die face (three pips) -->
-            <Grid>
-              <Ellipse Width="6.5" Height="6.5" Fill="White"
-                       HorizontalAlignment="Left" VerticalAlignment="Top"
-                       Margin="10,10,0,0" />
-              <Ellipse Width="6.5" Height="6.5" Fill="White"
-                       HorizontalAlignment="Center" VerticalAlignment="Center" />
-              <Ellipse Width="6.5" Height="6.5" Fill="White"
-                       HorizontalAlignment="Right" VerticalAlignment="Bottom"
-                       Margin="0,0,10,10" />
-            </Grid>
-          </Border>
-          <StackPanel VerticalAlignment="Center" Spacing="2">
-            <TextBlock Classes="appTitle" Text="Steam Backlog Picker" />
-            <TextBlock Classes="appSubtitle" Text="{DynamicResource Header_Tagline}" />
-          </StackPanel>
-        </StackPanel>
-
-        <!-- Language selector -->
-        <StackPanel Grid.Column="2"
-                    Orientation="Horizontal"
-                    VerticalAlignment="Center"
-                    Spacing="10">
-          <Button Classes="lang"
-                  Classes.activeLanguage="{Binding CurrentLanguage, Converter={x:Static conv:StringEqualsConverter.Instance}, ConverterParameter=pt-BR}"
-                  Command="{Binding ChangeLanguageCommand}"
-                  CommandParameter="pt-BR"
-                  ToolTip.Tip="{DynamicResource Language_Portuguese}">
-            <Image Source="{DynamicResource FlagBrazilImage}" Width="28" Height="20" />
-          </Button>
-          <Button Classes="lang"
-                  Classes.activeLanguage="{Binding CurrentLanguage, Converter={x:Static conv:StringEqualsConverter.Instance}, ConverterParameter=en-US}"
-                  Command="{Binding ChangeLanguageCommand}"
-                  CommandParameter="en-US"
-                  ToolTip.Tip="{DynamicResource Language_English}">
-            <Image Source="{DynamicResource FlagUnitedStatesImage}" Width="28" Height="20" />
-          </Button>
-        </StackPanel>
-      </Grid>
-    </Border>
-
-    <!-- ============ Content ============ -->
-    <Grid Grid.Row="1" Margin="20,16,20,20" ColumnDefinitions="320,26,*">
-
-      <!-- Sidebar: filters and actions -->
-      <Border Grid.Column="0" Classes="card">
-        <Grid RowDefinitions="Auto,*,Auto">
-          <TextBlock Classes="sectionTitle"
-                     Margin="0,0,0,16"
-                     Text="{DynamicResource Filters_Title}" />
-
-          <ScrollViewer Grid.Row="1">
-            <StackPanel Spacing="10">
-              <CheckBox Content="{DynamicResource Filters_RequireInstalled}"
-                        IsChecked="{Binding Preferences.RequireInstalled, Mode=TwoWay}" />
-              <CheckBox Content="{DynamicResource Filters_ExcludeDeckUnsupported}"
-                        IsChecked="{Binding Preferences.ExcludeDeckUnsupported, Mode=TwoWay}" />
-              <CheckBox Content="{DynamicResource Filters_RequireMacCompatible}"
-                        IsChecked="{Binding Preferences.RequireMacCompatible, Mode=TwoWay}" />
-
-              <TextBlock Classes="sectionLabel" Text="{DynamicResource Filters_ContentTypesLabel}" />
-              <CheckBox Content="{DynamicResource Filters_IncludeGames}"
-                        IsChecked="{Binding Preferences.IncludeGames, Mode=TwoWay}" />
-              <CheckBox Content="{DynamicResource Filters_IncludeSoundtracks}"
-                        IsChecked="{Binding Preferences.IncludeSoundtracks, Mode=TwoWay}" />
-              <CheckBox Content="{DynamicResource Filters_IncludeSoftware}"
-                        IsChecked="{Binding Preferences.IncludeSoftware, Mode=TwoWay}" />
-              <CheckBox Content="{DynamicResource Filters_IncludeTools}"
-                        IsChecked="{Binding Preferences.IncludeTools, Mode=TwoWay}" />
-              <CheckBox Content="{DynamicResource Filters_IncludeVideos}"
-                        IsChecked="{Binding Preferences.IncludeVideos, Mode=TwoWay}" />
-              <CheckBox Content="{DynamicResource Filters_IncludeOther}"
-                        IsChecked="{Binding Preferences.IncludeOther, Mode=TwoWay}" />
-
-              <TextBlock Classes="sectionLabel" Text="{DynamicResource Filters_StorefrontsLabel}" />
-              <CheckBox Content="{DynamicResource Filters_IncludeSteam}"
-                        IsChecked="{Binding Preferences.IncludeSteam, Mode=TwoWay}" />
-
-              <TextBlock Classes="sectionLabel" Text="{DynamicResource Filters_CollectionLabel}" />
-              <ComboBox ItemsSource="{Binding Preferences.CollectionOptions}"
-                        SelectedItem="{Binding Preferences.SelectedCollection, Mode=TwoWay}" />
-            </StackPanel>
-          </ScrollViewer>
-
-          <!-- Actions + status -->
-          <StackPanel Grid.Row="2" Spacing="10">
-            <Border Height="1"
-                    Background="{DynamicResource SurfaceBorderBrush}"
-                    Margin="0,14,0,4" />
-
-            <Button Classes="secondary"
-                    HorizontalAlignment="Stretch"
-                    Height="44"
-                    Command="{Binding RefreshCommand}">
-              <StackPanel Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
-                <Viewbox Width="16" Height="16">
-                  <Canvas Width="24" Height="24">
-                    <Path Data="{StaticResource IconRefreshGeometry}"
-                          Fill="{DynamicResource TextPrimaryBrush}" />
-                  </Canvas>
-                </Viewbox>
-                <TextBlock VerticalAlignment="Center"
-                           Text="{DynamicResource Filters_RefreshButton}" />
-              </StackPanel>
-            </Button>
-            <Button Classes="primary"
-                    HorizontalAlignment="Stretch"
-                    Height="52"
-                    Command="{Binding DrawCommand}">
-              <StackPanel Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
-                <Viewbox Width="17" Height="17">
-                  <Canvas Width="24" Height="24">
-                    <Path Data="{StaticResource IconShuffleGeometry}"
-                          Fill="White" />
-                  </Canvas>
-                </Viewbox>
-                <TextBlock VerticalAlignment="Center"
-                           Text="{DynamicResource Filters_DrawButton}" />
-              </StackPanel>
-            </Button>
-
-            <Border Classes="statusBox" Margin="0,4,0,0">
-              <Grid ColumnDefinitions="Auto,*">
-                <Ellipse Width="8"
-                         Height="8"
-                         Fill="{DynamicResource SuccessBrush}"
-                         VerticalAlignment="Top"
-                         Margin="0,5,10,0" />
-                <TextBlock Grid.Column="1"
-                           Classes="body"
-                           Text="{Binding StatusMessage}" />
-              </Grid>
-            </Border>
-          </StackPanel>
-        </Grid>
-      </Border>
-
-      <!-- Showcase: drawn game -->
-      <Border Grid.Column="2" Classes="card">
-        <Grid RowDefinitions="Auto,*,Auto">
-
-          <!-- Featured game header -->
-          <Grid ColumnDefinitions="*,Auto">
-            <StackPanel Spacing="6">
-              <TextBlock Classes="sectionLabel"
-                         Margin="0"
-                         Text="{DynamicResource GameDetails_NextGameTitle}" />
-              <TextBlock Classes="gameTitle" Text="{Binding SelectedGame.Title}" />
-            </StackPanel>
-
-            <!-- Storefront badge -->
-            <Border Grid.Column="1"
-                    Classes="tagChip"
-                    Margin="16,4,0,0"
-                    VerticalAlignment="Top"
-                    IsVisible="{Binding SelectedGame.HasStorefront}">
-              <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
-                <Viewbox Width="14" Height="14">
-                  <Canvas Width="24" Height="24">
-                    <Path Data="{StaticResource IconSteamGeometry}"
-                          Fill="{DynamicResource TextPrimaryBrush}" />
-                  </Canvas>
-                </Viewbox>
-                <TextBlock FontSize="12"
-                           FontWeight="Medium"
-                           Foreground="{DynamicResource TextPrimaryBrush}"
-                           Text="{Binding SelectedGame.StorefrontDisplayName}" />
-              </StackPanel>
-            </Border>
-          </Grid>
-
-          <!-- Cover -->
-          <Border Grid.Row="1"
-                  Margin="0,18,0,0"
-                  Height="410"
-                  CornerRadius="18"
-                  Background="{DynamicResource AppBackgroundDeepBrush}"
-                  BorderBrush="{DynamicResource SurfaceBorderBrush}"
-                  BorderThickness="1"
-                  ClipToBounds="True">
-            <Grid>
-              <Image Margin="2"
-                     Stretch="Uniform"
-                     Source="{Binding SelectedGame.CoverImagePath}"
-                     IsVisible="{Binding SelectedGame.HasCoverImage}" />
-
-              <!-- Empty / no-cover placeholder -->
-              <StackPanel HorizontalAlignment="Center"
-                          VerticalAlignment="Center"
-                          Spacing="10"
-                          IsVisible="{Binding SelectedGame.ShowArtworkPlaceholder}">
-                <TextBlock HorizontalAlignment="Center"
-                           FontSize="19"
-                           FontWeight="SemiBold"
-                           Foreground="{DynamicResource TextSecondaryBrush}"
-                           Text="{Binding SelectedGame.ArtworkPlaceholderTitle}" />
-                <TextBlock HorizontalAlignment="Center"
-                           MaxWidth="360"
-                           TextAlignment="Center"
-                           TextWrapping="Wrap"
-                           FontSize="14"
-                           Foreground="{DynamicResource TextMutedBrush}"
-                           Text="{Binding SelectedGame.ArtworkPlaceholderSubtitle}" />
-              </StackPanel>
-
-              <!-- Drawing overlay -->
-              <Border Background="#E0070A0E"
-                      IsVisible="{Binding IsDrawing}">
-                <StackPanel HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            Spacing="16">
-                  <ProgressBar IsIndeterminate="True"
-                               Width="180"
-                               Foreground="{DynamicResource AccentBrush}" />
-                  <TextBlock HorizontalAlignment="Center"
-                             FontSize="15"
-                             FontWeight="Medium"
-                             Foreground="{DynamicResource TextSecondaryBrush}"
-                             Text="{DynamicResource Status_Drawing}" />
+<Window xmlns:conv="using:SteamBacklogPicker.Linux.Converters" xmlns="https://github.com/avaloniaui" xmlns:controls="using:SteamBacklogPicker.Linux.Controls" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="SteamBacklogPicker.Linux.Views.MainWindow" Title="Steam Backlog Picker" Width="1360" Height="900" MinWidth="980" MinHeight="680" WindowStartupLocation="CenterScreen" Background="#10141D" Foreground="#F2F6FB" FontFamily="Inter, Segoe UI, DejaVu Sans">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="190" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Border x:Name="NavigationSidebar" Background="#0C1017" BorderBrush="#242D3C" BorderThickness="0,0,1,0">
+            <Grid Margin="14,26,14,22" RowDefinitions="Auto,Auto,*,Auto">
+                <StackPanel Margin="16,0,0,28">
+                    <TextBlock Text="STEAM" FontSize="11" Foreground="#8AABDA" FontWeight="Bold" />
+                    <TextBlock Text="Backlog Picker" FontSize="20" FontWeight="SemiBold" Margin="0,4,0,0" />
                 </StackPanel>
-              </Border>
+                <StackPanel Grid.Row="1" Spacing="4">
+                    <Button x:Name="DiscoverNavigation" Content="{DynamicResource Workspace_discover}" Command="{Binding NavigateCommand}" CommandParameter="discover" Classes="nav" Classes.active="{Binding IsDiscoverPage}" />
+                    <Button x:Name="LibraryNavigation" Content="{DynamicResource Workspace_library}" Command="{Binding NavigateCommand}" CommandParameter="library" Classes="nav" Classes.active="{Binding IsLibraryPage}" />
+                    <Button x:Name="HistoryNavigation" Content="{DynamicResource Workspace_history}" Command="{Binding NavigateCommand}" CommandParameter="history" Classes="nav" Classes.active="{Binding IsHistoryPage}" />
+                </StackPanel>
+                <Button Grid.Row="3" x:Name="SettingsNavigation" Content="{DynamicResource Workspace_settings}" Command="{Binding NavigateCommand}" CommandParameter="settings" Classes="nav" Classes.active="{Binding IsSettingsPage}" />
             </Grid>
-          </Border>
-
-          <!-- Footer: status, tags, actions -->
-          <Grid Grid.Row="2" Margin="0,18,0,0" ColumnDefinitions="*,Auto">
-            <StackPanel VerticalAlignment="Center" Spacing="2">
-              <TextBlock FontSize="14"
-                         FontWeight="SemiBold"
-                         Foreground="{DynamicResource TextPrimaryBrush}"
-                         Text="{Binding SelectedGame.InstallationStatus}" />
-              <ItemsControl ItemsSource="{Binding SelectedGame.Tags}">
-                <ItemsControl.ItemsPanel>
-                  <ItemsPanelTemplate>
-                    <WrapPanel Orientation="Horizontal" />
-                  </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate>
-                    <Border Classes="tagChip">
-                      <TextBlock FontSize="12"
-                                 FontWeight="Medium"
-                                 Foreground="{DynamicResource TextPrimaryBrush}"
-                                 Text="{Binding}" />
+        </Border>
+        <Grid Grid.Column="1" Margin="30,26,30,18">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Grid Margin="0,0,0,22">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="{Binding PageTitle}" FontSize="32" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding PageSubtitle}" Margin="0,7,14,0" Classes="body" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <Button Content="{DynamicResource Workspace_Sync}" Command="{Binding RefreshCommand}" AutomationProperties.Name="{DynamicResource Filters_RefreshButton_Automation}" Classes="secondary" />
+                    <TextBlock Text="{Binding LastSyncSummary}" FontSize="11" Margin="0,7,0,0" Classes="body" />
+                </StackPanel>
+            </Grid>
+            <StackPanel Grid.Row="1" Margin="0,0,0,20" x:Name="FilterBar" IsVisible="{Binding !IsSettingsPage}">
+                <StackPanel IsVisible="{Binding !IsHistoryPage}">
+                    <Grid ColumnDefinitions="*,12,Auto,12,Auto">
+                        <TextBox x:Name="SearchBox" Text="{Binding SearchText, Mode=TwoWay}" Classes="field" Watermark="{DynamicResource Workspace_Search}" AutomationProperties.Name="{DynamicResource Workspace_Search}" />
+                        <ToggleButton Grid.Column="2" x:Name="InstalledFilter" Content="{DynamicResource Workspace_Installed}" IsChecked="{Binding Preferences.RequireInstalled, Mode=TwoWay}" Classes="filterToggle" />
+                        <ToggleButton Grid.Column="4" x:Name="FiltersToggle" IsChecked="{Binding AdvancedFilters, Mode=TwoWay}" Classes="filterToggle" AutomationProperties.Name="{DynamicResource Workspace_Advanced}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="{DynamicResource Workspace_Advanced}" VerticalAlignment="Center" />
+                                <Border x:Name="AdvancedFilterBadge" IsVisible="{Binding HasAdvancedFilterCount}" CornerRadius="8" Background="#354C70" Padding="6,1">
+                                    <TextBlock Text="{Binding AdvancedFilterCount}" FontSize="11" Foreground="#F2F6FB" />
+                                </Border>
+                            </StackPanel>
+                        </ToggleButton>
+                    </Grid>
+                    <Grid ColumnDefinitions="Auto,12,174,12,*" Margin="0,12,0,0">
+                        <Border Background="#151E2A" BorderBrush="#29374A" BorderThickness="1" CornerRadius="10" Padding="3">
+                            <UniformGrid Rows="1" Columns="3" Width="336">
+                                <Button x:Name="AllOwnershipButton" Content="{DynamicResource Workspace_All}" Command="{Binding SetOwnershipFilterCommand}" CommandParameter="all" Classes="segment" Classes.active="{Binding OwnershipFilter, Converter={x:Static conv:StringEqualsConverter.Instance}, ConverterParameter=all}" />
+                                <Button x:Name="OwnedOwnershipButton" Content="{DynamicResource Workspace_Owned}" Command="{Binding SetOwnershipFilterCommand}" CommandParameter="owned" Classes="segment" Classes.active="{Binding OwnershipFilter, Converter={x:Static conv:StringEqualsConverter.Instance}, ConverterParameter=owned}" />
+                                <Button x:Name="FamilyOwnershipButton" Content="{DynamicResource Workspace_Family}" Command="{Binding SetOwnershipFilterCommand}" CommandParameter="family" Classes="segment" Classes.active="{Binding OwnershipFilter, Converter={x:Static conv:StringEqualsConverter.Instance}, ConverterParameter=family}" />
+                            </UniformGrid>
+                        </Border>
+                        <ComboBox Grid.Column="2" x:Name="BacklogFilterBox" SelectedValue="{Binding BacklogFilter, Mode=TwoWay}" SelectedValueBinding="{Binding Tag}" AutomationProperties.Name="{DynamicResource Workspace_Backlog}" VerticalAlignment="Center">
+                            <ComboBoxItem Content="{DynamicResource Workspace_Active}" Tag="active" />
+                            <ComboBoxItem Content="{DynamicResource Workspace_AllStates}" Tag="all" />
+                            <ComboBoxItem Content="{DynamicResource Backlog_WantToPlay}" Tag="want" />
+                            <ComboBoxItem Content="{DynamicResource Backlog_Playing}" Tag="playing" />
+                            <ComboBoxItem Content="{DynamicResource Backlog_Completed}" Tag="completed" />
+                            <ComboBoxItem Content="{DynamicResource Backlog_Later}" Tag="later" />
+                            <ComboBoxItem Content="{DynamicResource Backlog_Hidden}" Tag="hidden" />
+                        </ComboBox>
+                        <TextBlock Grid.Column="4" Text="{Binding LibraryCountSummary}" Classes="body" HorizontalAlignment="Right" VerticalAlignment="Center" TextWrapping="Wrap" />
+                    </Grid>
+                    <Border x:Name="AdvancedFiltersPanel" Classes="card filters" IsVisible="{Binding AdvancedFilters}" Margin="0,12,0,0">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" MaxHeight="204">
+                            <Grid ColumnDefinitions="*,24,*">
+                                <StackPanel Spacing="8">
+                                    <TextBlock Text="{DynamicResource Filters_CollectionLabel}" Classes="kicker" />
+                                    <ComboBox x:Name="CollectionFilterBox" ItemsSource="{Binding Preferences.CollectionOptions}" SelectedItem="{Binding Preferences.SelectedCollection, Mode=TwoWay}" AutomationProperties.Name="{DynamicResource Filters_SelectCollection}" />
+                                    <CheckBox IsChecked="{Binding Preferences.ExcludeDeckUnsupported, Mode=TwoWay}" Classes="compactCheck">
+                                        <TextBlock Text="{DynamicResource Filters_ExcludeDeckUnsupported}" TextWrapping="Wrap" />
+                                    </CheckBox>
+                                    <CheckBox IsChecked="{Binding Preferences.RequireMacCompatible, Mode=TwoWay}" Classes="compactCheck">
+                                        <TextBlock Text="{DynamicResource Filters_RequireMacCompatible}" TextWrapping="Wrap" />
+                                    </CheckBox>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Spacing="8">
+                                    <TextBlock Text="{DynamicResource Filters_ContentTypesLabel}" Classes="kicker" />
+                                    <UniformGrid Columns="3" Rows="2">
+                                        <CheckBox Content="{DynamicResource Filters_IncludeGames}" IsChecked="{Binding Preferences.IncludeGames, Mode=TwoWay}" Classes="compactCheck" />
+                                        <CheckBox IsChecked="{Binding Preferences.IncludeSoundtracks, Mode=TwoWay}" Classes="compactCheck">
+                                            <TextBlock Text="{DynamicResource Filters_IncludeSoundtracks}" TextWrapping="Wrap" />
+                                        </CheckBox>
+                                        <CheckBox Content="{DynamicResource Filters_IncludeSoftware}" IsChecked="{Binding Preferences.IncludeSoftware, Mode=TwoWay}" Classes="compactCheck" />
+                                        <CheckBox Content="{DynamicResource Filters_IncludeTools}" IsChecked="{Binding Preferences.IncludeTools, Mode=TwoWay}" Classes="compactCheck" />
+                                        <CheckBox Content="{DynamicResource Filters_IncludeVideos}" IsChecked="{Binding Preferences.IncludeVideos, Mode=TwoWay}" Classes="compactCheck" />
+                                        <CheckBox Content="{DynamicResource Filters_IncludeOther}" IsChecked="{Binding Preferences.IncludeOther, Mode=TwoWay}" Classes="compactCheck" />
+                                    </UniformGrid>
+                                    <Button x:Name="ResetFiltersButton" Content="{DynamicResource Workspace_ClearFilters}" Command="{Binding ResetFiltersCommand}" Classes="secondary" HorizontalAlignment="Right" />
+                                </StackPanel>
+                            </Grid>
+                        </ScrollViewer>
                     </Border>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-            </StackPanel>
-
-            <StackPanel Grid.Column="1"
-                        Orientation="Horizontal"
-                        VerticalAlignment="Bottom"
-                        Margin="16,0,0,0"
-                        Spacing="10">
-              <Button Classes="secondary"
-                      MinHeight="46"
-                      MinWidth="124"
-                      Content="{DynamicResource GameDetails_InstallButton}"
-                      Command="{Binding InstallCommand}"
-                      IsEnabled="{Binding SelectedGame.CanInstall}" />
-              <Button Classes="primary"
-                      MinHeight="46"
-                      MinWidth="134"
-                      Command="{Binding LaunchCommand}"
-                      IsEnabled="{Binding SelectedGame.CanLaunch}">
-                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                  <Viewbox Width="16" Height="16">
-                    <Canvas Width="24" Height="24">
-                      <Path Data="{StaticResource IconPlayGeometry}"
-                            Fill="White" />
-                    </Canvas>
-                  </Viewbox>
-                  <TextBlock VerticalAlignment="Center"
-                             Text="{DynamicResource GameDetails_PlayButton}" />
                 </StackPanel>
-              </Button>
             </StackPanel>
-          </Grid>
+            <Grid Grid.Row="2">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" IsVisible="{Binding IsDiscoverPage}" x:Name="DiscoverPage" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel>
+                        <StackPanel IsVisible="{Binding !HasNoMatches}">
+                            <Border Padding="0" ClipToBounds="True" Margin="0,0,0,22" Classes="card" IsVisible="{Binding HasSelection}" x:Name="HeroPanel">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="1.35*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid MinHeight="285" Background="#202B3D">
+                                        <TextBlock Text="STEAM" FontSize="28" FontWeight="Bold" Foreground="#637B9E" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        <controls:CachedArtwork SourcePath="{Binding SelectedGame.CoverImagePath}" AllowNetwork="{Binding NetworkEnabled}" Stretch="UniformToFill" AutomationProperties.Name="{Binding SelectedGame.Title}" />
+                                        <Border Background="#E5122239" CornerRadius="6" Padding="11,6" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="18">
+                                            <TextBlock Text="{Binding SelectedGame.InstallationStatus}" FontSize="12" Foreground="#D5E5FC" />
+                                        </Border>
+                                    </Grid>
+                                    <StackPanel Grid.Column="1" Margin="25,24">
+                                        <TextBlock Text="{DynamicResource Workspace_Ready}" Classes="kicker" />
+                                        <TextBlock Text="{Binding SelectedGame.Title}" AutomationProperties.Name="{Binding SelectedGame.Title}" FontSize="27" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,12,0,10" />
+                                        <TextBlock Text="{Binding SelectionReason}" Classes="body" />
+                                        <TextBlock Text="{Binding SelectedGame.OwnershipStatus}" FontSize="12" Margin="0,9,0,15" Classes="body" />
+                                        <WrapPanel>
+                                            <Button Content="{DynamicResource GameDetails_PlayButton}" Command="{Binding LaunchCommand}" Background="#2867D6" Margin="0,0,8,8" AutomationProperties.Name="{DynamicResource GameDetails_PlayButton_Automation}" Classes="primary" ToolTip.Tip="{Binding SelectedGame.LaunchErrorMessage}" x:Name="LaunchButton" IsVisible="{Binding SelectedGame.CanLaunch}" Height="44" MinWidth="116" Padding="18,0" />
+                                            <Button Content="{DynamicResource GameDetails_InstallButton}" Command="{Binding InstallCommand}" Margin="0,0,0,8" AutomationProperties.Name="{DynamicResource GameDetails_InstallButton_Automation}" Classes="secondary" ToolTip.Tip="{Binding SelectedGame.InstallErrorMessage}" x:Name="InstallButton" IsVisible="{Binding !SelectedGame.CanLaunch}" Height="44" MinWidth="116" Padding="18,0" />
+                                        </WrapPanel>
+                                        <StackPanel Margin="0,12,0,0" Spacing="8">
+                                            <TextBlock Text="{DynamicResource Workspace_Backlog}" Classes="kicker" />
+                                            <Button x:Name="BacklogMenuButton" Classes="secondary" HorizontalAlignment="Left" MinWidth="210" AutomationProperties.Name="{DynamicResource Workspace_Backlog}">
+                                                <Grid ColumnDefinitions="*,24">
+                                                    <TextBlock Text="{Binding SelectedBacklogLabel}" />
+                                                    <TextBlock Text="⌄" Grid.Column="1" HorizontalAlignment="Right" />
+                                                </Grid>
+                                                <Button.Flyout>
+                                                    <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                                                        <MenuItem Header="{DynamicResource Backlog_WantToPlay}" Command="{Binding SetBacklogStatusCommand}" CommandParameter="WantToPlay" />
+                                                        <MenuItem Header="{DynamicResource Backlog_Playing}" Command="{Binding SetBacklogStatusCommand}" CommandParameter="Playing" />
+                                                        <MenuItem Header="{DynamicResource Backlog_Completed}" Command="{Binding SetBacklogStatusCommand}" CommandParameter="Completed" />
+                                                        <MenuItem Header="{DynamicResource Backlog_Later}" Command="{Binding SetBacklogStatusCommand}" CommandParameter="Later" />
+                                                        <MenuItem Header="{DynamicResource Backlog_Hidden}" Command="{Binding SetBacklogStatusCommand}" CommandParameter="Hidden" />
+                                                        <Separator />
+                                                        <MenuItem Header="{DynamicResource Backlog_None}" Command="{Binding SetBacklogStatusCommand}" CommandParameter="None" />
+                                                    </MenuFlyout>
+                                                </Button.Flyout>
+                                            </Button>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                        <Border Margin="0,0,0,20" Classes="card" IsVisible="{Binding HasNoMatches}" x:Name="DiscoverEmptyState">
+                            <StackPanel Margin="10">
+                                <TextBlock Text="{Binding EmptyTitle}" FontSize="26" FontWeight="SemiBold" />
+                                <TextBlock Text="{Binding EmptyDescription}" Margin="0,12,0,20" Classes="body" />
+                                <Button Content="{DynamicResource Workspace_ClearFilters}" Command="{Binding ResetFiltersCommand}" HorizontalAlignment="Left" Classes="secondary" />
+                            </StackPanel>
+                        </Border>
+                        <Grid Margin="0,0,0,20" IsVisible="{Binding !HasNoMatches}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel IsVisible="{Binding HasSuggestions}" x:Name="SuggestionsHeading">
+                                <TextBlock Text="{DynamicResource Workspace_Suggestions}" FontSize="23" FontWeight="SemiBold" />
+                                <TextBlock Text="{DynamicResource Workspace_AvoidRepeats}" FontSize="12" Margin="0,7,16,0" Classes="body" IsVisible="{Binding AvoidRepeats}" />
+                            </StackPanel>
+                            <Button Content="{DynamicResource Workspace_Pick}" Command="{Binding DrawCommand}" Grid.Column="1" Background="#2867D6" Padding="18,0" AutomationProperties.Name="{DynamicResource Filters_DrawButton_Automation}" Classes="primary" x:Name="DrawButton" Height="44" MinWidth="116" />
+                        </Grid>
+                        <ItemsControl ItemsSource="{Binding Suggestions}" IsVisible="{Binding HasSuggestions}" x:Name="SuggestionCards" Margin="0,0,-10,0">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Rows="1" Columns="3" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Command="{Binding $parent[Window].DataContext.SelectGameCommand}" CommandParameter="{Binding}" Padding="0" HorizontalContentAlignment="Stretch" AutomationProperties.Name="{Binding Title}" Margin="0,0,10,8" Classes="secondary gameCard" HorizontalAlignment="Stretch">
+                                        <StackPanel>
+                                            <controls:CachedArtwork SourcePath="{Binding CoverImagePath}" AllowNetwork="{Binding $parent[Window].DataContext.NetworkEnabled}" Stretch="UniformToFill" Height="122" />
+                                            <StackPanel Margin="14">
+                                                <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Text="{Binding Reason}" FontSize="11" Margin="0,6,0,0" Classes="body" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+                <Grid IsVisible="{Binding IsLibraryPage}" x:Name="LibraryPage">
+                    <ListBox ItemsSource="{Binding VisibleGames}" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" AutomationProperties.Name="{DynamicResource Workspace_library}" x:Name="LibraryList">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Button Command="{Binding $parent[Window].DataContext.SelectGameCommand}" CommandParameter="{Binding}" Padding="0" HorizontalContentAlignment="Stretch" AutomationProperties.Name="{Binding Title}" Margin="0,0,10,8" Classes="secondary gameCard" HorizontalAlignment="Stretch">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="144" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <controls:CachedArtwork SourcePath="{Binding CoverImagePath}" AllowNetwork="{Binding $parent[Window].DataContext.NetworkEnabled}" Stretch="UniformToFill" Height="72" />
+                                        <StackPanel Grid.Column="1" Margin="20,10">
+                                            <TextBlock Text="{Binding Title}" FontSize="17" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Text="{Binding Reason}" FontSize="12" Margin="0,7,0,0" Classes="body" />
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding BacklogLabel}" Grid.Column="2" Margin="16" VerticalAlignment="Center" Classes="body" />
+                                    </Grid>
+                                </Button>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding HasNoMatches}">
+                        <TextBlock Text="{Binding EmptyTitle}" FontSize="26" />
+                        <Button Content="{DynamicResource Workspace_ClearFilters}" Command="{Binding ResetFiltersCommand}" Margin="0,20,0,0" Classes="secondary" />
+                    </StackPanel>
+                </Grid>
+                <Grid IsVisible="{Binding IsHistoryPage}" x:Name="HistoryPage">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Button Content="{DynamicResource Workspace_ClearHistory}" Command="{Binding ClearHistoryCommand}" HorizontalAlignment="Right" Margin="0,0,0,18" Classes="secondary" />
+                    <ListBox Grid.Row="1" ItemsSource="{Binding History}" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" x:Name="HistoryList">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Button Command="{Binding $parent[Window].DataContext.SelectGameCommand}" CommandParameter="{Binding}" Padding="0" HorizontalContentAlignment="Stretch" AutomationProperties.Name="{Binding Title}" Margin="0,0,10,8" Classes="secondary gameCard" HorizontalAlignment="Stretch">
+                                    <Grid Margin="16">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding Title}" FontSize="16" />
+                                        <TextBlock Text="{Binding Time}" Grid.Column="1" Margin="20,0,0,0" Classes="body" />
+                                    </Grid>
+                                </Button>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <TextBlock Grid.Row="1" Text="{DynamicResource Workspace_NoHistory}" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding !HasHistory}">
+</TextBlock>
+                </Grid>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" IsVisible="{Binding IsSettingsPage}" x:Name="SettingsPage">
+                    <StackPanel>
+                        <Border Margin="0,0,0,18" Classes="card">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource Workspace_Connection}" Classes="kicker" />
+                                <TextBlock Text="{DynamicResource Workspace_FamilyTitle}" FontSize="25" FontWeight="SemiBold" Margin="0,10" />
+                                <TextBlock Text="{DynamicResource Workspace_FamilyHelp}" MaxWidth="720" HorizontalAlignment="Left" Classes="body" />
+                                <WrapPanel Margin="0,20,0,0">
+                                    <Button Content="{DynamicResource Workspace_Connect}" Command="{Binding ConnectSteamCommand}" Background="#2867D6" Margin="0,0,10,8" Classes="primary" x:Name="ConnectSteamButton" />
+                                    <Button Content="{DynamicResource Workspace_Disconnect}" Command="{Binding DisconnectSteamCommand}" Margin="0,0,10,8" Classes="secondary" />
+                                    <Button Content="{DynamicResource Workspace_Cancel}" Command="{Binding CancelSyncCommand}" Classes="secondary" IsVisible="{Binding IsSyncBusy}" />
+                                </WrapPanel>
+                                <StackPanel Margin="0,16,0,0" IsVisible="{Binding HasQrChallenge}">
+                                    <Image x:Name="LoginQrImage" Width="220" Height="220" HorizontalAlignment="Left" AutomationProperties.Name="{DynamicResource Workspace_QrHelp}" />
+                                    <TextBlock Text="{DynamicResource Workspace_QrHelp}" Margin="0,10,0,0" Classes="body" />
+                                </StackPanel>
+                                <TextBlock Text="{Binding SyncSummary}" Margin="0,10,0,0" Classes="body" />
+                                <TextBlock Text="{Binding SyncError}" Foreground="#FFBDAC" TextWrapping="Wrap" Margin="0,6,0,0" />
+                            </StackPanel>
+                        </Border>
+                        <Border Margin="0,0,0,18" Classes="card">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource Workspace_Privacy}" FontSize="23" FontWeight="SemiBold" />
+                                <CheckBox Content="{DynamicResource Workspace_Network}" IsChecked="{Binding NetworkEnabled, Mode=TwoWay}" Classes="check" />
+                                <TextBlock Text="{DynamicResource Workspace_NetworkHelp}" Classes="body" />
+                                <CheckBox Content="{DynamicResource Workspace_AvoidRepeats}" IsChecked="{Binding AvoidRepeats, Mode=TwoWay}" Classes="check" />
+                            </StackPanel>
+                        </Border>
+                        <Border Margin="0,0,0,18" Classes="card">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource Workspace_Diagnostics}" FontSize="23" FontWeight="SemiBold" />
+                                <TextBlock Text="{Binding AccountSummary}" Margin="0,15,0,0" Classes="body" />
+                                <WrapPanel Margin="0,14,0,0">
+                                    <StackPanel Margin="0,0,40,0">
+                                        <TextBlock Text="{Binding TotalGameCount}" FontSize="30" FontWeight="SemiBold" />
+                                        <TextBlock Text="{DynamicResource Workspace_Total}" Classes="body" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,40,0">
+                                        <TextBlock Text="{Binding InstalledGameCount}" FontSize="30" FontWeight="SemiBold" />
+                                        <TextBlock Text="{DynamicResource Workspace_Installed}" Classes="body" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,40,0">
+                                        <TextBlock Text="{Binding MissingNameCount}" FontSize="30" FontWeight="SemiBold" />
+                                        <TextBlock Text="{DynamicResource Workspace_MissingNames}" Classes="body" />
+                                    </StackPanel>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+                        <WrapPanel>
+                            <TextBlock Text="{DynamicResource Workspace_Language}" VerticalAlignment="Center" Margin="0,0,16,0" Classes="body" />
+                            <Button Content="Português" Command="{Binding ChangeLanguageCommand}" CommandParameter="pt-BR" Margin="0,0,10,0" Classes="secondary" />
+                            <Button Content="English" Command="{Binding ChangeLanguageCommand}" CommandParameter="en-US" Classes="secondary" />
+                        </WrapPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
+            <Grid Grid.Row="3" Margin="0,18,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="{Binding StatusMessage}" FontSize="12" AutomationProperties.LiveSetting="Polite" Classes="body" />
+                    <TextBlock Text="{Binding LastRefreshError}" Foreground="#FFBDAC" FontSize="12" TextWrapping="Wrap" />
+                </StackPanel>
+                <Button Content="{DynamicResource Workspace_Undo}" Command="{Binding UndoBacklogCommand}" Grid.Column="1" Padding="12,6" Classes="secondary" IsVisible="{Binding CanUndoBacklog}" />
+            </Grid>
         </Grid>
-      </Border>
     </Grid>
-  </Grid>
 </Window>

@@ -15,7 +15,7 @@
     <Color x:Key="SuccessColor">#3DDC97</Color>
     <Color x:Key="TextPrimaryColor">#F2F6FB</Color>
     <Color x:Key="TextSecondaryColor">#93A3B8</Color>
-    <Color x:Key="TextMutedColor">#5C6B80</Color>
+    <Color x:Key="TextMutedColor">#9BAAC0</Color>
 
     <!-- Brushes -->
     <SolidColorBrush x:Key="BackgroundBrush" Color="{StaticResource BackgroundColor}" />

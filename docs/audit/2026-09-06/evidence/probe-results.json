@@ -1,0 +1,37 @@
+{
+  "shared_state_probe": {
+    "passesInstalledFilter": true,
+    "canLaunch": false,
+    "canInstall": true
+  },
+  "localconfig_missing_installed_probe": {
+    "declaredInstalled": true,
+    "manifestExists": false
+  },
+  "account_switch_probe": {
+    "sharedBeforeSwitch": true,
+    "sharedAfterSwitchWithoutFlag": true
+  },
+  "local_library": {
+    "total": 451,
+    "missingTitles": 100,
+    "reportedInstalled": 444,
+    "shared": 0,
+    "manifestCount": 14,
+    "installedWithoutManifest": 430,
+    "elapsedMilliseconds": 1520,
+    "completedSynchronously": true
+  },
+  "appinfo": {
+    "headerHex": "07564429",
+    "version": 41,
+    "bytes": 9375507,
+    "parsed": 3073,
+    "error": null
+  },
+  "steamkit_family_types": [
+    "SteamKit2.Internal.CFamilyGroups_GetSharedLibraryApps_Request",
+    "SteamKit2.Internal.CFamilyGroups_GetSharedLibraryApps_Response",
+    "SteamKit2.Internal.FamilyGroups"
+  ]
+}

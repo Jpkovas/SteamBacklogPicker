@@ -1,4 +1,4 @@
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.8.34330.188
 MinimumVisualStudioVersion = 10.0.40219.1
@@ -31,6 +31,22 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamBacklogPicker.AppCore", "src\Presentation\SteamBacklogPicker.AppCore\SteamBacklogPicker.AppCore.csproj", "{9E3131D9-B921-45BB-9D59-2DCD2A68C826}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamBacklogPicker.Linux", "src\Presentation\SteamBacklogPicker.Linux\SteamBacklogPicker.Linux.csproj", "{53C72E8D-69C9-4AAB-81A4-850A3D4284C2}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{C1E0F72D-970E-4C54-B489-137047D7D885}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Presentation", "Presentation", "{DD7410F1-1B58-4FAE-AE6F-5093C5660307}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamBacklogPicker.Linux.Tests", "tests\Presentation\SteamBacklogPicker.Linux.Tests\SteamBacklogPicker.Linux.Tests.csproj", "{D63C29D6-EACB-499F-B31C-C45CF90EF639}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{8C95175B-CECC-45D7-B7D1-4079A8286A8F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Integration", "Integration", "{512D6C62-E4C7-4FC8-9E72-24F74604EA4A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamCatalog", "src\Integration\SteamCatalog\SteamCatalog.csproj", "{E1B3775F-43B3-4E66-B2AE-0CD6D88DA856}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Integration", "Integration", "{F373C346-9CAB-49D3-84D5-83FBEE38D145}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamCatalog.Tests", "tests\Integration\SteamCatalog.Tests\SteamCatalog.Tests.csproj", "{7D7F14D0-9456-40AA-97C3-05EFF5A62E6A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -90,7 +106,6 @@ Global
 		{D0CE20DA-CC44-4F0E-9EC3-6F7545F9572F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D0CE20DA-CC44-4F0E-9EC3-6F7545F9572F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D0CE20DA-CC44-4F0E-9EC3-6F7545F9572F}.Release|Any CPU.Build.0 = Release|Any CPU
-
 		{9E3131D9-B921-45BB-9D59-2DCD2A68C826}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{9E3131D9-B921-45BB-9D59-2DCD2A68C826}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9E3131D9-B921-45BB-9D59-2DCD2A68C826}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -99,8 +114,28 @@ Global
 		{53C72E8D-69C9-4AAB-81A4-850A3D4284C2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{53C72E8D-69C9-4AAB-81A4-850A3D4284C2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{53C72E8D-69C9-4AAB-81A4-850A3D4284C2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D63C29D6-EACB-499F-B31C-C45CF90EF639}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D63C29D6-EACB-499F-B31C-C45CF90EF639}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D63C29D6-EACB-499F-B31C-C45CF90EF639}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D63C29D6-EACB-499F-B31C-C45CF90EF639}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E1B3775F-43B3-4E66-B2AE-0CD6D88DA856}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E1B3775F-43B3-4E66-B2AE-0CD6D88DA856}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E1B3775F-43B3-4E66-B2AE-0CD6D88DA856}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E1B3775F-43B3-4E66-B2AE-0CD6D88DA856}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7D7F14D0-9456-40AA-97C3-05EFF5A62E6A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7D7F14D0-9456-40AA-97C3-05EFF5A62E6A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7D7F14D0-9456-40AA-97C3-05EFF5A62E6A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7D7F14D0-9456-40AA-97C3-05EFF5A62E6A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{DD7410F1-1B58-4FAE-AE6F-5093C5660307} = {C1E0F72D-970E-4C54-B489-137047D7D885}
+		{D63C29D6-EACB-499F-B31C-C45CF90EF639} = {DD7410F1-1B58-4FAE-AE6F-5093C5660307}
+		{512D6C62-E4C7-4FC8-9E72-24F74604EA4A} = {8C95175B-CECC-45D7-B7D1-4079A8286A8F}
+		{E1B3775F-43B3-4E66-B2AE-0CD6D88DA856} = {512D6C62-E4C7-4FC8-9E72-24F74604EA4A}
+		{F373C346-9CAB-49D3-84D5-83FBEE38D145} = {C1E0F72D-970E-4C54-B489-137047D7D885}
+		{7D7F14D0-9456-40AA-97C3-05EFF5A62E6A} = {F373C346-9CAB-49D3-84D5-83FBEE38D145}
 	EndGlobalSection
 EndGlobal

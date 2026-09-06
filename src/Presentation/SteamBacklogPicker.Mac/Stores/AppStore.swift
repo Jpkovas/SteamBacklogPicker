@@ -52,7 +52,7 @@ final class AppStore: ObservableObject {
         case raw(String)
     }
 
-    private let loadLibraryAction: @Sendable () throws -> [GameEntry]
+    private let loadLibraryAction: (@Sendable () throws -> [GameEntry])?
     private let openURL: (URL) -> Bool
     private let notificationSender: GameNotificationSending
     private let updateChecker: AppUpdateChecking
@@ -69,7 +69,7 @@ final class AppStore: ObservableObject {
     var languageDidChange: (() -> Void)?
 
     init(
-        loadLibrary: @escaping @Sendable () throws -> [GameEntry] = { try SteamLibraryService().loadLibrary() },
+        loadLibrary: (@Sendable () throws -> [GameEntry])? = nil,
         openURL: @escaping (URL) -> Bool = { NSWorkspace.shared.open($0) },
         notificationSender: GameNotificationSending = MacGameNotificationService(),
         updateChecker: AppUpdateChecking = NoOpMacAppUpdateService(),
@@ -153,11 +153,35 @@ final class AppStore: ObservableObject {
 
         do {
             let loadLibraryAction = loadLibraryAction
-            library = try await Task.detached(priority: .userInitiated) {
-                try loadLibraryAction()
-            }.value
+            let steamLanguage = language == .portuguese ? "brazilian" : "english"
+            let cancellation = LibraryLoadCancellation()
+            let worker = Task.detached(priority: .userInitiated) {
+                try Task.checkCancellation()
+                let result: [GameEntry]
+                if let loadLibraryAction {
+                    result = try loadLibraryAction()
+                } else {
+                    result = try SteamLibraryService(appNameResolver: SteamAppNameResolver(
+                        language: steamLanguage, isCancelled: { cancellation.isCancelled }
+                    )).loadLibrary()
+                }
+                try Task.checkCancellation()
+                return result
+            }
+            let loadedLibrary = try await withTaskCancellationHandler(operation: {
+                try await worker.value
+            }, onCancel: {
+                cancellation.cancel()
+                worker.cancel()
+            })
+            try Task.checkCancellation()
+            library = loadedLibrary
             diagnosticLogger.info("Loaded \(library.count) Steam library entries.")
             clearMissingCollectionFilterIfNeeded()
+            updateEligibilitySummary()
+        } catch is CancellationError {
+            // Window/task cancellation is not a failed library and must not clear saved filters.
+            diagnosticLogger.info("Steam library refresh cancelled.")
             updateEligibilitySummary()
         } catch {
             library = []
@@ -291,7 +315,7 @@ final class AppStore: ObservableObject {
                 return false
             }
 
-            if preferences.filters.requireInstalled && !(game.installState == .installed || game.installState == .shared) {
+            if preferences.filters.requireInstalled && game.installState != .installed {
                 return false
             }
 
@@ -593,5 +617,22 @@ final class AppStore: ObservableObject {
             return []
         }
         return decoded
+    }
+}
+
+private final class LibraryLoadCancellation: @unchecked Sendable {
+    private let lock = NSLock()
+    private var cancelled = false
+
+    var isCancelled: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return cancelled
+    }
+
+    func cancel() {
+        lock.lock()
+        defer { lock.unlock() }
+        cancelled = true
     }
 }

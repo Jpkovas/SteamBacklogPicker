@@ -5,7 +5,7 @@
         <ResourceDictionary>
             <!-- Palette (mirrors the WPF Themes/Palette.xaml) -->
             <Color x:Key="SystemAccentColor">#2D7FF9</Color>
-            <SolidColorBrush x:Key="AppBackgroundBrush">#0A0D12</SolidColorBrush>
+            <SolidColorBrush x:Key="AppBackgroundBrush">#10141D</SolidColorBrush>
             <SolidColorBrush x:Key="AppBackgroundDeepBrush">#070A0E</SolidColorBrush>
             <SolidColorBrush x:Key="SurfaceBrush">#11151D</SolidColorBrush>
             <SolidColorBrush x:Key="SurfaceAltBrush">#171D28</SolidColorBrush>
@@ -16,8 +16,8 @@
             <SolidColorBrush x:Key="AccentDeepBrush">#1F5FD6</SolidColorBrush>
             <SolidColorBrush x:Key="SuccessBrush">#3DDC97</SolidColorBrush>
             <SolidColorBrush x:Key="TextPrimaryBrush">#F2F6FB</SolidColorBrush>
-            <SolidColorBrush x:Key="TextSecondaryBrush">#93A3B8</SolidColorBrush>
-            <SolidColorBrush x:Key="TextMutedBrush">#5C6B80</SolidColorBrush>
+            <SolidColorBrush x:Key="TextSecondaryBrush">#A9B6C9</SolidColorBrush>
+            <SolidColorBrush x:Key="TextMutedBrush">#8E9FB7</SolidColorBrush>
             <SolidColorBrush x:Key="TagBrush">#1A2433</SolidColorBrush>
             <SolidColorBrush x:Key="TagBorderBrush">#2C3A50</SolidColorBrush>
 
@@ -43,9 +43,8 @@
         <Setter Property="Background" Value="{DynamicResource CardGradientBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource SurfaceBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="18" />
-        <Setter Property="Padding" Value="24" />
-        <Setter Property="BoxShadow" Value="0 7 28 0 #61000000" />
+        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="Padding" Value="20" />
     </Style>
 
     <Style Selector="Border.headerBar">
@@ -121,8 +120,9 @@
         <Setter Property="Foreground" Value="White" />
         <Setter Property="FontWeight" Value="Bold" />
         <Setter Property="FontSize" Value="16" />
-        <Setter Property="CornerRadius" Value="12" />
-        <Setter Property="Padding" Value="22,13" />
+        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="Height" Value="44" />
+        <Setter Property="Padding" Value="18,0" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="HorizontalContentAlignment" Value="Center" />
         <Setter Property="Cursor" Value="Hand" />
@@ -147,8 +147,9 @@
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="FontSize" Value="14" />
-        <Setter Property="CornerRadius" Value="10" />
-        <Setter Property="Padding" Value="18,11" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Height" Value="40" />
+        <Setter Property="Padding" Value="16,0" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="BorderBrush" Value="{DynamicResource SurfaceBorderBrush}" />
         <Setter Property="HorizontalContentAlignment" Value="Center" />
@@ -191,9 +192,118 @@
     <Style Selector="ComboBox">
         <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource SurfaceBorderBrush}" />
-        <Setter Property="CornerRadius" Value="10" />
-        <Setter Property="MinHeight" Value="38" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Height" Value="40" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="HorizontalAlignment" Value="Stretch" />
     </Style>
 
+    <Style Selector="Button.nav">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="Foreground" Value="#CDD8E9" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="Height" Value="40" />
+        <Setter Property="Padding" Value="16,0" />
+        <Setter Property="Margin" Value="0,3" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Button.nav.active">
+        <Setter Property="Background" Value="#203353" />
+        <Setter Property="Foreground" Value="#BBD6FF" />
+    </Style>
+    <Style Selector="TextBlock.kicker">
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="#9FBAE4" />
+    </Style>
+    <Style Selector="TextBox.field">
+        <Setter Property="Background" Value="#111722" />
+        <Setter Property="Foreground" Value="#F2F6FB" />
+        <Setter Property="BorderBrush" Value="#45536B" />
+        <Setter Property="Height" Value="40" />
+        <Setter Property="Padding" Value="12,0" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="FontSize" Value="14" />
+    </Style>
+    <Style Selector="CheckBox.check">
+        <Setter Property="Foreground" Value="#CDD8E9" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Margin" Value="0,8,20,8" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="ListBoxItem">
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="Button.gameCard">
+        <Setter Property="Height" Value="NaN" />
+        <Setter Property="ClipToBounds" Value="True" />
+        <Setter Property="VerticalAlignment" Value="Stretch" />
+        <Setter Property="VerticalContentAlignment" Value="Top" />
+    </Style>
+    <Style Selector="Button.segment, ToggleButton.filterToggle">
+        <Setter Property="Height" Value="40" />
+        <Setter Property="Padding" Value="16,0" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Background" Value="#171D28" />
+        <Setter Property="BorderBrush" Value="#32405A" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Foreground" Value="#CDD8E9" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.segment.active, ToggleButton.filterToggle:checked">
+        <Setter Property="Background" Value="#203353" />
+        <Setter Property="BorderBrush" Value="#789CD4" />
+        <Setter Property="Foreground" Value="#D5E5FC" />
+    </Style>
+    <Style Selector="Button.segment">
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="Padding" Value="8,0" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="CheckBox.compactCheck">
+        <Setter Property="MinHeight" Value="40" />
+        <Setter Property="Margin" Value="0,0,8,0" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="MenuItem">
+        <Setter Property="MinHeight" Value="40" />
+    </Style>
+    <Style Selector="MenuFlyoutPresenter">
+        <Setter Property="MinWidth" Value="210" />
+        <Setter Property="Background" Value="#171D28" />
+        <Setter Property="BorderBrush" Value="#32405A" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="10" />
+    </Style>
+    <!-- Opacity feedback only: no layout animation, perpetual timers or page-wide motion. -->
+    <Style Selector="Button, ToggleButton">
+        <Setter Property="RenderTransform" Value="{x:Null}" />
+    </Style>
+    <Style Selector="Window:not(.motion-enabled) Button, Window:not(.motion-enabled) ToggleButton">
+        <Setter Property="Transitions" Value="{x:Null}" />
+    </Style>
+    <Style Selector="Window.motion-enabled Button, Window.motion-enabled ToggleButton">
+        <Setter Property="Transitions">
+            <Transitions>
+                <DoubleTransition Property="Opacity" Duration="0:0:0.18" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Button:pointerover, ToggleButton:pointerover">
+        <Setter Property="Opacity" Value="0.94" />
+    </Style>
+    <Style Selector="Button:pressed, ToggleButton:pressed">
+        <Setter Property="Opacity" Value="0.82" />
+    </Style>
+    <Style Selector="Button:disabled, ToggleButton:disabled">
+        <Setter Property="Opacity" Value="0.5" />
+    </Style>
 </Styles>

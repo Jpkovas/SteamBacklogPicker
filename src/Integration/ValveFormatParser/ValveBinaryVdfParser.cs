@@ -13,6 +13,13 @@ namespace ValveFormatParser;
 
 public sealed class ValveBinaryVdfParser
 {
+    public const int MaxEntryBytes = 16 * 1024 * 1024;
+    public const long MaxDocumentBytes = 512L * 1024 * 1024;
+    private const int MaxStrings = 1_000_000;
+    private const int MaxStringBytes = 1024 * 1024;
+    private const int MaxDepth = 128;
+    private sealed class ParseBudget { public int Nodes; }
+
     private const uint ExpectedMagic = 0x075644;
     private const uint ValveZstdMagic = 0x615A5356; // VSZa
     private const int ValveZstdHeaderLength = 8;
@@ -46,11 +53,18 @@ public sealed class ValveBinaryVdfParser
         if (!stream.CanSeek)
         {
             using var buffer = new MemoryStream();
-            stream.CopyTo(buffer);
+            var chunk = new byte[81920];
+            int count;
+            while ((count = stream.Read(chunk, 0, chunk.Length)) > 0)
+            {
+                if (buffer.Length + count > MaxDocumentBytes) throw new InvalidDataException("Appinfo document is too large.");
+                buffer.Write(chunk, 0, count);
+            }
             buffer.Position = 0;
             return ParseAppInfo(buffer);
         }
 
+        if (stream.Length - stream.Position > MaxDocumentBytes) throw new InvalidDataException("Appinfo document is too large.");
         var origin = stream.Position;
         var reader = new BinaryReader(stream, Encoding.UTF8, leaveOpen: true);
 
@@ -82,16 +96,14 @@ public sealed class ValveBinaryVdfParser
         var reader = new BinaryReader(stream, Encoding.UTF8, leaveOpen: true);
         var result = new Dictionary<uint, ValveKeyValueNode>();
 
-        if (!TryReadHeader(reader, out var version, out var options))
+        if (!TryReadHeader(reader, out var version, out var stringTable))
         {
             return result;
         }
 
-        var serializer = KVSerializer.Create(KVSerializationFormat.KeyValues1Binary);
-
         while (stream.Position < stream.Length)
         {
-            if (!TryReadEntry(reader, version, options, serializer, out var appId, out var node))
+            if (!TryReadEntry(reader, version, stringTable, out var appId, out var node))
             {
                 break;
             }
@@ -105,9 +117,9 @@ public sealed class ValveBinaryVdfParser
         return result;
     }
 
-    private static bool TryReadHeader(BinaryReader reader, out byte version, out KVSerializerOptions options)
+    private static bool TryReadHeader(BinaryReader reader, out byte version, out string[]? stringTable)
     {
-        options = new KVSerializerOptions();
+        stringTable = null;
         version = 0;
 
         if (reader.BaseStream.Length - reader.BaseStream.Position < sizeof(uint) + sizeof(uint))
@@ -134,18 +146,23 @@ public sealed class ValveBinaryVdfParser
 
         if (version >= 41)
         {
+            if (reader.BaseStream.Length - reader.BaseStream.Position < sizeof(long)) return false;
             var stringTableOffset = reader.ReadInt64();
+            if (stringTableOffset < reader.BaseStream.Position || stringTableOffset > reader.BaseStream.Length - sizeof(uint))
+                throw new InvalidDataException("Appinfo string table offset is outside the document.");
             var returnPosition = reader.BaseStream.Position;
 
             reader.BaseStream.Position = stringTableOffset;
             var stringCount = reader.ReadUInt32();
+            if (stringCount > MaxStrings || stringCount > reader.BaseStream.Length - reader.BaseStream.Position)
+                throw new InvalidDataException("Appinfo string table count is invalid.");
             var strings = new string[stringCount];
             for (var i = 0; i < stringCount; i++)
             {
                 strings[i] = ReadNullTerminatedUtf8String(reader.BaseStream);
             }
 
-            options.StringTable = new StringTable(strings);
+            stringTable = strings;
             reader.BaseStream.Position = returnPosition;
         }
 
@@ -155,26 +172,25 @@ public sealed class ValveBinaryVdfParser
     private static bool TryReadEntry(
         BinaryReader reader,
         byte version,
-        KVSerializerOptions options,
-        KVSerializer serializer,
+        string[]? stringTable,
         out uint appId,
         out ValveKeyValueNode? node)
     {
         node = null;
         appId = 0;
 
-        if (reader.BaseStream.Length - reader.BaseStream.Position < sizeof(uint) * 2)
+        if (reader.BaseStream.Length - reader.BaseStream.Position < sizeof(uint))
         {
             return false;
         }
 
         appId = reader.ReadUInt32();
-        var size = reader.ReadUInt32();
-
-        if (appId == 0 && size == 0)
+        // The terminal AppID is a single uint32, followed by the string table in v41+.
+        if (appId == 0 || reader.BaseStream.Length - reader.BaseStream.Position < sizeof(uint))
         {
             return false;
         }
+        var size = reader.ReadUInt32();
 
         var endPosition = reader.BaseStream.Position + size;
         if (reader.BaseStream.Length < endPosition)
@@ -183,8 +199,14 @@ public sealed class ValveBinaryVdfParser
             return false;
         }
 
+        if (size > MaxEntryBytes)
+        {
+            reader.BaseStream.Position = endPosition;
+            return true;
+        }
         try
         {
+            if (size < (version >= 40 ? 60 : 40)) throw new InvalidDataException("Appinfo metadata is truncated.");
             ReadEntryMetadata(reader, version);
 
             var payloadLength = (int)(endPosition - reader.BaseStream.Position);
@@ -207,7 +229,7 @@ public sealed class ValveBinaryVdfParser
                     throw new EndOfStreamException($"Unexpected end of stream while reading app {appId} payload.");
                 }
 
-                node = DeserializePayload(buffer, payloadLength, serializer, options);
+                node = DeserializePayload(buffer, payloadLength, stringTable);
             }
             finally
             {
@@ -229,8 +251,7 @@ public sealed class ValveBinaryVdfParser
     private static ValveKeyValueNode? DeserializePayload(
         byte[] buffer,
         int length,
-        KVSerializer serializer,
-        KVSerializerOptions options)
+        string[]? stringTable)
     {
         if (length == 0)
         {
@@ -239,12 +260,11 @@ public sealed class ValveBinaryVdfParser
 
         if (IsValveZstdPayload(buffer, length))
         {
-            return DeserializeValveZstdPayload(buffer, length, serializer, options);
+            return DeserializeValveZstdPayload(buffer, length, stringTable);
         }
 
         using var payloadStream = new MemoryStream(buffer, 0, length, writable: false, publiclyVisible: true);
-        var kvObject = serializer.Deserialize(payloadStream, options);
-        return ConvertToNode(kvObject);
+        return ReadPayloadNode(payloadStream, stringTable);
     }
 
     private static bool IsValveZstdPayload(byte[] buffer, int length)
@@ -261,8 +281,7 @@ public sealed class ValveBinaryVdfParser
     private static ValveKeyValueNode DeserializeValveZstdPayload(
         byte[] buffer,
         int length,
-        KVSerializer serializer,
-        KVSerializerOptions options)
+        string[]? stringTable)
     {
         if (length < ValveZstdHeaderLength + ValveZstdFooterLength)
         {
@@ -288,9 +307,9 @@ public sealed class ValveBinaryVdfParser
         }
 
         var decompressedSize = BinaryPrimitives.ReadInt32LittleEndian(footer.Slice(4, sizeof(int)));
-        if (decompressedSize < 0)
+        if (decompressedSize < 0 || decompressedSize > MaxEntryBytes)
         {
-            throw new InvalidDataException("Valve Zstd payload reported a negative decompressed size.");
+            throw new InvalidDataException("Valve Zstd payload reported an invalid decompressed size.");
         }
 
         var decompressedBuffer = ArrayPool<byte>.Shared.Rent(decompressedSize);
@@ -298,8 +317,7 @@ public sealed class ValveBinaryVdfParser
         {
             var written = DecompressValveZstd(payload, decompressedBuffer.AsSpan(0, decompressedSize));
             using var decompressedStream = new MemoryStream(decompressedBuffer, 0, written, writable: false, publiclyVisible: true);
-            var kvObject = serializer.Deserialize(decompressedStream, options);
-            return ConvertToNode(kvObject);
+            return ReadPayloadNode(decompressedStream, stringTable);
         }
         finally
         {
@@ -395,7 +413,7 @@ public sealed class ValveBinaryVdfParser
                 break;
             }
 
-            if (size > int.MaxValue)
+            if (size > MaxEntryBytes)
             {
                 break;
             }
@@ -486,8 +504,10 @@ public sealed class ValveBinaryVdfParser
         return root;
     }
 
-    private static void ReadLegacyChildren(BinaryReader reader, ValveKeyValueNode parent)
+    private static void ReadLegacyChildren(BinaryReader reader, ValveKeyValueNode parent, string[]? stringTable = null, int depth = 0, ParseBudget? budget = null)
     {
+        if (depth > MaxDepth) throw new InvalidDataException("Appinfo nesting limit exceeded.");
+        budget ??= new ParseBudget();
         while (true)
         {
             var type = (ValveBinaryType)reader.ReadByte();
@@ -496,14 +516,22 @@ public sealed class ValveBinaryVdfParser
                 return;
             }
 
-            var key = ReadLegacyNullTerminatedString(reader);
+            if (++budget.Nodes > 250_000) throw new InvalidDataException("Appinfo node limit exceeded.");
+            string key;
+            if (stringTable is null) key = ReadLegacyNullTerminatedString(reader);
+            else
+            {
+                var index = reader.ReadUInt32();
+                if (index >= stringTable.Length) throw new InvalidDataException("Appinfo string index is invalid.");
+                key = stringTable[index];
+            }
             switch (type)
             {
                 case ValveBinaryType.Child:
                 {
                     var child = ValveKeyValueNode.CreateObject(key);
                     parent.AddChild(child);
-                    ReadLegacyChildren(reader, child);
+                    ReadLegacyChildren(reader, child, stringTable, depth + 1, budget);
                     break;
                 }
                 case ValveBinaryType.String:
@@ -536,7 +564,7 @@ public sealed class ValveBinaryVdfParser
                 case ValveBinaryType.BinaryBlob:
                 {
                     var length = reader.ReadInt32();
-                    if (length < 0)
+                    if (length < 0 || length > MaxEntryBytes || length > reader.BaseStream.Length - reader.BaseStream.Position)
                     {
                         throw new InvalidDataException($"Binary data for key '{key}' has a negative length ({length}).");
                     }
@@ -562,21 +590,12 @@ public sealed class ValveBinaryVdfParser
         }
     }
 
-    private static ValveKeyValueNode ConvertToNode(KVObject kvObject)
+    private static ValveKeyValueNode ReadPayloadNode(Stream stream, string[]? stringTable)
     {
-        if (kvObject.Value.ValueType is KVValueType.Collection or KVValueType.Array)
-        {
-            var node = ValveKeyValueNode.CreateObject(kvObject.Name);
-            foreach (var child in kvObject.Children)
-            {
-                node.AddChild(ConvertToNode(child));
-            }
-
-            return node;
-        }
-
-        var value = kvObject.Value.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
-        return ValveKeyValueNode.CreateValue(kvObject.Name, value);
+        using var reader = new BinaryReader(stream, Encoding.UTF8, leaveOpen: true);
+        var root = ValveKeyValueNode.CreateObject("appinfo");
+        ReadLegacyChildren(reader, root, stringTable);
+        return root.TryGetChild("appinfo", out var nested) && nested.IsObject ? nested : root;
     }
 
     private static string ReadLegacyNullTerminatedString(BinaryReader reader)
@@ -585,6 +604,7 @@ public sealed class ValveBinaryVdfParser
         byte value;
         while ((value = reader.ReadByte()) != 0)
         {
+            if (bytes.Count >= MaxStringBytes) throw new InvalidDataException("Appinfo string is too large.");
             bytes.Add(value);
         }
 
@@ -602,6 +622,7 @@ public sealed class ValveBinaryVdfParser
                 break;
             }
 
+            if (sb.Length >= MaxStringBytes / 2) throw new InvalidDataException("Appinfo string is too large.");
             sb.Append((char)character);
         }
 
@@ -619,10 +640,9 @@ public sealed class ValveBinaryVdfParser
             while (true)
             {
                 var next = stream.ReadByte();
-                if (next <= 0)
-                {
-                    break;
-                }
+                if (next < 0) throw new EndOfStreamException("Unterminated appinfo string table entry.");
+                if (next == 0) break;
+                if (length >= MaxStringBytes) throw new InvalidDataException("Appinfo string is too large.");
 
                 if (length >= buffer.Length)
                 {

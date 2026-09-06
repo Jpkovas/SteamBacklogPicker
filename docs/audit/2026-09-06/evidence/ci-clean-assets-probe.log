@@ -1,0 +1,8 @@
+  Domain -> .\src\Domain\bin\Release\net8.0\Domain.dll
+  ValveFormatParser -> .\src\Integration\ValveFormatParser\bin\Release\net8.0\ValveFormatParser.dll
+  Telemetry -> .\src\Infrastructure\Telemetry\bin\Release\net8.0\Telemetry.dll
+  SteamClientAdapter -> .\src\Integration\SteamClientAdapter\bin\Release\net8.0\SteamClientAdapter.dll
+  SteamDiscovery -> .\src\Infrastructure\SteamDiscovery\bin\Release\net8.0\SteamDiscovery.dll
+  SteamBacklogPicker.AppCore -> .\src\Presentation\SteamBacklogPicker.AppCore\bin\Release\net8.0\SteamBacklogPicker.AppCore.dll
+  SteamBacklogPicker.Linux -> .\src\Presentation\SteamBacklogPicker.Linux\bin\Release\net8.0\SteamBacklogPicker.Linux.dll
+.\artifacts\audit\runtime\dotnet\sdk\8.0.424\Sdks\Microsoft.NET.Sdk\targets\Microsoft.NET.Sdk.targets(284,5): error NETSDK1004: Arquivo de ativos '.\tests\Presentation\SteamBacklogPicker.Linux.Tests\obj\project.assets.json' não encontrado. Execute uma restauração de pacote do NuGet para gerar esse arquivo. [.\tests\Presentation\SteamBacklogPicker.Linux.Tests\SteamBacklogPicker.Linux.Tests.csproj]
