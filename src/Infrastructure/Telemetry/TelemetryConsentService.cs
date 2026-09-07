@@ -11,10 +11,6 @@ public sealed class TelemetryConsentService : ITelemetryConsentService
         _store = store;
         _state = store.Load();
 
-        if (!_state.HasResponded && options.TelemetryEnabledByDefault)
-        {
-            SetTelemetryEnabled(true);
-        }
     }
 
     public bool HasResponded
@@ -34,7 +30,7 @@ public sealed class TelemetryConsentService : ITelemetryConsentService
         {
             lock (_syncRoot)
             {
-                return _state.IsTelemetryEnabled;
+                return _state.HasResponded && _state.IsTelemetryEnabled;
             }
         }
     }

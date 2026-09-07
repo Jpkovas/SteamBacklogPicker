@@ -101,6 +101,10 @@ public sealed class CombinedGameLibraryService : IGameLibraryService
             return left;
         }
 
+        // Generated placeholders must never beat a real (possibly shorter) title.
+        static bool IsPlaceholder(string title) => title.StartsWith("App ", StringComparison.OrdinalIgnoreCase)
+            && uint.TryParse(title.AsSpan(4), out _);
+        if (IsPlaceholder(left) != IsPlaceholder(right)) return IsPlaceholder(left) ? right : left;
         return right.Length > left.Length ? right : left;
     }
 
@@ -129,12 +133,12 @@ public sealed class CombinedGameLibraryService : IGameLibraryService
 
     private static InstallState PrioritizeInstallState(InstallState current, InstallState incoming)
     {
-        var ranked = new[] { InstallState.Installed, InstallState.Shared, InstallState.Available, InstallState.Unknown };
+        var ranked = new[] { InstallState.Installed, InstallState.Available, InstallState.Unknown };
         var currentRank = Array.IndexOf(ranked, current);
         var incomingRank = Array.IndexOf(ranked, incoming);
         if (incomingRank < 0)
         {
-            return current;
+            return currentRank < 0 ? InstallState.Unknown : current;
         }
 
         if (currentRank < 0)

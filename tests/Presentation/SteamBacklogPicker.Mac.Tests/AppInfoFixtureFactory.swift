@@ -39,7 +39,6 @@ enum AppInfoFixtureFactory {
         }
 
         data.appendUInt32(0)
-        data.appendUInt32(0)
 
         let stringTableOffset = data.count
         data.appendUInt32(UInt32(strings.count))
@@ -155,7 +154,6 @@ enum AppInfoFixtureFactory {
         data.appendUInt32(UInt32(60 + payload.count))
         data.append(Data(repeating: 0, count: 60))
         data.append(payload)
-        data.appendUInt32(0)
         data.appendUInt32(0)
 
         let stringTableOffset = data.count

@@ -1,154 +1,116 @@
-using System;
-using System.Globalization;
-using System.IO;
 using System.Text;
 
 namespace ValveFormatParser;
 
 public sealed class ValveTextVdfParser
 {
+    public const int MaxDocumentCharacters = 64 * 1024 * 1024;
+    public const int MaxTokenCharacters = 1024 * 1024;
+    public const int MaxDepth = 128;
+    public const int MaxNodes = 1_000_000;
+
     public ValveKeyValueNode Parse(string content)
     {
-        if (content is null)
-        {
-            throw new ArgumentNullException(nameof(content));
-        }
-
-        using var reader = new StringReader(content);
-        return Parse(reader);
+        ArgumentNullException.ThrowIfNull(content);
+        if (content.Length > MaxDocumentCharacters) throw new InvalidDataException("VDF document is too large.");
+        return new Parser(new StringReader(content)).Parse();
     }
 
     public ValveKeyValueNode Parse(Stream stream)
     {
-        if (stream is null)
-        {
-            throw new ArgumentNullException(nameof(stream));
-        }
-
+        ArgumentNullException.ThrowIfNull(stream);
         using var reader = new StreamReader(stream, Encoding.UTF8, leaveOpen: true);
-        return Parse(reader);
+        return new Parser(reader).Parse();
     }
 
-    private static ValveKeyValueNode Parse(TextReader reader)
-    {
-        var root = ValveKeyValueNode.CreateObject("root");
-        ParseObjectInto(reader, root);
-        return root;
-    }
+    private enum TokenKind { Text, Open, Close }
+    private readonly record struct Token(TokenKind Kind, string Value);
 
-    private static void ParseObjectInto(TextReader reader, ValveKeyValueNode current)
+    private sealed class Parser(TextReader reader)
     {
-        while (true)
+        private int _characters;
+        private int _nodes;
+
+        public ValveKeyValueNode Parse()
         {
-            var token = ReadToken(reader);
-            if (token is null)
-            {
-                return;
-            }
-
-            if (token == "}")
-            {
-                return;
-            }
-
-            if (token == "{")
-            {
-                throw new InvalidDataException("Unexpected object start.");
-            }
-
-            var value = ReadToken(reader);
-            if (value is null)
-            {
-                throw new InvalidDataException("Unexpected end of VDF while parsing value.");
-            }
-
-            if (value == "{")
-            {
-                var child = ValveKeyValueNode.CreateObject(token);
-                current.AddChild(child);
-                ParseObjectInto(reader, child);
-            }
-            else if (value == "}")
-            {
-                throw new InvalidDataException("Unexpected object end.");
-            }
-            else
-            {
-                current.AddChild(ValveKeyValueNode.CreateValue(token, value));
-            }
+            var root = ValveKeyValueNode.CreateObject("root");
+            ReadObject(root, 0);
+            return root;
         }
-    }
 
-    private static string? ReadToken(TextReader reader)
-    {
-        var sb = new StringBuilder();
-        int next;
-        bool insideQuotes = false;
-
-        while (true)
+        private int Read()
         {
-            next = reader.Read();
-            if (next == -1)
+            var value = reader.Read();
+            if (value != -1 && ++_characters > MaxDocumentCharacters)
+                throw new InvalidDataException("VDF document is too large.");
+            return value;
+        }
+
+        private void ReadObject(ValveKeyValueNode parent, int depth)
+        {
+            if (depth > MaxDepth) throw new InvalidDataException("VDF nesting limit exceeded.");
+            while (NextToken() is { } key)
             {
-                if (insideQuotes)
+                if (key.Kind == TokenKind.Close)
                 {
-                    throw new InvalidDataException("Unterminated quoted string.");
+                    if (depth == 0) throw new InvalidDataException("Unexpected object end.");
+                    return;
                 }
-
-                return sb.Length > 0 ? sb.ToString() : null;
-            }
-
-            var ch = (char)next;
-            if (insideQuotes)
-            {
-                if (ch == '\\')
+                if (key.Kind != TokenKind.Text) throw new InvalidDataException("Expected a VDF key.");
+                var value = NextToken() ?? throw new InvalidDataException("Missing VDF value.");
+                if (++_nodes > MaxNodes) throw new InvalidDataException("VDF node limit exceeded.");
+                if (value.Kind == TokenKind.Open)
                 {
-                    var escape = reader.Read();
-                    if (escape == -1)
-                    {
-                        throw new InvalidDataException("Invalid escape sequence in quoted string.");
-                    }
+                    var child = ValveKeyValueNode.CreateObject(key.Value);
+                    ReadObject(child, depth + 1);
+                    parent.AddChild(child);
+                }
+                else if (value.Kind == TokenKind.Text)
+                {
+                    parent.AddChild(ValveKeyValueNode.CreateValue(key.Value, value.Value));
+                }
+                else throw new InvalidDataException("Missing VDF value before object end.");
+            }
+            if (depth != 0) throw new InvalidDataException("Unterminated VDF object.");
+        }
 
-                    sb.Append((char)escape);
+        private Token? NextToken()
+        {
+            int first;
+            while (true)
+            {
+                first = Read();
+                if (first == -1) return null;
+                if (char.IsWhiteSpace((char)first)) continue;
+                if (first == '/' && reader.Peek() == '/')
+                {
+                    while ((first = Read()) != -1 && first != '\n') { }
                     continue;
                 }
-
-                if (ch == '"')
-                {
-                    return sb.ToString();
-                }
-
-                sb.Append(ch);
-                continue;
+                break;
             }
-
-            if (ch == '"')
+            if (first == '{') return new Token(TokenKind.Open, "{");
+            if (first == '}') return new Token(TokenKind.Close, "}");
+            var quoted = first == '"';
+            var text = new StringBuilder();
+            if (!quoted) text.Append((char)first);
+            while (true)
             {
-                insideQuotes = true;
-                continue;
-            }
-
-            if (char.IsWhiteSpace(ch))
-            {
-                if (sb.Length > 0)
+                if (text.Length > MaxTokenCharacters) throw new InvalidDataException("VDF token is too large.");
+                var next = reader.Peek();
+                if (!quoted && (next == -1 || char.IsWhiteSpace((char)next) || next is '{' or '}'))
+                    return new Token(TokenKind.Text, text.ToString());
+                next = Read();
+                if (next == -1) throw new InvalidDataException("Unterminated quoted VDF string.");
+                if (quoted && next == '"') return new Token(TokenKind.Text, text.ToString());
+                if (quoted && next == '\\')
                 {
-                    return sb.ToString();
+                    var escape = Read();
+                    if (escape == -1) throw new InvalidDataException("Unterminated VDF escape.");
+                    text.Append(escape switch { 'n' => '\n', 'r' => '\r', 't' => '\t', _ => (char)escape });
                 }
-
-                continue;
+                else text.Append((char)next);
             }
-
-            if (ch is '{' or '}')
-            {
-                if (sb.Length > 0)
-                {
-                    throw new InvalidDataException("Unexpected token before structural character.");
-                }
-
-                return ch.ToString(CultureInfo.InvariantCulture);
-            }
-
-            sb.Append(ch);
         }
     }
 }

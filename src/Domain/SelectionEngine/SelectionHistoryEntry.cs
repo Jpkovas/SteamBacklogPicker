@@ -8,12 +8,12 @@ public sealed class SelectionHistoryEntry
 
     public uint AppId
     {
-        get => Id.SteamAppId ?? 0;
+        get => Id?.SteamAppId ?? 0;
         set
         {
             if (value == 0)
             {
-                if (Id != GameIdentifier.Unknown && Id.Storefront != Storefront.Steam)
+                if (Id is not null && Id != GameIdentifier.Unknown && Id.Storefront != Storefront.Steam)
                 {
                     return;
                 }

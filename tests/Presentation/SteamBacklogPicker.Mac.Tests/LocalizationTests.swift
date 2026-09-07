@@ -52,6 +52,11 @@ final class LocalizationTests: XCTestCase {
         }
     }
 
+    func testWorkspaceGameCountFormatsNumericArgumentsInBothLanguages() {
+        XCTAssertEqual(Localization.format("Workspace_CountSummary", language: .portuguese, 2, 10), "2 de 10 jogos")
+        XCTAssertEqual(Localization.format("Workspace_CountSummary", language: .english, 2, 10), "2 of 10 games")
+    }
+
     func testLaunchFailureLocalizationMatchesSharedDesktopStrings() {
         let expected: [(String, AppLanguage, String)] = [
             (

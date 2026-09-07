@@ -1,5 +1,32 @@
 # CHANGES
 
+## 0.5.0 — Revisão e publicação
+
+- Corrigidas regressões de histórico/snapshots com campos nulos, troca de conta durante falha de descoberta, status de refresh inalterado e notificações em modo offline.
+- Respostas Family recentes prevalecem sobre cache antigo quando a gravação falha; encerramento de conexões passa a ser idempotente.
+- Appinfo aceita o terminador real de quatro bytes; cancelamento no macOS preserva filtros; QR excessivo é rejeitado sem interromper WPF/Avalonia.
+- Tags semânticas acionam testes Windows/Linux/macOS e só publicam a release após reunir e verificar os pacotes das três plataformas. Pacotes Windows/macOS têm checksums próprios; releases públicas existentes não são sobrescritas.
+- Notas de distribuição em `docs/releases/v0.5.0.md`; revisão em `docs/testing/2026-09-06/CODE-REVIEW-RELEASE.md`.
+
+## 2026-09-06 — Refino de interface e performance
+
+- Controles com alturas consistentes, origem segmentada, filtros expansíveis com indicador de critérios ativos e menu único de backlog. O cartão/contador Steam Family e textos redundantes saem da lateral; jogar/instalar compartilham uma ação contextual.
+- Microinterações curtas de opacidade/deslocamento, sem loops em repouso, com respeito a movimento reduzido. WPF volta a selecionar automaticamente a renderização, mantendo override de compatibilidade por software.
+- Catálogo consulta SQLite em lote, preserva snapshots imutáveis e agrupa mudanças para reduzir reconstruções da UI. Leitura de 2.000 jogos no teste controlado caiu de cerca de 1.295 ms para 87 ms; refresh inalterado passou de 102 eventos de biblioteca para 1.
+- Revisão de miniaturas, histórico e preferências com regressões automatizadas. Evidências e limites em `docs/testing/2026-09-06/refinement/REFINAMENTO.md`.
+
+## 2026-09-06 — Biblioteca, Steam Families e redesenho
+
+- Windows/WPF e Linux/Avalonia ganham Descobrir, Biblioteca pesquisável, Histórico, Configurações, backlog por conta, desfazer e sorteio sem repetições entre candidatos elegíveis.
+- Catálogo .NET com SteamKit PICS, fallback da loja, SQLite por AppID/idioma, atualização em segundo plano, limites de concorrência, TTL, cancelamento e preservação de dados válidos. Capas têm cache próprio limitado.
+- Login QR opcional e consulta autenticada de Steam Families; credenciais somente em memória. Propriedade, compartilhamento e instalação são informações independentes. Cache global e LastOwner deixam de servir como prova de licença.
+- Descoberta corrige instalação sem evidência, identidade/invalidação de cache, tipos DLC, VR e valores Steam Deck. Parsers .NET/Swift validam limites e truncamentos; Swift recebe zstd e resolvedor de nomes limitado.
+- Telemetria opcional não impede startup; atualização Linux revalida assinatura/hash na aplicação; CI usa testes nativos e skips explícitos. Windows recebe script de ZIP portátil com runtime e checksum; macOS recebe pacote de desenvolvimento.
+- Diferença de plataforma explícita: a nova UI, SteamKit/SQLite/Steam Families e gestão de backlog são Windows/Linux. SwiftUI mantém a apresentação anterior; não há data de paridade prometida. Execução Swift e troca de AppImage exigem runners nativos. Distribuição assinada exige credenciais do mantenedor.
+- Evidências desta entrega em `docs/testing/2026-09-06/IMPLEMENTACAO-E-VALIDACAO.md`; as entradas abaixo descrevem implementações anteriores e podem ter sido substituídas por estas correções.
+
+## Histórico anterior
+
 - Adicionei o filtro opt-in "Somente compatíveis com macOS" em Windows, Linux e macOS; quando ativo, a pool de sorteio mantém apenas jogos com suporte macOS explicitamente informado pelo `appcache/appinfo.vdf`, removendo também entradas sem metadado de plataforma.
 - Adicionei o cliente nativo macOS em SwiftUI em `src/Presentation/SteamBacklogPicker.Mac`, com pacote SwiftPM no repositório para manter Windows, Linux e macOS como três versões separadas.
 - Portabilizei para macOS a descoberta local da Steam, parsing de `libraryfolders.vdf`/`appmanifest_*.acf`, hidratação de coleções via `sharedconfig.vdf`, arte local/CDN, filtros, sorteio, histórico persistido e ações `steam://run`/`steam://install`.

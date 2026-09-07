@@ -53,7 +53,7 @@ public sealed class MainWindowAccessibilityTests
 
         statusText.Should().NotBeNull();
         statusText!.Attribute(XName.Get("AutomationProperties.LiveSetting"))
-            ?.Value.Should().Be("Assertive");
+            ?.Value.Should().Be("Polite", "routine filter and sync updates should not interrupt the screen reader");
     }
 
     [Fact]
@@ -62,7 +62,7 @@ public sealed class MainWindowAccessibilityTests
         var document = XDocument.Load(GetMainWindowPath());
         var comboBox = document
             .Descendants(PresentationNamespace + "ComboBox")
-            .FirstOrDefault(element => element.Attribute(XName.Get("AutomationProperties.Name")) is not null);
+            .FirstOrDefault(element => (string?)element.Attribute(XName.Get("ItemsSource")) == "{Binding Preferences.CollectionOptions}");
 
         comboBox.Should().NotBeNull("o menu de seleção de coleção precisa expor um nome acessível");
 

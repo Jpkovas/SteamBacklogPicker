@@ -29,6 +29,11 @@ public sealed class SteamLibraryProvider : IGameLibraryProvider
 
     public Task<IReadOnlyCollection<GameEntry>> GetLibraryAsync(CancellationToken cancellationToken = default)
     {
+        return Task.Run(() => LoadLibrary(cancellationToken), cancellationToken);
+    }
+
+    private IReadOnlyCollection<GameEntry> LoadLibrary(CancellationToken cancellationToken)
+    {
         cancellationToken.ThrowIfCancellationRequested();
         _libraryLocator.Refresh();
         _cache.Refresh();
@@ -45,8 +50,7 @@ public sealed class SteamLibraryProvider : IGameLibraryProvider
         {
             var enriched = game;
             var id = game.Id;
-            var steamAppId = game.SteamAppId;
-            var isFamilyShared = steamAppId.HasValue && _fallback.IsSubscribedFromFamilySharing(steamAppId.Value);
+            cancellationToken.ThrowIfCancellationRequested();
 
             if (knownApps.TryGetValue(id, out var definition))
             {
@@ -85,34 +89,11 @@ public sealed class SteamLibraryProvider : IGameLibraryProvider
                     enriched = enriched with { ProductCategory = category };
                 }
 
-                var desiredOwnership = isFamilyShared ? OwnershipType.FamilyShared : OwnershipType.Owned;
-                if (enriched.OwnershipType != desiredOwnership)
+                if (definition.OwnershipType != OwnershipType.Unknown)
                 {
-                    enriched = enriched with { OwnershipType = desiredOwnership };
+                    enriched = enriched with { OwnershipType = definition.OwnershipType };
                 }
-
-                if (isFamilyShared)
-                {
-                    if (enriched.InstallState != InstallState.Shared)
-                    {
-                        enriched = enriched with { InstallState = InstallState.Shared };
-                    }
-                }
-                else if (definition.IsInstalled && enriched.InstallState != InstallState.Installed)
-                {
-                    enriched = enriched with { InstallState = InstallState.Installed };
-                }
-            }
-            else if (isFamilyShared)
-            {
-                if (enriched.OwnershipType != OwnershipType.FamilyShared || enriched.InstallState != InstallState.Shared)
-                {
-                    enriched = enriched with
-                    {
-                        OwnershipType = OwnershipType.FamilyShared,
-                        InstallState = InstallState.Shared
-                    };
-                }
+                // Metadata never promotes installation; keep manifest/native evidence.
             }
 
             results[id] = enriched;
@@ -125,11 +106,11 @@ public sealed class SteamLibraryProvider : IGameLibraryProvider
                 continue;
             }
 
-            var isFamilyShared = id.SteamAppId is uint steamAppId && _fallback.IsSubscribedFromFamilySharing(steamAppId);
-            var ownership = isFamilyShared ? OwnershipType.FamilyShared : OwnershipType.Owned;
-            var installState = ownership == OwnershipType.FamilyShared
-                ? InstallState.Shared
-                : (definition.IsInstalled ? InstallState.Installed : InstallState.Available);
+            cancellationToken.ThrowIfCancellationRequested();
+            var ownership = definition.OwnershipType;
+            var installState = definition.InstallState == InstallState.Unknown
+                ? InstallState.Unknown
+                : InstallState.Available;
 
             var title = !string.IsNullOrWhiteSpace(definition.Name)
                 ? definition.Name!
@@ -152,7 +133,7 @@ public sealed class SteamLibraryProvider : IGameLibraryProvider
 
         if (collectionDefinitions.Count > 0)
         {
-            var membership = BuildCollectionMembership(collectionDefinitions, results);
+            var membership = BuildCollectionMembership(collectionDefinitions, results, cancellationToken);
             foreach (var (id, names) in membership)
             {
                 if (!results.TryGetValue(id, out var entry))
@@ -174,7 +155,7 @@ public sealed class SteamLibraryProvider : IGameLibraryProvider
             .ThenBy(game => game.Id, GameIdentifier.Comparer)
             .ToList();
 
-        return Task.FromResult<IReadOnlyCollection<GameEntry>>(ordered);
+        return ordered;
     }
 
     private static ProductCategory MapProductCategory(string? type)
@@ -191,13 +172,15 @@ public sealed class SteamLibraryProvider : IGameLibraryProvider
             "application" or "software" => ProductCategory.Software,
             "tool" => ProductCategory.Tool,
             "video" or "movie" or "series" or "tv" or "episode" => ProductCategory.Video,
-            "dlc" or "demo" or "mod" or "advertising" or "hardware" or "plugin" or "config" or "beta" => ProductCategory.Other,
+            "dlc" => ProductCategory.DLC,
+            "demo" or "mod" or "advertising" or "hardware" or "plugin" or "config" or "beta" => ProductCategory.Other,
             _ => ProductCategory.Other,
         };
     }
     private static Dictionary<GameIdentifier, List<string>> BuildCollectionMembership(
         IReadOnlyList<SteamCollectionDefinition> definitions,
-        Dictionary<GameIdentifier, GameEntry> entries)
+        Dictionary<GameIdentifier, GameEntry> entries,
+        CancellationToken cancellationToken)
     {
         var membership = new Dictionary<GameIdentifier, List<string>>();
         if (definitions.Count == 0 || entries.Count == 0)
@@ -207,6 +190,7 @@ public sealed class SteamLibraryProvider : IGameLibraryProvider
 
         foreach (var definition in definitions)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             HashSet<uint>? explicitSet = null;
             if (definition.ExplicitAppIds.Count > 0)
             {
@@ -295,7 +279,7 @@ public sealed class SteamLibraryProvider : IGameLibraryProvider
     {
         return option switch
         {
-            1 => entry.InstallState is InstallState.Installed or InstallState.Shared,
+            1 => entry.InstallState == InstallState.Installed,
             3 => SupportsVr(entry),
             7 => SupportsSinglePlayer(entry),
             8 => SupportsMultiplayer(entry),
@@ -312,28 +296,8 @@ public sealed class SteamLibraryProvider : IGameLibraryProvider
 
     private static bool SupportsVr(GameEntry entry)
     {
-        foreach (var category in entry.StoreCategoryIds)
-        {
-            switch (category)
-            {
-                case 31:
-                case 32:
-                case 33:
-                case 34:
-                case 35:
-                case 36:
-                case 37:
-                case 38:
-                case 39:
-                case 52:
-                case 53:
-                case 54:
-                    return true;
-            }
-        }
-
-        return false;
+        // VR support, tracked controllers, VR supported and VR only. Nearby IDs describe
+        // multiplayer, in-app purchases and other unrelated store features.
+        return entry.StoreCategoryIds.Any(id => id is 31 or 52 or 53 or 54);
     }
-
 }
-

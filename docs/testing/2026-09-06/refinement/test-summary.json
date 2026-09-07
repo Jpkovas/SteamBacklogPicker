@@ -1,0 +1,66 @@
+[
+  {
+    "Suite": "domain.tests",
+    "Framework": "net8.0",
+    "Total": 18,
+    "Passed": 18,
+    "Failed": 0,
+    "Skipped": 0
+  },
+  {
+    "Suite": "steambacklogpicker.linux.tests",
+    "Framework": "net8.0",
+    "Total": 35,
+    "Passed": 24,
+    "Failed": 0,
+    "Skipped": 11
+  },
+  {
+    "Suite": "steambacklogpicker.ui.tests",
+    "Framework": "net8.0-windows10.0.18362.0",
+    "Total": 121,
+    "Passed": 121,
+    "Failed": 0,
+    "Skipped": 0
+  },
+  {
+    "Suite": "steamcatalog.tests",
+    "Framework": "net8.0",
+    "Total": 35,
+    "Passed": 35,
+    "Failed": 0,
+    "Skipped": 0
+  },
+  {
+    "Suite": "steamclientadapter.tests",
+    "Framework": "net8.0",
+    "Total": 61,
+    "Passed": 61,
+    "Failed": 0,
+    "Skipped": 0
+  },
+  {
+    "Suite": "steamdiscovery.tests",
+    "Framework": "net8.0",
+    "Total": 45,
+    "Passed": 45,
+    "Failed": 0,
+    "Skipped": 0
+  },
+  {
+    "Suite": "steamdiscovery.tests",
+    "Framework": "net8.0-windows10.0.17763.0",
+    "Total": 47,
+    "Passed": 47,
+    "Failed": 0,
+    "Skipped": 0
+  },
+  {
+    "Suite": "steamhooks.tests",
+    "Framework": "net8.0",
+    "Total": 4,
+    "Passed": 4,
+    "Failed": 0,
+    "Skipped": 0
+  }
+]

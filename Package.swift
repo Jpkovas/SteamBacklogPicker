@@ -13,14 +13,18 @@ let package = Package(
             targets: ["SteamBacklogPickerMac"]
         )
     ],
+    dependencies: [
+        .package(url: "https://github.com/facebook/zstd.git", exact: "1.5.7")
+    ],
     targets: [
         .executableTarget(
             name: "SteamBacklogPickerMac",
+            dependencies: [.product(name: "libzstd", package: "zstd")],
             path: "src/Presentation/SteamBacklogPicker.Mac"
         ),
         .testTarget(
             name: "SteamBacklogPickerMacTests",
-            dependencies: ["SteamBacklogPickerMac"],
+            dependencies: ["SteamBacklogPickerMac", .product(name: "libzstd", package: "zstd")],
             path: "tests/Presentation/SteamBacklogPicker.Mac.Tests"
         )
     ]

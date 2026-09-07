@@ -1,115 +1,115 @@
 import Foundation
+import libzstd
 
 struct SteamAppInfoParser {
-    private static let expectedMagic: UInt32 = 0x075644
-    private static let valveZstdMagic: UInt32 = 0x615A5356
+    private static let maximumFileBytes = 512 * 1024 * 1024
+    private static let maximumPayloadBytes = 16 * 1024 * 1024
 
     func parseAppMetadata(from url: URL) -> [UInt32: SteamAppInfoMetadata] {
-        guard let data = try? Data(contentsOf: url), data.count >= 16 else {
-            return [:]
-        }
+        guard url.isFileURL, let file = try? FileHandle(forReadingFrom: url) else { return [:] }
+        defer { try? file.close() }
+        guard let length = try? file.seekToEnd(), length <= UInt64(Self.maximumFileBytes) else { return [:] }
+        do { try file.seek(toOffset: 0) } catch { return [:] }
+        guard let data = try? file.read(upToCount: Int(length) + 1),
+              data.count <= Self.maximumFileBytes else { return [:] }
+        do { return try parse(data) } catch { return [:] }
+    }
 
-        let rawMagic = data.readUInt32(at: 0)
+    private func parse(_ data: Data) throws -> [UInt32: SteamAppInfoMetadata] {
+        var reader = AppInfoReader(data: data)
+        let rawMagic = try reader.uint32()
         let version = UInt8(rawMagic & 0xFF)
-        let magic = rawMagic >> 8
-        guard magic == Self.expectedMagic, (39...42).contains(version) else {
-            return [:]
-        }
-
-        var offset = 8
+        guard rawMagic >> 8 == 0x075644, (39...42).contains(version) else { throw AppInfoError.malformed }
+        _ = try reader.uint32()
         var stringTable: [String] = []
+        var entriesEnd = data.count
         if version >= 41 {
-            let stringTableOffset = Int(data.readInt64(at: offset))
-            offset += 8
-            stringTable = readStringTable(data: data, offset: stringTableOffset)
+            let tableOffset = try reader.uint64()
+            guard tableOffset >= UInt64(reader.position), tableOffset <= UInt64(data.count - 4) else {
+                throw AppInfoError.malformed
+            }
+            entriesEnd = Int(tableOffset)
+            var tableReader = AppInfoReader(data: data, position: entriesEnd)
+            let count = Int(try tableReader.uint32())
+            guard count <= 1_000_000, count <= tableReader.remaining else { throw AppInfoError.limitExceeded }
+            for _ in 0..<count { stringTable.append(try tableReader.string()) }
         }
-
         var result: [UInt32: SteamAppInfoMetadata] = [:]
-        while offset + 8 <= data.count {
-            let appId = data.readUInt32(at: offset)
-            let size = Int(data.readUInt32(at: offset + 4))
-            offset += 8
-
-            if appId == 0 && size == 0 {
-                break
-            }
-
-            let entryEnd = offset + size
-            guard size >= 0, entryEnd <= data.count else {
-                break
-            }
-
+        var decodedBytes = 0
+        while reader.position < entriesEnd {
+            guard entriesEnd - reader.position >= 4 else { break }
+            let appId = try reader.uint32()
+            // Steam's footer is just AppID=0, without a following entry size.
+            if appId == 0 { break }
+            guard entriesEnd - reader.position >= 4 else { break }
+            let size = Int(try reader.uint32())
+            guard size <= entriesEnd - reader.position else { break }
+            let end = reader.position + size
             let metadataLength = version >= 40 ? 60 : 40
-            let payloadOffset = offset + metadataLength
-            if payloadOffset <= entryEnd {
-                let payload = Data(data[payloadOffset..<entryEnd])
-                if let parsed = parsePayload(payload, appId: appId, stringTable: stringTable) {
-                    result[appId] = parsed
-                }
+            defer { reader.position = end }
+            guard size >= metadataLength, size - metadataLength <= Self.maximumPayloadBytes else { continue }
+            let payload = Data(data[(reader.position + metadataLength)..<end])
+            do {
+                let decoded = try decodePayload(payload)
+                guard decoded.count <= 256 * 1024 * 1024 - decodedBytes else { break }
+                decodedBytes += decoded.count
+                var payloadReader = AppInfoReader(data: decoded)
+                var nodes = 0
+                let root = try parseObject(&payloadReader, stringTable: version >= 41 ? stringTable : nil, depth: 0, nodes: &nodes)
+                if let parsed = metadata(from: root, appId: appId) { result[appId] = parsed }
+            } catch {
+                // Reject only this corrupt entry; retain other valid cached metadata.
             }
-
-            offset = entryEnd
         }
-
         return result
     }
 
-    private func readStringTable(data: Data, offset: Int) -> [String] {
-        guard offset + 4 <= data.count else {
-            return []
-        }
-
-        let count = Int(data.readUInt32(at: offset))
-        var cursor = offset + 4
-        var strings: [String] = []
-        strings.reserveCapacity(count)
-
-        for _ in 0..<count {
-            let (value, next) = data.readNullTerminatedString(at: cursor)
-            strings.append(value)
-            cursor = next
-            if cursor >= data.count {
-                break
+    private func decodePayload(_ payload: Data) throws -> Data {
+        var header = AppInfoReader(data: payload)
+        guard payload.count >= 4 else { throw AppInfoError.malformed }
+        guard try header.uint32() == 0x615A5356 else { return payload }
+        guard payload.count >= 23 else { throw AppInfoError.malformed }
+        let checksum = try header.uint32()
+        var footer = AppInfoReader(data: payload, position: payload.count - 15)
+        guard try footer.uint32() == checksum else { throw AppInfoError.malformed }
+        let expectedSize = Int(try footer.uint32())
+        guard expectedSize > 0, expectedSize <= Self.maximumPayloadBytes,
+              payload.suffix(3) == Data([0x7a, 0x73, 0x76]) else { throw AppInfoError.limitExceeded }
+        let compressed = Data(payload[8..<(payload.count - 15)])
+        var decoded = Data(count: expectedSize)
+        let written = decoded.withUnsafeMutableBytes { output in
+            compressed.withUnsafeBytes { input in
+                ZSTD_decompress(output.baseAddress, output.count, input.baseAddress, input.count)
             }
         }
-
-        return strings
+        guard ZSTD_isError(written) == 0, written == expectedSize,
+              Self.crc32(decoded) == checksum else { throw AppInfoError.malformed }
+        return decoded
     }
 
-    private func parsePayload(_ payload: Data, appId: UInt32, stringTable: [String]) -> SteamAppInfoMetadata? {
-        guard payload.count >= 8 else {
-            return nil
-        }
+    private static let crcTable: [UInt32] = (0..<256).map { index in
+        var value = UInt32(index)
+        for _ in 0..<8 { value = (value >> 1) ^ ((value & 1) == 0 ? 0 : 0xEDB88320) }
+        return value
+    }
 
-        if payload.readUInt32(at: 0) == Self.valveZstdMagic {
-            return nil
-        }
+    static func crc32(_ data: Data) -> UInt32 {
+        var crc: UInt32 = 0xFFFFFFFF
+        for byte in data { crc = (crc >> 8) ^ crcTable[Int((crc ^ UInt32(byte)) & 0xFF)] }
+        return ~crc
+    }
 
-        var cursor = 0
-        let root = parseObject(payload, cursor: &cursor, stringTable: stringTable)
-        let common = root.path("appinfo", "common")
-            ?? root.children["common"]
-            ?? root.firstDescendant(named: "common")
+    private func metadata(from root: AppInfoNode, appId: UInt32) -> SteamAppInfoMetadata? {
+        let common = root.path("appinfo", "common") ?? root.children["common"] ?? root.firstDescendant(named: "common")
         let name = common?.children["name"]?.value
         let type = common?.children["type"]?.value
-        let categoryIds = extractCategoryIds(from: common)
-        let deckCompatibility = extractDeckCompatibility(from: common)
-        let supportedPlatforms = extractSupportedPlatforms(from: common)
-        let isFamilyShared = extractFamilySharingFlag(from: root) ?? false
-
-        if name == nil && type == nil && categoryIds.isEmpty && deckCompatibility == .unknown && supportedPlatforms.isEmpty && !isFamilyShared {
-            return nil
-        }
-
-        return SteamAppInfoMetadata(
-            appId: appId,
-            name: name,
-            type: type,
-            storeCategoryIds: categoryIds,
-            deckCompatibility: deckCompatibility,
-            supportedPlatforms: supportedPlatforms,
-            isFamilyShared: isFamilyShared
-        )
+        let categories = extractCategoryIds(from: common)
+        let deck = extractDeckCompatibility(from: common)
+        let platforms = extractSupportedPlatforms(from: common)
+        let family = extractFamilySharingFlag(from: root) ?? false
+        guard name != nil || type != nil || !categories.isEmpty || deck != .unknown || !platforms.isEmpty || family else { return nil }
+        return SteamAppInfoMetadata(appId: appId, name: name, type: type, storeCategoryIds: categories,
+                                    deckCompatibility: deck, supportedPlatforms: platforms, isFamilyShared: family)
     }
 
     private func extractCategoryIds(from common: AppInfoNode?) -> [Int] {
@@ -138,11 +138,11 @@ struct SteamAppInfoParser {
         let rawValue = deck.children["category"]?.value ?? deck.children["overall_category"]?.value
         switch rawValue.flatMap(Int.init) {
         case 1:
-            return .verified
+            return .unsupported
         case 2:
             return .playable
         case 3:
-            return .unsupported
+            return .verified
         default:
             return .unknown
         }
@@ -193,66 +193,45 @@ struct SteamAppInfoParser {
         return filtered
     }
 
-    private func parseObject(_ data: Data, cursor: inout Int, stringTable: [String]) -> AppInfoNode {
+    private func parseObject(_ reader: inout AppInfoReader, stringTable: [String]?, depth: Int, nodes: inout Int) throws -> AppInfoNode {
+        guard depth < 64 else { throw AppInfoError.limitExceeded }
         var node = AppInfoNode()
-
-        while cursor < data.endIndex {
-            let type = data[cursor]
-            cursor += 1
-
-            if type == 0x08 || type == 0x0B {
-                break
+        while reader.remaining > 0 {
+            let type = try reader.byte()
+            if type == 0x08 || type == 0x0B { return node }
+            nodes += 1
+            guard nodes <= 100_000 else { throw AppInfoError.limitExceeded }
+            let key: String
+            if let stringTable {
+                let index = Int(try reader.uint32())
+                guard stringTable.indices.contains(index) else { throw AppInfoError.malformed }
+                key = stringTable[index].lowercased()
+            } else {
+                key = try reader.string().lowercased()
             }
-
-            guard cursor + 4 <= data.endIndex else {
-                break
-            }
-
-            let keyIndex = Int(data.readUInt32(at: cursor))
-            cursor += 4
-            let key = stringTable.indices.contains(keyIndex) ? stringTable[keyIndex].lowercased() : "\(keyIndex)"
-
             switch type {
             case 0x00:
-                node.children[key] = parseObject(data, cursor: &cursor, stringTable: stringTable)
+                node.children[key] = try parseObject(&reader, stringTable: stringTable, depth: depth + 1, nodes: &nodes)
             case 0x01:
-                let (value, next) = data.readNullTerminatedString(at: cursor)
-                cursor = next
-                node.children[key] = AppInfoNode(value: value)
+                node.children[key] = AppInfoNode(value: try reader.string())
             case 0x02, 0x0C:
-                let value = data.readUInt32(at: cursor)
-                cursor += 4
-                node.children[key] = AppInfoNode(value: String(value))
-            case 0x03, 0x04:
-                cursor += 4
+                node.children[key] = AppInfoNode(value: String(try reader.uint32()))
+            case 0x03, 0x04, 0x06:
+                try reader.skip(4)
             case 0x05:
-                let (value, next) = data.readNullTerminatedWideString(at: cursor)
-                cursor = next
-                node.children[key] = AppInfoNode(value: value)
-            case 0x06:
-                cursor += 4
+                node.children[key] = AppInfoNode(value: try reader.wideString())
             case 0x07, 0x0A:
-                cursor += 8
+                try reader.skip(8)
             case 0x0D:
-                guard cursor + 4 <= data.endIndex else {
-                    cursor = data.endIndex
-                    break
-                }
-                let length = Int(data.readInt32(at: cursor))
-                cursor += 4 + max(0, length)
+                let length = Int(try reader.uint32())
+                try reader.skip(length)
             case 0x14:
-                let value = cursor < data.endIndex ? data[cursor] : 0
-                cursor += 1
-                node.children[key] = AppInfoNode(value: value == 0 ? "0" : "1")
+                node.children[key] = AppInfoNode(value: try reader.byte() == 0 ? "0" : "1")
             default:
-                cursor = data.endIndex
-            }
-
-            if cursor > data.endIndex {
-                cursor = data.endIndex
+                throw AppInfoError.malformed
             }
         }
-
+        guard depth == 0 else { throw AppInfoError.malformed }
         return node
     }
 }
@@ -305,51 +284,58 @@ private struct AppInfoNode {
     }
 }
 
-private extension Data {
-    func readUInt32(at offset: Int) -> UInt32 {
-        let bytes = self[offset..<offset + 4]
-        return bytes.enumerated().reduce(UInt32(0)) { result, item in
-            result | (UInt32(item.element) << UInt32(item.offset * 8))
-        }
+private enum AppInfoError: Error { case malformed, limitExceeded }
+
+private struct AppInfoReader {
+    let data: Data
+    var position = 0
+    var remaining: Int { data.count - position }
+
+    mutating func skip(_ count: Int) throws {
+        guard count >= 0, count <= remaining else { throw AppInfoError.malformed }
+        position += count
     }
 
-    func readInt32(at offset: Int) -> Int32 {
-        Int32(bitPattern: readUInt32(at: offset))
+    mutating func byte() throws -> UInt8 {
+        guard remaining >= 1 else { throw AppInfoError.malformed }
+        defer { position += 1 }
+        return data[position]
     }
 
-    func readInt64(at offset: Int) -> Int64 {
-        let bytes = self[offset..<offset + 8]
-        let value = bytes.enumerated().reduce(UInt64(0)) { result, item in
-            result | (UInt64(item.element) << UInt64(item.offset * 8))
-        }
-        return Int64(bitPattern: value)
+    mutating func uint32() throws -> UInt32 {
+        guard remaining >= 4 else { throw AppInfoError.malformed }
+        var value: UInt32 = 0
+        for shift in 0..<4 { value |= UInt32(try byte()) << (shift * 8) }
+        return value
     }
 
-    func readNullTerminatedString(at offset: Int) -> (String, Int) {
-        var cursor = offset
-        var bytes: [UInt8] = []
-        while cursor < count {
-            let byte = self[cursor]
-            cursor += 1
-            if byte == 0 {
-                break
+    mutating func uint64() throws -> UInt64 {
+        let low = UInt64(try uint32())
+        return low | (UInt64(try uint32()) << 32)
+    }
+
+    mutating func string() throws -> String {
+        let start = position
+        while remaining > 0 {
+            if try byte() == 0 {
+                // Cached localized values can contain legacy/non-UTF8 bytes. A bad display
+                // string must not discard every other field in an otherwise bounded entry.
+                return String(decoding: data[start..<(position - 1)], as: UTF8.self)
             }
-            bytes.append(byte)
+            guard position - start <= 1024 * 1024 else { throw AppInfoError.limitExceeded }
         }
-        return (String(bytes: bytes, encoding: .utf8) ?? "", cursor)
+        throw AppInfoError.malformed
     }
 
-    func readNullTerminatedWideString(at offset: Int) -> (String, Int) {
-        var cursor = offset
+    mutating func wideString() throws -> String {
         var values: [UInt16] = []
-        while cursor + 1 < count {
-            let value = UInt16(self[cursor]) | (UInt16(self[cursor + 1]) << 8)
-            cursor += 2
-            if value == 0 {
-                break
-            }
+        while remaining >= 2 {
+            let low = UInt16(try byte())
+            let value = low | (UInt16(try byte()) << 8)
+            if value == 0 { return String(decoding: values, as: UTF16.self) }
+            guard values.count < 512 * 1024 else { throw AppInfoError.limitExceeded }
             values.append(value)
         }
-        return (String(decoding: values, as: UTF16.self), cursor)
+        throw AppInfoError.malformed
     }
 }

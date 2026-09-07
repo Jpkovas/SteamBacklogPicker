@@ -30,25 +30,45 @@ enum VDFParserError: Error, Equatable {
     case expectedString
     case unexpectedToken
     case unterminatedString
+    case limitExceeded
 }
 
 struct VDFParser {
+    func parseFile(_ url: URL) throws -> VDFNode {
+        guard url.isFileURL else { throw VDFParserError.unexpectedToken }
+        let handle = try FileHandle(forReadingFrom: url)
+        defer { try? handle.close() }
+        let length = try handle.seekToEnd()
+        guard length <= 16 * 1024 * 1024 else { throw VDFParserError.limitExceeded }
+        try handle.seek(toOffset: 0)
+        guard let data = try handle.read(upToCount: Int(length) + 1),
+              data.count <= 16 * 1024 * 1024,
+              let content = String(data: data, encoding: .utf8) else { throw VDFParserError.limitExceeded }
+        return try parse(content)
+    }
+
     func parse(_ content: String) throws -> VDFNode {
+        guard content.utf8.count <= 16 * 1024 * 1024 else { throw VDFParserError.limitExceeded }
         var tokenizer = VDFTokenizer(content)
+        var nodes = 0
         let root = VDFNode(name: "root")
-        root.children = try parseObject(tokenizer: &tokenizer)
+        root.children = try parseObject(tokenizer: &tokenizer, depth: 0, nodes: &nodes)
         return root
     }
 
-    private func parseObject(tokenizer: inout VDFTokenizer) throws -> [String: VDFNode] {
+    private func parseObject(tokenizer: inout VDFTokenizer, depth: Int, nodes: inout Int) throws -> [String: VDFNode] {
+        guard depth < 64 else { throw VDFParserError.limitExceeded }
         var result: [String: VDFNode] = [:]
 
         while let token = try tokenizer.peek() {
             if token == .closeBrace {
                 _ = try tokenizer.read()
-                break
+                guard depth > 0 else { throw VDFParserError.unexpectedToken }
+                return result
             }
 
+            nodes += 1
+            guard nodes <= 250_000 else { throw VDFParserError.limitExceeded }
             guard case let .string(key) = try tokenizer.read() else {
                 throw VDFParserError.expectedString
             }
@@ -60,7 +80,7 @@ struct VDFParser {
             switch valueToken {
             case .openBrace:
                 _ = try tokenizer.read()
-                result[key] = VDFNode(name: key, children: try parseObject(tokenizer: &tokenizer))
+                result[key] = VDFNode(name: key, children: try parseObject(tokenizer: &tokenizer, depth: depth + 1, nodes: &nodes))
             case let .string(value):
                 _ = try tokenizer.read()
                 result[key] = VDFNode(name: key, value: value)
@@ -69,6 +89,7 @@ struct VDFParser {
             }
         }
 
+        guard depth == 0 else { throw VDFParserError.unexpectedToken }
         return result
     }
 }
@@ -105,6 +126,10 @@ private struct VDFTokenizer {
 
     private mutating func readNextToken() throws -> VDFToken? {
         skipWhitespace()
+        while position < scalars.count, scalars[position] == "/", peekNext("/") {
+            skipComment()
+            skipWhitespace()
+        }
         guard position < scalars.count else { return nil }
 
         let current = scalars[position]
@@ -117,9 +142,6 @@ private struct VDFTokenizer {
             return .closeBrace
         case "\"":
             return .string(try readString())
-        case "/" where peekNext("/") == true:
-            skipComment()
-            return try readNextToken()
         default:
             throw VDFParserError.unexpectedToken
         }
@@ -144,9 +166,11 @@ private struct VDFTokenizer {
 
     private mutating func readString() throws -> String {
         var result = ""
+        let start = position
         position += 1
 
         while position < scalars.count {
+            guard position - start <= 1024 * 1024 else { throw VDFParserError.limitExceeded }
             let current = scalars[position]
             position += 1
 

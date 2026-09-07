@@ -39,8 +39,11 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
     private readonly Dictionary<uint, SteamDeckCompatibility> _appDeckCompatibility = new();
     private readonly Dictionary<uint, IReadOnlyList<SteamPlatform>> _appSupportedPlatforms = new();
     private IReadOnlyList<SteamCollectionDefinition>? _collectionDefinitions;
-    private bool _appInfoLoaded;
-    private string? _currentSteamId;
+    private readonly object _syncRoot = new();
+    private string? _snapshotVersion;
+    private bool _snapshotReadFailed;
+    private string? _appInfoVersion;
+    private IReadOnlyDictionary<uint, SteamAppDefinition> _knownApps = new Dictionary<uint, SteamAppDefinition>();
 
     public SteamVdfFallback(
         string steamDirectory,
@@ -56,92 +59,121 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
 
     public IReadOnlyCollection<uint> GetInstalledAppIds()
     {
-        return GetKnownApps()
-            .Values
-            .Where(app => app.IsInstalled)
-            .Select(app => app.AppId)
-            .ToArray();
+        // Profile flags describe cached history, not installation. Manifests and
+        // the native installation API are consumed by SteamAppManifestCache.
+        return Array.Empty<uint>();
     }
 
     public IReadOnlyDictionary<uint, SteamAppDefinition> GetKnownApps()
     {
-        return LoadAppDefinitions();
+        lock (_syncRoot)
+        {
+            _snapshotReadFailed = false;
+            var steamId = ResolveCurrentSteamId();
+            var version = BuildSnapshotVersion(steamId);
+            if (version is not null && version == _snapshotVersion)
+            {
+                return _knownApps;
+            }
+
+            _familySharingCache.Clear();
+            _collectionDefinitions = Array.Empty<SteamCollectionDefinition>();
+            _knownApps = steamId is null
+                ? new Dictionary<uint, SteamAppDefinition>()
+                : LoadAppDefinitions(steamId);
+            _snapshotVersion = _snapshotReadFailed ? null : version;
+            return _knownApps;
+        }
     }
 
     public string? GetCurrentUserSteamId()
     {
-        if (_currentSteamId is not null)
+        lock (_syncRoot)
         {
-            return _currentSteamId;
+            // Re-resolve rather than returning the previous account after Steam switches users.
+            return ResolveCurrentSteamId();
         }
-
-        // Ensure metadata is loaded so that we attempt to resolve the user id.
-        _ = GetKnownApps();
-        return _currentSteamId;
     }
 
     public IReadOnlyList<SteamCollectionDefinition> GetCollections()
     {
-        var cached = _collectionDefinitions;
-        if (cached is not null)
+        lock (_syncRoot)
         {
-            return cached;
+            _ = GetKnownApps();
+            return _collectionDefinitions ?? Array.Empty<SteamCollectionDefinition>();
         }
-
-        _ = GetKnownApps();
-        var steamId = GetCurrentUserSteamId();
-        if (string.IsNullOrWhiteSpace(steamId))
-        {
-            cached = Array.Empty<SteamCollectionDefinition>();
-        }
-        else
-        {
-            cached = LoadCollectionsFromCloudStorage(steamId!);
-        }
-
-        _collectionDefinitions = cached;
-        return cached;
     }
 
-    private IReadOnlyDictionary<uint, SteamAppDefinition> LoadAppDefinitions()
+    private string? ResolveCurrentSteamId()
     {
-        var loginUsersPath = Path.Combine(_steamDirectory, "config", "loginusers.vdf");
-        if (!_files.FileExists(loginUsersPath))
+        var path = Path.Combine(_steamDirectory, "config", "loginusers.vdf");
+        if (!TryParseTextVdfFile(path, out var root))
         {
-            return new Dictionary<uint, SteamAppDefinition>();
+            return null;
         }
 
-        if (!TryParseTextVdfFile(loginUsersPath, out var loginUsers))
+        var users = FindChildCaseInsensitive(root, "users");
+        return users is null ? null : FindMostRecentUser(users);
+    }
+
+    private string? BuildSnapshotVersion(string? steamId)
+    {
+        var paths = new List<string>
         {
-            return new Dictionary<uint, SteamAppDefinition>();
+            Path.Combine(_steamDirectory, "config", "loginusers.vdf"),
+            Path.Combine(_steamDirectory, "appcache", "appinfo.vdf")
+        };
+        if (steamId is not null)
+        {
+            foreach (var candidate in GetUserDirectoryCandidates(steamId))
+            {
+                var user = Path.Combine(_steamDirectory, "userdata", candidate);
+                paths.Add(Path.Combine(user, "config", "localconfig.vdf"));
+                paths.Add(Path.Combine(user, "7", "remote", "sharedconfig.vdf"));
+                paths.Add(Path.Combine(user, "config", "cloudstorage", "cloud-storage-namespace-1.json"));
+                paths.AddRange(_files.EnumerateFiles(Path.Combine(user, "config", "librarycache"), "*.json"));
+            }
         }
 
-        var usersNode = loginUsers.FindPath("users") ?? FindChildCaseInsensitive(loginUsers, "users");
-        if (usersNode is null)
+        var version = new StringBuilder(steamId ?? "unknown");
+        foreach (var path in paths.OrderBy(path => path, StringComparer.Ordinal))
         {
-            return new Dictionary<uint, SteamAppDefinition>();
+            var stamp = _files.GetFileVersion(path);
+            if (stamp is null || (stamp == "missing" && _files.FileExists(path)))
+            {
+                return null;
+            }
+            version.Append('|').Append(path).Append(':').Append(stamp);
         }
+        return version.ToString();
+    }
 
-        var steamId = FindMostRecentUser(usersNode);
-        if (steamId is null)
-        {
-            return new Dictionary<uint, SteamAppDefinition>();
-        }
-        _currentSteamId = steamId;
-        _collectionDefinitions = null;
-
+    private IReadOnlyDictionary<uint, SteamAppDefinition> LoadAppDefinitions(string steamId)
+    {
         var definitions = LoadDefinitionsFromLocalConfig(steamId);
         AddLibraryCacheEntries(steamId, definitions);
-        var collections = LoadCollectionsFromSharedConfig(steamId);
-
-        foreach (var (appId, appCollections) in collections)
+        foreach (var (appId, collections) in LoadCollectionsFromSharedConfig(steamId))
         {
-            UpsertDefinition(definitions, appId, null, null, null, appCollections);
+            UpsertDefinition(definitions, appId, null, null, null, collections);
         }
 
-        AddFamilySharedAppInfoDefinitions(definitions);
-        ApplyAppMetadata(definitions);
+        _collectionDefinitions = LoadCollectionsFromCloudStorage(steamId);
+        foreach (var collection in _collectionDefinitions)
+        {
+            foreach (var appId in collection.ExplicitAppIds)
+            {
+                UpsertDefinition(definitions, appId, null, null, null, new[] { collection.Name });
+            }
+        }
 
+        ApplyAppMetadata(definitions);
+        foreach (var (appId, definition) in definitions.ToArray())
+        {
+            if (_familySharingCache.TryGetValue(appId, out var shared) && shared)
+            {
+                definitions[appId] = definition with { OwnershipType = OwnershipType.FamilyShared };
+            }
+        }
         return definitions;
     }
 
@@ -176,7 +208,7 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
 
             foreach (var (key, value) in appsNode.Children)
             {
-                if (!uint.TryParse(key, NumberStyles.Integer, CultureInfo.InvariantCulture, out var appId))
+                if (!uint.TryParse(key, NumberStyles.None, CultureInfo.InvariantCulture, out var appId) || appId == 0)
                 {
                     continue;
                 }
@@ -185,13 +217,6 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
                 if (value.TryGetChild("name", out var nameNode))
                 {
                     name = nameNode.Value;
-                }
-
-                bool? isInstalled = null;
-                var installedNode = FindChildCaseInsensitive(value, "Installed") ?? FindChildCaseInsensitive(value, "installed");
-                if (installedNode is not null && installedNode.TryGetBoolean(out var installedFlag))
-                {
-                    isInstalled = installedFlag;
                 }
 
                 string? type = null;
@@ -206,7 +231,11 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
                     _familySharingCache[appId] = familyShared;
                 }
 
-                UpsertDefinition(definitions, appId, string.IsNullOrWhiteSpace(name) ? null : name, isInstalled ?? true, type, null);
+                UpsertDefinition(definitions, appId, string.IsNullOrWhiteSpace(name) ? null : name, false, type, null);
+                if ((TryFindBooleanFlag(value, "is_owned", out var owned) || TryFindBooleanFlag(value, "IsSubscribed", out owned)) && owned)
+                {
+                    definitions[appId] = definitions[appId] with { OwnershipType = OwnershipType.Owned };
+                }
             }
         }
 
@@ -218,27 +247,111 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
         foreach (var candidate in GetUserDirectoryCandidates(steamId))
         {
             var libraryCachePath = Path.Combine(_steamDirectory, "userdata", candidate, "config", "librarycache");
-            if (!Directory.Exists(libraryCachePath))
+            foreach (var path in _files.EnumerateFiles(libraryCachePath, "*.json"))
             {
-                continue;
-            }
-
-            foreach (var path in Directory.EnumerateFiles(libraryCachePath, "*.json", SearchOption.TopDirectoryOnly))
-            {
-                var fileName = Path.GetFileNameWithoutExtension(path);
-                if (!uint.TryParse(fileName, NumberStyles.Integer, CultureInfo.InvariantCulture, out var appId))
-                {
-                    continue;
-                }
-
-                if (appId == 0)
+                if (!uint.TryParse(Path.GetFileNameWithoutExtension(path), NumberStyles.None, CultureInfo.InvariantCulture, out var appId) || appId == 0)
                 {
                     continue;
                 }
 
                 UpsertDefinition(definitions, appId, null, null, null, null);
+                try
+                {
+                    using var document = ReadJsonDocument(path);
+                    var name = FindJsonValue(document.RootElement, "name", "app_name", "display_name", "strName");
+                    var type = FindJsonValue(document.RootElement, "app_type", "type");
+                    UpsertDefinition(definitions, appId,
+                        name is { ValueKind: JsonValueKind.String } ? name.Value.GetString() : null,
+                        false,
+                        type is { ValueKind: JsonValueKind.String } ? type.Value.GetString() : null,
+                        null);
+                    var shared = FindJsonValue(document.RootElement, "IsSubscribedFromFamilySharing", "is_family_shared");
+                    var owned = FindJsonValue(document.RootElement, "is_owned", "IsSubscribed");
+                    if (JsonBoolean(shared) == true)
+                    {
+                        _familySharingCache[appId] = true;
+                    }
+                    else if (JsonBoolean(owned) == true)
+                    {
+                        definitions[appId] = definitions[appId] with { OwnershipType = OwnershipType.Owned };
+                    }
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+                {
+                    _snapshotReadFailed = true;
+                    // A partial Steam cache must not discard unrelated entries.
+                }
             }
         }
+    }
+
+    private JsonDocument ReadJsonDocument(string path)
+    {
+        const int maxBytes = 16 * 1024 * 1024;
+        using var stream = _files.OpenRead(path);
+        if (stream.CanSeek && stream.Length > maxBytes) throw new InvalidDataException("Steam JSON cache exceeds the size limit.");
+        using var buffer = new MemoryStream();
+        var chunk = new byte[81920];
+        int read;
+        while ((read = stream.Read(chunk, 0, chunk.Length)) != 0)
+        {
+            if (buffer.Length + read > maxBytes) throw new InvalidDataException("Steam JSON cache exceeds the size limit.");
+            buffer.Write(chunk, 0, read);
+        }
+        return JsonDocument.Parse(buffer.ToArray(), new JsonDocumentOptions { MaxDepth = 64 });
+    }
+
+    private static readonly HashSet<string> AppMetadataContainers = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "data", "appinfo", "common", "overview", "app_overview"
+    };
+
+    private static JsonElement? FindJsonValue(JsonElement root, params string[] names)
+    {
+        foreach (var metadata in EnumerateAppMetadataObjects(root))
+        {
+            foreach (var property in metadata.EnumerateObject())
+            {
+                if (names.Contains(property.Name, StringComparer.OrdinalIgnoreCase)) return property.Value;
+            }
+        }
+        return null;
+    }
+
+    private static IEnumerable<JsonElement> EnumerateAppMetadataObjects(JsonElement root)
+    {
+        if (root.ValueKind == JsonValueKind.Object)
+        {
+            yield return root;
+            foreach (var property in root.EnumerateObject())
+            {
+                if (!AppMetadataContainers.Contains(property.Name)) continue;
+                foreach (var metadata in EnumerateAppMetadataObjects(property.Value)) yield return metadata;
+            }
+        }
+        else if (root.ValueKind == JsonValueKind.Array)
+        {
+            // Steam also stores named cache sections as [name, payload] pairs.
+            foreach (var section in root.EnumerateArray())
+            {
+                if (section.ValueKind != JsonValueKind.Array || section.GetArrayLength() != 2 ||
+                    section[0].ValueKind != JsonValueKind.String ||
+                    !AppMetadataContainers.Contains(section[0].GetString()!)) continue;
+                foreach (var metadata in EnumerateAppMetadataObjects(section[1])) yield return metadata;
+            }
+        }
+    }
+
+    private static bool? JsonBoolean(JsonElement? value)
+    {
+        if (value is not { } element) return null;
+        return element.ValueKind switch
+        {
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            JsonValueKind.Number when element.TryGetInt32(out var number) => number != 0,
+            _ => null
+        };
     }
 
     private Dictionary<uint, IReadOnlyList<string>> LoadCollectionsFromSharedConfig(string steamId)
@@ -279,12 +392,7 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
             }
 
             var appsNode = FindChildCaseInsensitive(storeNode, "apps");
-            if (appsNode is null)
-            {
-                continue;
-            }
-
-            foreach (var (appIdText, appNode) in appsNode.Children)
+            foreach (var (appIdText, appNode) in appsNode?.Children ?? new Dictionary<string, ValveKeyValueNode>())
             {
                 if (!uint.TryParse(appIdText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var appId))
                 {
@@ -454,19 +562,22 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
 
     public bool IsSubscribedFromFamilySharing(uint appId)
     {
-        EnsureAppInfoMetadataLoaded();
-
-        return _familySharingCache.TryGetValue(appId, out var isFamilyShared) && isFamilyShared;
+        lock (_syncRoot)
+        {
+            return GetKnownApps().TryGetValue(appId, out var app) && app.OwnershipType == OwnershipType.FamilyShared;
+        }
     }
 
     private void EnsureAppInfoMetadataLoaded()
     {
-        if (_appInfoLoaded)
-        {
-            return;
-        }
-
         var appInfoPath = Path.Combine(_steamDirectory, "appcache", "appinfo.vdf");
+        var version = _files.GetFileVersion(appInfoPath);
+        if (version is not null && version == _appInfoVersion) return;
+        _appNames.Clear();
+        _appTypes.Clear();
+        _appCategories.Clear();
+        _appDeckCompatibility.Clear();
+        _appSupportedPlatforms.Clear();
         if (!_files.FileExists(appInfoPath))
         {
             return;
@@ -479,11 +590,6 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
             var entries = _binaryParser.ParseAppInfo(stream);
             foreach (var (appId, node) in entries)
             {
-                if (TryGetFamilySharingFlag(node, out var flag))
-                {
-                    _familySharingCache[appId] = flag;
-                }
-
                 if (TryGetAppName(node, out var appName))
                 {
                     _appNames[appId] = appName;
@@ -516,34 +622,11 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
         }
         catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or KeyValueException or ZstdException)
         {
+            _snapshotReadFailed = true;
             // Ignore appinfo parsing errors and continue with limited metadata.
         }
 
-        _appInfoLoaded = loaded;
-    }
-
-    private static bool TryGetFamilySharingFlag(ValveKeyValueNode node, out bool flag)
-    {
-        var stack = new Stack<ValveKeyValueNode>();
-        stack.Push(node);
-
-        while (stack.Count > 0)
-        {
-            var current = stack.Pop();
-            if (NameMatchesFlag(current.Name, "IsSubscribedFromFamilySharing") &&
-                current.TryGetBoolean(out flag))
-            {
-                return true;
-            }
-
-            foreach (var child in current.Children.Values)
-            {
-                stack.Push(child);
-            }
-        }
-
-        flag = false;
-        return false;
+        _appInfoVersion = loaded ? version : null;
     }
 
     private static bool TryFindBooleanFlag(ValveKeyValueNode node, string flagName, out bool flag)
@@ -645,8 +728,14 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
         string? candidate = null;
         DateTimeOffset mostRecentTimestamp = DateTimeOffset.MinValue;
 
-        foreach (var (steamId, node) in usersNode.Children)
+        foreach (var (rawSteamId, node) in usersNode.Children)
         {
+            if (!ulong.TryParse(rawSteamId, NumberStyles.None, CultureInfo.InvariantCulture, out var steamIdValue) ||
+                steamIdValue <= SteamIdOffset || steamIdValue - SteamIdOffset > uint.MaxValue)
+            {
+                continue;
+            }
+            var steamId = steamIdValue.ToString(CultureInfo.InvariantCulture);
             var timestampNode = FindChildCaseInsensitive(node, "Timestamp");
             if (timestampNode is not null &&
                 long.TryParse(timestampNode.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var timestamp))
@@ -686,15 +775,13 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
         {
             var updated = definition;
 
-            if (string.IsNullOrWhiteSpace(updated.Name) &&
-                _appNames.TryGetValue(appId, out var name) &&
+            if (_appNames.TryGetValue(appId, out var name) &&
                 !string.IsNullOrWhiteSpace(name))
             {
                 updated = updated with { Name = name };
             }
 
-            if (string.IsNullOrWhiteSpace(updated.Type) &&
-                _appTypes.TryGetValue(appId, out var type) &&
+            if (_appTypes.TryGetValue(appId, out var type) &&
                 !string.IsNullOrWhiteSpace(type))
             {
                 updated = updated with { Type = type };
@@ -716,26 +803,6 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
             }
 
             definitions[appId] = updated;
-        }
-    }
-
-    private void AddFamilySharedAppInfoDefinitions(Dictionary<uint, SteamAppDefinition> definitions)
-    {
-        EnsureAppInfoMetadataLoaded();
-        foreach (var (appId, isFamilyShared) in _familySharingCache)
-        {
-            if (!isFamilyShared || definitions.ContainsKey(appId))
-            {
-                continue;
-            }
-
-            UpsertDefinition(
-                definitions,
-                appId,
-                _appNames.TryGetValue(appId, out var name) ? name : null,
-                false,
-                _appTypes.TryGetValue(appId, out var type) ? type : null,
-                null);
         }
     }
 
@@ -763,10 +830,11 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
         string? type,
         IReadOnlyList<string>? collections)
     {
+        if (appId == 0) return;
         if (definitions.TryGetValue(appId, out var existing))
         {
             var updatedName = !string.IsNullOrWhiteSpace(name) ? name : existing.Name;
-            var updatedInstalled = isInstalled.HasValue ? (isInstalled.Value || existing.IsInstalled) : existing.IsInstalled;
+            var updatedInstalled = false;
             var updatedType = !string.IsNullOrWhiteSpace(type) ? type : existing.Type;
             IReadOnlyList<string> updatedCollections;
             if (collections is null || collections.Count == 0)
@@ -798,9 +866,9 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
             definitions[appId] = new SteamAppDefinition(
                 appId,
                 string.IsNullOrWhiteSpace(name) ? null : name,
-                isInstalled ?? false,
+                false,
                 string.IsNullOrWhiteSpace(type) ? null : type,
-                collections ?? Array.Empty<string>());
+                collections ?? Array.Empty<string>()) { InstallState = InstallState.Available };
         }
     }
 
@@ -857,11 +925,13 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
 
         try
         {
-            root = _textParser.Parse(_files.ReadAllText(path));
+            using var stream = _files.OpenRead(path);
+            root = _textParser.Parse(stream);
             return true;
         }
         catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
         {
+            _snapshotReadFailed = true;
             return false;
         }
     }
@@ -883,20 +953,22 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
             JsonDocument document;
             try
             {
-                var json = _files.ReadAllText(cloudStoragePath);
-                document = JsonDocument.Parse(json);
+                document = ReadJsonDocument(cloudStoragePath);
             }
             catch (IOException)
             {
+                _snapshotReadFailed = true;
                 continue;
             }
-            catch (JsonException)
+            catch (Exception ex) when (ex is JsonException or UnauthorizedAccessException)
             {
+                _snapshotReadFailed = true;
                 continue;
             }
 
             using (document)
             {
+                if (document.RootElement.ValueKind != JsonValueKind.Array) continue;
                 foreach (var entry in document.RootElement.EnumerateArray())
                 {
                     if (entry.ValueKind != JsonValueKind.Array || entry.GetArrayLength() != 2)
@@ -904,6 +976,7 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
                         continue;
                     }
 
+                    if (entry[0].ValueKind != JsonValueKind.String) continue;
                     var key = entry[0].GetString();
                     if (string.IsNullOrWhiteSpace(key) || !key.StartsWith("user-collections", StringComparison.OrdinalIgnoreCase))
                     {
@@ -936,7 +1009,7 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
                         using var valueDocument = JsonDocument.Parse(rawValue);
                         var root = valueDocument.RootElement;
 
-                        if (!root.TryGetProperty("id", out var idElement))
+                        if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("id", out var idElement) || idElement.ValueKind != JsonValueKind.String)
                         {
                             continue;
                         }
@@ -997,7 +1070,7 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
 
     private static CollectionFilterSpec? ParseFilterSpec(JsonElement root)
     {
-        if (!root.TryGetProperty("filterSpec", out var specElement) || specElement.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null)
+        if (!root.TryGetProperty("filterSpec", out var specElement) || specElement.ValueKind != JsonValueKind.Object)
         {
             return null;
         }
@@ -1020,7 +1093,7 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
             {
                 foreach (var optionElement in optionsElement.EnumerateArray())
                 {
-                    if (optionElement.TryGetInt32(out var option))
+                    if (optionElement.ValueKind == JsonValueKind.Number && optionElement.TryGetInt32(out var option))
                     {
                         options.Add(option);
                     }
@@ -1124,9 +1197,9 @@ public sealed class SteamVdfFallback : ISteamVdfFallback
 
         compatibility = value switch
         {
-            1 => SteamDeckCompatibility.Verified,
+            1 => SteamDeckCompatibility.Unsupported,
             2 => SteamDeckCompatibility.Playable,
-            3 => SteamDeckCompatibility.Unsupported,
+            3 => SteamDeckCompatibility.Verified,
             _ => SteamDeckCompatibility.Unknown,
         };
 

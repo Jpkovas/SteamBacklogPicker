@@ -114,13 +114,17 @@ public sealed class GameDetailsViewModel : ObservableObject
     public string InstallationStatus => InstallState switch
     {
         InstallState.Installed => _localizationService.GetString("GameDetails_InstallState_Installed"),
-        InstallState.Available => OwnershipType == OwnershipType.FamilyShared
-            ? _localizationService.GetString("GameDetails_InstallState_FamilySharing")
-            : _localizationService.GetString("GameDetails_InstallState_Available"),
-        InstallState.Shared => _localizationService.GetString("GameDetails_InstallState_FamilySharing"),
+        InstallState.Available => _localizationService.GetString("GameDetails_InstallState_Available"),
         InstallState.Unknown => _localizationService.GetString("GameDetails_InstallState_Unknown"),
         _ => _localizationService.GetString("GameDetails_InstallState_Unknown"),
     };
+
+    public string OwnershipStatus => _localizationService.GetString(OwnershipType switch
+    {
+        OwnershipType.Owned => "Workspace_Owned",
+        OwnershipType.FamilyShared => "Workspace_Family",
+        _ => "Workspace_AccessUnknown"
+    });
 
     public void RefreshLocalization()
     {
@@ -130,6 +134,7 @@ public sealed class GameDetailsViewModel : ObservableObject
         }
 
         OnPropertyChanged(nameof(InstallationStatus));
+        OnPropertyChanged(nameof(OwnershipStatus));
         OnPropertyChanged(nameof(StorefrontDisplayName));
         OnPropertyChanged(nameof(ArtworkPlaceholderTitle));
         OnPropertyChanged(nameof(ArtworkPlaceholderSubtitle));

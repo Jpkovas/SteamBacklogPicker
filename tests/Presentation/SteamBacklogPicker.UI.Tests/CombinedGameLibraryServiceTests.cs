@@ -86,6 +86,21 @@ public sealed class CombinedGameLibraryServiceTests
         entry.SupportedPlatforms.Should().Contain(new[] { SteamPlatform.Windows, SteamPlatform.MacOS });
     }
 
+    [Theory]
+    [InlineData("App 2280", "DOOM")]
+    [InlineData("DOOM", "App 2280")]
+    public async Task Merge_PrefersRealTitleOverLongerGeneratedPlaceholder(string first, string second)
+    {
+        var entry = new GameEntry { Id = GameIdentifier.ForSteam(2280), Title = first };
+        var service = new CombinedGameLibraryService(new[]
+        {
+            new FakeLibraryProvider(Storefront.Steam, entry),
+            new FakeLibraryProvider(Storefront.Steam, entry with { Title = second })
+        });
+        var result = await service.GetLibraryAsync();
+        result.Should().ContainSingle().Which.Title.Should().Be("DOOM");
+    }
+
     private sealed class FakeLibraryProvider : IGameLibraryProvider
     {
         private readonly IReadOnlyCollection<GameEntry> entries;

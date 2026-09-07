@@ -23,6 +23,11 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        // WPF selects the available rendering tier and falls back when acceleration is unavailable.
+        // Keep an explicit compatibility override for problematic drivers or remote desktops.
+        if (string.Equals(Environment.GetEnvironmentVariable("SBP_SOFTWARE_RENDERING"), "1", StringComparison.Ordinal) ||
+            string.Equals(Environment.GetEnvironmentVariable("SBP_HARDWARE_RENDERING"), "0", StringComparison.Ordinal))
+            System.Windows.Media.RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.SoftwareOnly;
         _serviceProvider = BuildServices();
         _updateCancellation = new CancellationTokenSource();
 
@@ -49,6 +54,7 @@ public partial class App : Application
     {
         base.OnExit(e);
         _updateCancellation?.Cancel();
+        _updateCancellation?.Dispose();
         if (_serviceProvider is null)
         {
             return;
@@ -64,16 +70,7 @@ public partial class App : Application
             telemetryClient.TrackEvent("application_exited");
         }
 
-        if (_serviceProvider.GetService<SteamAppManifestCache>() is { } cache)
-        {
-            cache.Dispose();
-        }
-
-        if (_serviceProvider.GetService<ISteamClientAdapter>() is IDisposable adapter)
-        {
-            adapter.Dispose();
-        }
-
+        // Singleton services are owned and disposed once by the container.
         _serviceProvider.Dispose();
         TelemetryBootstrapper.Shutdown();
     }

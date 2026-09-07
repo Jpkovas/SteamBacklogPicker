@@ -68,7 +68,7 @@ public sealed class SteamApiMocks
                 "SteamAPI_Shutdown" => (T)(Delegate)new SteamClientAdapter.SteamClientAdapter.SteamAPI_ShutdownDelegate(_api.Shutdown),
                 "SteamAPI_SteamApps" => (T)(Delegate)new SteamClientAdapter.SteamClientAdapter.SteamAPI_SteamAppsDelegate(_api.GetSteamApps),
                 "SteamAPI_ISteamApps_BIsAppInstalled" => (T)(Delegate)new SteamClientAdapter.SteamClientAdapter.SteamAPI_ISteamApps_BIsAppInstalledDelegate(_api.IsAppInstalled),
-                "SteamAPI_ISteamApps_BIsSubscribedFromFamilySharing" => (T)(Delegate)new SteamClientAdapter.SteamClientAdapter.SteamAPI_ISteamApps_BIsSubscribedFromFamilySharingDelegate(_api.IsFamilyShared),
+                "SteamAPI_ISteamApps_BIsSubscribedFromFamilySharing" => (T)(Delegate)new SteamClientAdapter.SteamClientAdapter.SteamAPI_ISteamApps_BIsSubscribedFromFamilySharingDelegate(self => _api.IsFamilyShared(self, 0)),
                 "SteamAPI_SteamAppList" => (T)(Delegate)new SteamClientAdapter.SteamClientAdapter.SteamAPI_SteamAppListDelegate(_api.GetSteamAppList),
                 "SteamAPI_ISteamAppList_GetNumInstalledApps" => (T)(Delegate)new SteamClientAdapter.SteamClientAdapter.SteamAPI_ISteamAppList_GetNumInstalledAppsDelegate(_api.GetNumInstalledApps),
                 "SteamAPI_ISteamAppList_GetInstalledApps" => (T)(Delegate)new SteamClientAdapter.SteamClientAdapter.SteamAPI_ISteamAppList_GetInstalledAppsDelegate(_api.GetInstalledApps),

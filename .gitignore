@@ -6,6 +6,7 @@
 [Pp]ublish/
 [Aa]rtifacts/
 .build/
+AvaloniaUI/
 dist/
 TestResults/
 

@@ -15,6 +15,7 @@ enum InstallState: String, Codable {
     case unknown
     case installed
     case available
+    @available(*, deprecated, message: "Use ownershipType for family sharing; installation is independent.")
     case shared
 }
 
@@ -110,7 +111,9 @@ extension ProductCategory {
             return .tool
         case "video", "movie", "series", "tv", "episode":
             return .video
-        case "dlc", "demo", "mod", "advertising", "hardware", "plugin", "config", "beta":
+        case "dlc":
+            return .dlc
+        case "demo", "mod", "advertising", "hardware", "plugin", "config", "beta":
             return .other
         case .some:
             return .other

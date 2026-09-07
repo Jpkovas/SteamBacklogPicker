@@ -17,7 +17,7 @@ namespace SteamBacklogPicker.UI.Tests;
 public sealed class SteamLibraryProviderTests
 {
     [Fact]
-    public async Task GetLibraryAsync_ShouldPromoteInstallState_WhenFallbackReportsInstallation()
+    public async Task GetLibraryAsync_ShouldNotPromoteOwnershipOrInstallation_FromProfileHistory()
     {
         const uint appId = 4242;
         using var environment = new TestLibraryEnvironment();
@@ -38,8 +38,8 @@ public sealed class SteamLibraryProviderTests
         var results = await provider.GetLibraryAsync();
 
         var entry = results.Should().ContainSingle(game => game.Id == GameIdentifier.ForSteam(appId)).Subject;
-        entry.InstallState.Should().Be(InstallState.Installed);
-        entry.OwnershipType.Should().Be(OwnershipType.Owned);
+        entry.InstallState.Should().Be(InstallState.Unknown);
+        entry.OwnershipType.Should().Be(OwnershipType.Unknown);
         entry.ProductCategory.Should().Be(ProductCategory.Game);
     }
 
@@ -54,7 +54,7 @@ public sealed class SteamLibraryProviderTests
         var fallback = new FakeSteamVdfFallback(
             new Dictionary<uint, SteamAppDefinition>
             {
-                [appId] = new SteamAppDefinition(appId, "Steam SDK", IsInstalled: false, Type: "application", Collections: Array.Empty<string>())
+                [appId] = new SteamAppDefinition(appId, "Steam SDK", IsInstalled: false, Type: "application", Collections: Array.Empty<string>()) { InstallState = InstallState.Available }
             },
             sharedAppIds: Array.Empty<uint>());
         using var cache = new SteamAppManifestCache(locator, adapter, fallback, new ValveTextVdfParser());
@@ -94,6 +94,62 @@ public sealed class SteamLibraryProviderTests
 
         var entry = results.Should().ContainSingle(game => game.Id == GameIdentifier.ForSteam(appId)).Subject;
         entry.SupportedPlatforms.Should().BeEquivalentTo(new[] { SteamPlatform.Windows, SteamPlatform.MacOS });
+    }
+
+    [Fact]
+    public async Task GetLibraryAsync_ShouldKeepFamilyOwnershipSeparateFromInstallation()
+    {
+        using var environment = new TestLibraryEnvironment();
+        environment.WriteManifest(10, "Installed family game");
+        var locator = new FakeLibraryLocator(environment.LibraryRoot);
+        var adapter = new FakeSteamClientAdapter(new[] { 10u }, Array.Empty<uint>());
+        var fallback = new FakeSteamVdfFallback(new Dictionary<uint, SteamAppDefinition>
+        {
+            [10] = new(10, "Installed family game", false, "game", Array.Empty<string>())
+                { OwnershipType = OwnershipType.FamilyShared, InstallState = InstallState.Available },
+            [20] = new(20, "Available family game", true, "game", Array.Empty<string>())
+                { OwnershipType = OwnershipType.FamilyShared, InstallState = InstallState.Available },
+            [30] = new(30, "DLC", false, "dlc", Array.Empty<string>())
+        }, Array.Empty<uint>(), collections: new[]
+        {
+            new SteamCollectionDefinition("installed", "Installed", Array.Empty<uint>(),
+                new CollectionFilterSpec(new[] { new CollectionFilterGroup(new[] { 1 }, false) }))
+        });
+        using var cache = new SteamAppManifestCache(locator, adapter, fallback, new ValveTextVdfParser());
+        var provider = new SteamLibraryProvider(cache, locator, fallback);
+        var results = (await provider.GetLibraryAsync()).ToDictionary(game => game.SteamAppId!.Value);
+        results[10].OwnershipType.Should().Be(OwnershipType.FamilyShared);
+        results[10].InstallState.Should().Be(InstallState.Installed);
+        results[10].Tags.Should().Contain("Installed");
+        results[20].OwnershipType.Should().Be(OwnershipType.FamilyShared);
+        results[20].InstallState.Should().Be(InstallState.Available);
+        results[20].Tags.Should().NotContain("Installed");
+        results[30].ProductCategory.Should().Be(ProductCategory.DLC);
+    }
+
+    [Theory]
+    [InlineData(31, true)]
+    [InlineData(52, true)]
+    [InlineData(35, false)]
+    [InlineData(38, false)]
+    [InlineData(39, false)]
+    [InlineData(53, true)]
+    [InlineData(54, true)]
+    public async Task GetLibraryAsync_ShouldNotConfuseUnrelatedStoreCategoriesWithVr(int category, bool expectedVr)
+    {
+        using var environment = new TestLibraryEnvironment();
+        var locator = new FakeLibraryLocator(environment.LibraryRoot);
+        var fallback = new FakeSteamVdfFallback(new Dictionary<uint, SteamAppDefinition>
+        {
+            [10] = new(10, "Game", false, "game", Array.Empty<string>()) { StoreCategoryIds = new[] { category } }
+        }, Array.Empty<uint>(), collections: new[]
+        {
+            new SteamCollectionDefinition("vr", "VR", Array.Empty<uint>(),
+                new CollectionFilterSpec(new[] { new CollectionFilterGroup(new[] { 3 }, false) }))
+        });
+        using var cache = new SteamAppManifestCache(locator, new FakeSteamClientAdapter(Array.Empty<uint>(), Array.Empty<uint>()), fallback, new ValveTextVdfParser());
+        var result = (await new SteamLibraryProvider(cache, locator, fallback).GetLibraryAsync()).Single();
+        result.Tags.Contains("VR").Should().Be(expectedVr);
     }
 
     private sealed class TestLibraryEnvironment : IDisposable

@@ -37,10 +37,10 @@ final class SteamLibraryServiceTests: XCTestCase {
         XCTAssertTrue(byAppId[10]?.coverURLs.contains(URL(string: "https://cdn.cloudflare.steamstatic.com/steam/apps/10/header.jpg")!) == true)
         XCTAssertEqual(byAppId[20]?.title, "Available From AppInfo")
         XCTAssertEqual(byAppId[20]?.installState, .available)
-        XCTAssertFalse(games.filter { $0.installState == .installed || $0.installState == .shared }.contains { $0.steamAppId == 20 })
+        XCTAssertFalse(games.filter { $0.installState == .installed }.contains { $0.steamAppId == 20 })
         XCTAssertEqual(
-            Set(games.filter { $0.installState == .installed || $0.installState == .shared }.compactMap(\.steamAppId)),
-            [10, 100, 110]
+            Set(games.filter { $0.installState == .installed }.compactMap(\.steamAppId)),
+            [10, 100]
         )
         XCTAssertEqual(byAppId[20]?.coverURLs.map(\.absoluteString), [
             "https://cdn.cloudflare.steamstatic.com/steam/apps/20/header.jpg",
@@ -53,6 +53,7 @@ final class SteamLibraryServiceTests: XCTestCase {
         XCTAssertEqual(byAppId[20]?.supportedPlatforms, [.windows, .macOS])
         XCTAssertEqual(byAppId[30]?.title, "Available From Cache")
         XCTAssertEqual(byAppId[30]?.installState, .available)
+        XCTAssertEqual(byAppId[30]?.ownershipType, .unknown)
         XCTAssertEqual(byAppId[40]?.title, "Collection From AppInfo")
         XCTAssertEqual(byAppId[40]?.productCategory, .software)
         XCTAssertTrue(byAppId[40]?.tags.contains("Favorites") == true)
@@ -60,12 +61,12 @@ final class SteamLibraryServiceTests: XCTestCase {
         XCTAssertEqual(byAppId[60]?.productCategory, .soundtrack)
         XCTAssertEqual(byAppId[70]?.productCategory, .tool)
         XCTAssertEqual(byAppId[80]?.productCategory, .video)
-        XCTAssertEqual(byAppId[90]?.productCategory, .other)
+        XCTAssertEqual(byAppId[90]?.productCategory, .dlc)
         XCTAssertEqual(byAppId[100]?.title, "Shared Installed")
-        XCTAssertEqual(byAppId[100]?.installState, .shared)
-        XCTAssertEqual(byAppId[100]?.ownershipType, .familyShared)
+        XCTAssertEqual(byAppId[100]?.installState, .installed)
+        XCTAssertEqual(byAppId[100]?.ownershipType, .unknown)
         XCTAssertEqual(byAppId[110]?.title, "Shared Available")
-        XCTAssertEqual(byAppId[110]?.installState, .shared)
+        XCTAssertEqual(byAppId[110]?.installState, .available)
         XCTAssertEqual(byAppId[110]?.ownershipType, .familyShared)
         XCTAssertEqual(byAppId[120]?.title, "Available From AppInfo")
         XCTAssertLessThan(
@@ -79,11 +80,11 @@ final class SteamLibraryServiceTests: XCTestCase {
         XCTAssertFalse(byAppId[20]?.tags.contains("Installed Dynamic") == true)
         XCTAssertTrue(byAppId[10]?.tags.contains("Installed Dynamic") == true)
         XCTAssertTrue(byAppId[100]?.tags.contains("Installed Dynamic") == true)
-        XCTAssertTrue(byAppId[110]?.tags.contains("Installed Dynamic") == true)
+        XCTAssertFalse(byAppId[110]?.tags.contains("Installed Dynamic") == true)
         XCTAssertFalse(byAppId[20]?.tags.contains("Installed With Empty Group") == true)
         XCTAssertTrue(byAppId[10]?.tags.contains("Installed With Empty Group") == true)
         XCTAssertTrue(byAppId[100]?.tags.contains("Installed With Empty Group") == true)
-        XCTAssertTrue(byAppId[110]?.tags.contains("Installed With Empty Group") == true)
+        XCTAssertFalse(byAppId[110]?.tags.contains("Installed With Empty Group") == true)
         XCTAssertFalse(byAppId[10]?.tags.contains("All Empty Groups") == true)
         XCTAssertFalse(byAppId[20]?.tags.contains("String Encoded Collection") == true)
         XCTAssertFalse(byAppId[10]?.tags.contains("String Encoded Collection") == true)
@@ -91,7 +92,7 @@ final class SteamLibraryServiceTests: XCTestCase {
         XCTAssertFalse(byAppId[110]?.tags.contains("All Empty Groups") == true)
     }
 
-    func testLoadLibraryUsesAppInfoFamilySharingWhenLocalConfigDoesNotExposeIt() throws {
+    func testLoadLibraryDoesNotTreatGlobalAppInfoAsOwnershipEvidence() throws {
         let steam = temporaryDirectory.appendingPathComponent("Steam", isDirectory: true)
         try createSteamFixture(at: steam)
 
@@ -140,11 +141,11 @@ final class SteamLibraryServiceTests: XCTestCase {
         ).loadLibrary()
 
         let entry = games.first { $0.steamAppId == 130 }
-        XCTAssertEqual(entry?.ownershipType, .familyShared)
-        XCTAssertEqual(entry?.installState, .shared)
+        XCTAssertEqual(entry?.ownershipType, .unknown)
+        XCTAssertEqual(entry?.installState, .available)
     }
 
-    func testLoadLibraryIncludesAppInfoOnlyFamilySharedApps() throws {
+    func testLoadLibraryExcludesGlobalAppInfoOnlyFamilySharedApps() throws {
         let steam = temporaryDirectory.appendingPathComponent("Steam", isDirectory: true)
         try createMinimalSteamFixture(at: steam)
         try writeAppInfoFixture(
@@ -167,10 +168,19 @@ final class SteamLibraryServiceTests: XCTestCase {
         let byAppId = Dictionary(uniqueKeysWithValues: games.compactMap { game in
             game.steamAppId.map { ($0, game) }
         })
-        XCTAssertEqual(Set(byAppId.keys), [140])
-        XCTAssertEqual(byAppId[140]?.title, "Family Only From AppInfo")
-        XCTAssertEqual(byAppId[140]?.ownershipType, .familyShared)
-        XCTAssertEqual(byAppId[140]?.installState, .shared)
+        XCTAssertTrue(byAppId.isEmpty)
+    }
+
+    func testManifestRequiresFullyInstalledState() throws {
+        let steam = temporaryDirectory.appendingPathComponent("StateFlagsSteam", isDirectory: true)
+        try createMinimalSteamFixture(at: steam)
+        for (flag, expected) in [("", InstallState.unknown), ("\"StateFlags\" \"2\"", .available), ("\"StateFlags\" \"4\"", .installed)] {
+            try write("\"AppState\" { \"appid\" \"200\" \"name\" \"Game\" \(flag) }",
+                      to: steam.appendingPathComponent("steamapps/appmanifest_200.acf"))
+            let games = try SteamLibraryService(steamDirectory: steam, appNameResolver: FixtureAppNameResolver(names: [:])).loadLibrary()
+            XCTAssertEqual(games.first?.installState, expected)
+            XCTAssertEqual(games.first?.ownershipType, .unknown)
+        }
     }
 
     private func createSteamFixture(at steam: URL) throws {
@@ -191,6 +201,7 @@ final class SteamLibraryServiceTests: XCTestCase {
             #"""
             "AppState"
             {
+                "StateFlags" "4"
                 "appid" "10"
                 "name" "Wrong Manifest Label"
                 "SizeOnDisk" "100"
@@ -202,6 +213,7 @@ final class SteamLibraryServiceTests: XCTestCase {
             #"""
             "AppState"
             {
+                "StateFlags" "4"
                 "appid" "100"
                 "name" "Shared Installed"
                 "LastOwner" "76561198000000001"

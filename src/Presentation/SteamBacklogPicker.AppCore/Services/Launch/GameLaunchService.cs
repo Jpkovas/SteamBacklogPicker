@@ -35,7 +35,7 @@ public sealed class GameLaunchService : IGameLaunchService
     private GameLaunchOptions BuildSteamOptions(GameEntry game)
     {
         var appId = game.SteamAppId;
-        if (!appId.HasValue)
+        if (!appId.HasValue || appId.Value == 0)
         {
             var missingAppIdMessage = _localizationService.GetString(SteamMissingAppIdKey);
             return new GameLaunchOptions(
@@ -47,7 +47,7 @@ public sealed class GameLaunchService : IGameLaunchService
             ? GameLaunchAction.Supported($"steam://run/{appId.Value}")
             : GameLaunchAction.Unsupported(_localizationService.GetString(LaunchNotInstalledKey));
 
-        var canInstall = game.InstallState is InstallState.Available or InstallState.Shared or InstallState.Unknown;
+        var canInstall = game.InstallState != InstallState.Installed;
         var installAction = canInstall
             ? GameLaunchAction.Supported($"steam://install/{appId.Value}")
             : GameLaunchAction.Unsupported(_localizationService.GetString(SteamAlreadyInstalledKey));

@@ -50,6 +50,12 @@ public sealed class SteamLibraryLocator : ISteamLibraryLocator, IDisposable
     {
         lock (_syncRoot)
         {
+            if (!_initialized)
+            {
+                InitializeWatcherNoLock();
+                _initialized = true;
+                return;
+            }
             UpdateCacheNoLock();
         }
     }
@@ -214,8 +220,8 @@ public sealed class SteamLibraryLocator : ISteamLibraryLocator, IDisposable
 
         try
         {
-            var content = File.ReadAllText(filePath);
-            var parsed = _parser.Parse(content);
+            using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            var parsed = _parser.Parse(stream);
             _cachedLibraries = parsed.ToArray();
         }
         catch (IOException)

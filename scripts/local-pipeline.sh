@@ -3,6 +3,7 @@ set -euo pipefail
 
 echo "==> Restoring solution"
 dotnet restore SteamBacklogPicker.sln
+dotnet restore tests/Presentation/SteamBacklogPicker.Linux.Tests/SteamBacklogPicker.Linux.Tests.csproj
 
 echo "==> Building common projects"
 dotnet build src/Domain/Domain.csproj -c Release --no-restore -f net8.0
@@ -19,6 +20,9 @@ dotnet test tests/Domain/Domain.Tests/Domain.Tests.csproj -c Release --no-restor
 
 echo "==> Running infrastructure tests"
 dotnet test tests/Infrastructure/SteamDiscovery.Tests/SteamDiscovery.Tests.csproj -c Release --no-restore -f net8.0 "$@"
+
+echo "==> Running catalog tests"
+dotnet test tests/Integration/SteamCatalog.Tests/SteamCatalog.Tests.csproj -c Release --no-restore -f net8.0 "$@"
 
 echo "==> Running integration tests (SteamClientAdapter)"
 dotnet test tests/Integration/SteamClientAdapter.Tests/SteamClientAdapter.Tests.csproj -c Release --no-restore -f net8.0 "$@"

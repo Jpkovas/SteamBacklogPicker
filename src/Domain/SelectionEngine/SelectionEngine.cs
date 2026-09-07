@@ -43,19 +43,24 @@ public sealed class SelectionEngine : ISelectionEngine
 
         lock (_syncRoot)
         {
-            var cloned = preferences.Clone();
-            cloned.Normalize();
-
-            var previousSeed = _state.Preferences.Seed;
-            _state.Preferences = cloned;
-            if (previousSeed != cloned.Seed)
+            var previous = CopyState();
+            try
             {
-                _state.RandomPosition = 0;
-                RefreshSeededRandomFromState();
-            }
+                var cloned = preferences.Clone();
+                cloned.Normalize();
 
-            TrimHistory();
-            SaveSettings();
+                var previousSeed = _state.Preferences.Seed;
+                _state.Preferences = cloned;
+                if (previousSeed != cloned.Seed)
+                {
+                    _state.RandomPosition = 0;
+                    RefreshSeededRandomFromState();
+                }
+
+                TrimHistory();
+                SaveSettings();
+            }
+            catch { RestoreState(previous); throw; }
         }
     }
 
@@ -78,8 +83,9 @@ public sealed class SelectionEngine : ISelectionEngine
     {
         lock (_syncRoot)
         {
-            _state.History.Clear();
-            SaveSettings();
+            var previous = CopyState();
+            try { _state.History.Clear(); SaveSettings(); }
+            catch { RestoreState(previous); throw; }
         }
     }
 
@@ -95,10 +101,15 @@ public sealed class SelectionEngine : ISelectionEngine
                 throw new InvalidOperationException("No games available after applying the current selection filters.");
             }
 
-            var selected = ChooseGame(candidates);
-            RegisterSelection(selected);
-            SaveSettings();
-            return selected;
+            var previous = CopyState();
+            try
+            {
+                var selected = ChooseGame(candidates);
+                RegisterSelection(selected);
+                SaveSettings();
+                return selected;
+            }
+            catch { RestoreState(previous); throw; }
         }
     }
 
@@ -130,6 +141,10 @@ public sealed class SelectionEngine : ISelectionEngine
         catch (IOException)
         {
             // If reading fails, fall back to defaults.
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // An unavailable user settings file must not prevent opening the library.
         }
         catch (JsonException)
         {
@@ -169,6 +184,20 @@ public sealed class SelectionEngine : ISelectionEngine
         }
     }
 
+    private SelectionSettings CopyState() => new()
+    {
+        Preferences = _state.Preferences.Clone(),
+        History = new List<SelectionHistoryEntry>(_state.History),
+        RandomPosition = _state.RandomPosition
+    };
+
+    private void RestoreState(SelectionSettings previous)
+    {
+        _state = previous;
+        // Rebuild lazily on the next seeded draw; a failed commit must not advance its sequence.
+        ResetSeededRandom();
+    }
+
     private static string BuildDefaultSettingsPath()
     {
         var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
@@ -185,6 +214,7 @@ public sealed class SelectionEngine : ISelectionEngine
         settings.Preferences ??= new SelectionPreferences();
         settings.Preferences.Normalize();
         settings.History ??= new List<SelectionHistoryEntry>();
+        settings.History.RemoveAll(entry => entry is null);
         foreach (var entry in settings.History)
         {
             entry.Title ??= string.Empty;
@@ -251,7 +281,7 @@ public sealed class SelectionEngine : ISelectionEngine
                 continue;
             }
 
-            if (filters.RequireInstalled && game.InstallState is not (InstallState.Installed or InstallState.Shared))
+            if (filters.RequireInstalled && game.InstallState != InstallState.Installed)
             {
                 continue;
             }

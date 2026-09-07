@@ -12,6 +12,7 @@ public enum InstallState
     Unknown = 0,
     Installed = 1,
     Available = 2,
+    [Obsolete("Sharing describes ownership. Use Installed, Available or Unknown for installation.")]
     Shared = 3,
 }
 

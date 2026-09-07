@@ -21,7 +21,8 @@ public sealed class SteamClientAdapterTests
         var adapter = CreateAdapter(mocks);
 
         mocks.SteamApi.AppInstallationPredicate = (_, appId) => appId is 10 or 20;
-        mocks.SteamApi.FamilySharingPredicate = (_, appId) => appId == 20;
+        mocks.SteamApi.FamilySharingPredicate = (_, _) => throw new InvalidOperationException("Per-game family ownership must not use the process-scoped Steamworks export.");
+        mocks.Fallback.FamilySharingPredicate = appId => appId == 20;
 
         Assert.True(adapter.Initialize("steam_api64.dll"));
 

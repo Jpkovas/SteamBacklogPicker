@@ -8,7 +8,7 @@ using SteamBacklogPicker.UI.Services.Localization;
 
 namespace SteamBacklogPicker.UI.ViewModels;
 
-public sealed class SelectionPreferencesViewModel : ObservableObject
+public sealed class SelectionPreferencesViewModel : ObservableObject, IDisposable
 {
     private readonly ISelectionEngine _selectionEngine;
     private readonly ILocalizationService _localizationService;
@@ -23,9 +23,10 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
     private bool _includeOther;
     private bool _includeSteam = true;
     private bool _isHydrating;
-    private readonly ObservableCollection<string> _collectionOptions = new();
+    private readonly SnapshotCollection<string> _collectionOptions = new();
     private string _noCollectionOption = string.Empty;
     private string _selectedCollection = string.Empty;
+    private string? _lastSaveError;
 
     public SelectionPreferencesViewModel(ISelectionEngine selectionEngine, ILocalizationService localizationService)
     {
@@ -40,6 +41,7 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
     }
 
     public event EventHandler<SelectionPreferences>? PreferencesChanged;
+    public string? LastSaveError { get => _lastSaveError; private set => SetProperty(ref _lastSaveError, value); }
 
     public bool RequireInstalled
     {
@@ -156,6 +158,10 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
         get => _selectedCollection;
         set
         {
+            // Rebuilding ComboBox items can send a temporary null through a TwoWay binding.
+            // Hydration restores its captured selection explicitly; this is not a user edit.
+            if (_isHydrating) return;
+
             var noCollection = _noCollectionOption;
             var desired = string.IsNullOrWhiteSpace(value) ? noCollection : value;
             if (string.Equals(desired, noCollection, StringComparison.OrdinalIgnoreCase))
@@ -163,7 +169,7 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
                 desired = noCollection;
             }
 
-            if (SetProperty(ref _selectedCollection, desired) && !_isHydrating)
+            if (SetProperty(ref _selectedCollection, desired))
             {
                 UpdatePreferences(p => p.Filters.RequiredCollection = desired == noCollection ? null : desired);
             }
@@ -218,9 +224,10 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
                 _collectionOptions.Add(requiredCollection);
             }
 
-            SelectedCollection = string.IsNullOrWhiteSpace(requiredCollection)
+            var selection = string.IsNullOrWhiteSpace(requiredCollection)
                 ? _noCollectionOption
-                : requiredCollection;
+                : _collectionOptions.First(option => string.Equals(option, requiredCollection, StringComparison.OrdinalIgnoreCase));
+            SetProperty(ref _selectedCollection, selection, nameof(SelectedCollection));
         }
         finally
         {
@@ -232,47 +239,51 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
     {
         ArgumentNullException.ThrowIfNull(collections);
 
+        var previousSelection = string.IsNullOrWhiteSpace(_selectedCollection) ? _noCollectionOption : _selectedCollection;
         var normalized = collections
             .Where(name => !string.IsNullOrWhiteSpace(name))
             .Select(name => name.Trim())
+            .Where(name => !string.Equals(name, _noCollectionOption, StringComparison.OrdinalIgnoreCase))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(name => name, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
 
+        // A partial metadata snapshot must not discard a collection the user selected earlier.
+        if (!string.Equals(previousSelection, _noCollectionOption, StringComparison.OrdinalIgnoreCase)
+            && !normalized.Contains(previousSelection, StringComparer.OrdinalIgnoreCase))
+        {
+            normalized.Add(previousSelection);
+        }
+
+        normalized.Insert(0, _noCollectionOption);
+        var selection = normalized.First(option => string.Equals(option, previousSelection, StringComparison.OrdinalIgnoreCase));
+        ReplaceCollectionOptions(normalized, selection);
+    }
+
+    private void ReplaceCollectionOptions(IReadOnlyList<string> options, string selection)
+    {
+        if (_collectionOptions.SequenceEqual(options, StringComparer.Ordinal))
+        {
+            SetProperty(ref _selectedCollection, selection, nameof(SelectedCollection));
+            return;
+        }
+
+        var wasHydrating = _isHydrating;
         _isHydrating = true;
         try
         {
-            _collectionOptions.Clear();
-            _collectionOptions.Add(_noCollectionOption);
-
-            foreach (var name in normalized)
-            {
-                _collectionOptions.Add(name);
-            }
-
-            var matchingSelection = _collectionOptions
-                .FirstOrDefault(option => string.Equals(option, _selectedCollection, StringComparison.OrdinalIgnoreCase));
-
-            if (matchingSelection is null)
-            {
-                _selectedCollection = _noCollectionOption;
-                OnPropertyChanged(nameof(SelectedCollection));
-            }
-            else if (!string.Equals(matchingSelection, _selectedCollection, StringComparison.Ordinal))
-            {
-                _selectedCollection = matchingSelection;
-                OnPropertyChanged(nameof(SelectedCollection));
-            }
+            // Invalidate the binding's cached source value before Reset, so restoring the same
+            // collection name still reaches controls that lost SelectedItem during the rebuild.
+            _selectedCollection = string.Empty;
+            OnPropertyChanged(nameof(SelectedCollection));
+            _collectionOptions.ReplaceWith(options);
+            _selectedCollection = selection;
+            // The control lost its selection during Reset even when the model value is unchanged.
+            OnPropertyChanged(nameof(SelectedCollection));
         }
         finally
         {
-            _isHydrating = false;
-        }
-
-        // If the selection was reset to "No collection", ensure the filter is cleared
-        if (string.Equals(_selectedCollection, _noCollectionOption, StringComparison.Ordinal))
-        {
-            UpdatePreferences(p => p.Filters.RequiredCollection = null);
+            _isHydrating = wasHydrating;
         }
     }
 
@@ -281,13 +292,27 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
         UpdateNoCollectionOption();
     }
 
+    public void ResetFilters()
+    {
+        UpdatePreferences(p => p.Filters = new SelectionFilters());
+    }
+
     private void UpdatePreferences(Action<SelectionPreferences> updater)
     {
         var preferences = _selectionEngine.GetPreferences();
         updater(preferences);
-        _selectionEngine.UpdatePreferences(preferences);
-        Apply(preferences);
-        PreferencesChanged?.Invoke(this, preferences);
+        try
+        {
+            _selectionEngine.UpdatePreferences(preferences);
+            LastSaveError = null;
+        }
+        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException)
+        {
+            LastSaveError = ex.Message;
+        }
+        var effective = _selectionEngine.GetPreferences();
+        Apply(effective);
+        PreferencesChanged?.Invoke(this, effective);
     }
 
     private void UpdateCategoryPreferences()
@@ -364,24 +389,26 @@ public sealed class SelectionPreferencesViewModel : ObservableObject
         var previousNoCollection = _noCollectionOption;
         var previousSelection = _selectedCollection;
 
-        _noCollectionOption = _localizationService.GetString("Filters_NoCollection");
+        var noCollection = _localizationService.GetString("Filters_NoCollection");
+        if (_collectionOptions.Count > 0 && string.Equals(previousNoCollection, noCollection, StringComparison.Ordinal)) return;
 
         var isNoneSelected = string.IsNullOrWhiteSpace(previousSelection) ||
                              string.Equals(previousSelection, previousNoCollection, StringComparison.OrdinalIgnoreCase);
 
-        if (_collectionOptions.Count == 0)
+        var options = _collectionOptions.ToList();
+        if (options.Count == 0)
         {
-            _collectionOptions.Add(_noCollectionOption);
+            options.Add(noCollection);
         }
         else
         {
-            _collectionOptions[0] = _noCollectionOption;
+            options[0] = noCollection;
         }
 
-        if (isNoneSelected)
-        {
-            _selectedCollection = _noCollectionOption;
-            OnPropertyChanged(nameof(SelectedCollection));
-        }
+        var selection = isNoneSelected ? noCollection : previousSelection;
+        if (!options.Contains(selection, StringComparer.Ordinal)) options.Add(selection);
+        _noCollectionOption = noCollection;
+        ReplaceCollectionOptions(options, selection);
     }
+    public void Dispose() => _localizationService.LanguageChanged -= OnLanguageChanged;
 }

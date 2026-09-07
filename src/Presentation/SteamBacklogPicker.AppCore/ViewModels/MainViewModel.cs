@@ -13,7 +13,7 @@ using SteamBacklogPicker.UI.Services.Notifications;
 
 namespace SteamBacklogPicker.UI.ViewModels;
 
-public sealed class MainViewModel : ObservableObject
+public sealed partial class MainViewModel : ObservableObject, IDisposable
 {
     private readonly ISelectionEngine _selectionEngine;
     private readonly IGameLibraryService _libraryService;
@@ -38,7 +38,8 @@ public sealed class MainViewModel : ObservableObject
         IToastNotificationService toastNotificationService,
         ILocalizationService localizationService,
         IGameLaunchService gameLaunchService,
-        Func<ProcessStartInfo, Process?>? processStarter = null)
+        Func<ProcessStartInfo, Process?>? processStarter = null,
+        BacklogStore? backlogStore = null)
     {
         _selectionEngine = selectionEngine ?? throw new ArgumentNullException(nameof(selectionEngine));
         _libraryService = libraryService ?? throw new ArgumentNullException(nameof(libraryService));
@@ -61,6 +62,8 @@ public sealed class MainViewModel : ObservableObject
         LaunchCommand = new RelayCommand(LaunchGame, () => SelectedGame.CanLaunch);
         InstallCommand = new RelayCommand(InstallGame, () => SelectedGame.CanInstall);
         ChangeLanguageCommand = new RelayCommand(ChangeLanguage);
+
+        InitializeWorkspace(backlogStore ?? new BacklogStore());
 
         SetStatus(loc => loc.GetString("Status_LoadingLibrary"));
     }
@@ -94,6 +97,7 @@ public sealed class MainViewModel : ObservableObject
             LaunchCommand.RaiseCanExecuteChanged();
             InstallCommand.RaiseCanExecuteChanged();
             OnPropertyChanged(nameof(HasSelection));
+            NotifySelectionChanged();
         }
     }
 
@@ -113,36 +117,50 @@ public sealed class MainViewModel : ObservableObject
 
     public async Task InitializeAsync()
     {
+        if (_vmDisposed || _initialized) return;
+        _initialized = true;
+        _uiContext = System.Threading.SynchronizationContext.Current;
         await RefreshLibraryAsync().ConfigureAwait(true);
     }
 
     private async Task RefreshLibraryAsync()
     {
+        if (_vmDisposed || IsRefreshing) return;
+        IsRefreshing = true;
         SetStatus(loc => loc.GetString("Status_LoadingLibrary"));
-        ResetSelection();
-        _library.Clear();
         try
         {
-            var games = await _libraryService.GetLibraryAsync().ConfigureAwait(true);
-            _library.AddRange(games.OrderBy(game => game.Title, StringComparer.CurrentCultureIgnoreCase));
-            Preferences.UpdateCollections(GetAvailableCollections());
-            UpdateEligibilitySummary();
+            // A provider may expose synchronous file IO behind a Task-returning interface.
+            var token = _lifetime.Token;
+            var games = await Task.Run(() => _libraryService.GetLibraryAsync(token), token).ConfigureAwait(true);
+            if (_vmDisposed) return;
+            // Synchronizing providers publish identity/generation-bound events. Their Task result
+            // can reach this continuation after a newer account event, so never replay it here.
+            if (_synchronization is null) AcceptSnapshot(games, "local");
+            LastRefreshError = null;
         }
+        catch (OperationCanceledException) { if (!_vmDisposed) SetStatus(loc => loc.GetString("Workspace_Canceled")); }
         catch (Exception ex)
         {
-            _eligibleGameCount = 0;
-            SetStatusRaw(ex.Message);
-            Preferences.UpdateCollections(Array.Empty<string>());
-            ResetSelection();
+            if (!_vmDisposed)
+            {
+                LastRefreshError = ex.Message;
+                SetStatus(loc => loc.GetString("Workspace_RefreshFailed"));
+            }
         }
         finally
         {
-            DrawCommand.RaiseCanExecuteChanged();
+            if (!_vmDisposed)
+            {
+                IsRefreshing = false;
+                DrawCommand.RaiseCanExecuteChanged();
+            }
         }
     }
 
     private async Task DrawAsync()
     {
+        if (_vmDisposed) return;
         if (_library.Count == 0)
         {
             await RefreshLibraryAsync().ConfigureAwait(true);
@@ -151,25 +169,46 @@ public sealed class MainViewModel : ObservableObject
                 return;
             }
         }
+        var account = _accountId;
+        var version = _libraryVersion;
 
         try
         {
             IsDrawing = true;
-            ResetSelection();
             SetStatus(loc => loc.GetString("Status_Drawing"));
-            await Task.Delay(850).ConfigureAwait(true);
-
-            var game = _selectionEngine.PickNext(_library);
+            await Task.Yield();
+            if (_vmDisposed || account != _accountId || version != _libraryVersion) return;
+            var candidates = _selectionEngine.FilterGames(FilterWorkspaceGames()).ToArray();
+            if (AvoidRepeats)
+            {
+                var unplayedCycle = candidates.Where(game => !_drawnCycle.Contains(game.Id)).ToArray();
+                if (unplayedCycle.Length == 0) { _drawnCycle.Clear(); unplayedCycle = candidates; }
+                candidates = unplayedCycle;
+            }
+            if (candidates.Length == 0) { UpdateEligibilitySummary(); return; }
+            // Both services persist decisions. Keep their file flushes off the dispatcher,
+            // then publish only while the initiating account/snapshot is still current.
+            var token = _lifetime.Token;
+            var game = await Task.Run(() =>
+            {
+                token.ThrowIfCancellationRequested();
+                var selected = _selectionEngine.PickNext(candidates);
+                _backlog.RecordDraw(account, selected);
+                return selected;
+            }, token).ConfigureAwait(true);
+            if (_vmDisposed || account != _accountId || version != _libraryVersion) return;
+            _drawnCycle.Add(game.Id);
             ApplySelection(game);
+            RefreshHistory();
             SetStatus(loc => loc.GetString("Status_Drawn", game.Title));
         }
         catch (Exception ex)
         {
-            SetStatusRaw(ex.Message);
+            if (!_vmDisposed) SetStatusRaw(ex.Message);
         }
         finally
         {
-            IsDrawing = false;
+            if (!_vmDisposed) IsDrawing = false;
         }
     }
 
@@ -180,7 +219,11 @@ public sealed class MainViewModel : ObservableObject
         var details = GameDetailsViewModel.FromGame(game, coverPath, _localizationService, launchOptions);
         _selectedGameEntry = game;
         SelectedGame = details;
-        _toastNotificationService.ShowGameSelected(game, coverPath);
+        // Windows may fetch a remote inline image itself. Respect the same network setting
+        // as the artwork control instead of bypassing it through a toast notification.
+        var toastPath = NetworkEnabled || Uri.TryCreate(coverPath, UriKind.Absolute, out var imageUri) && imageUri.IsFile
+            ? coverPath : null;
+        _toastNotificationService.ShowGameSelected(game, toastPath);
     }
 
     private void LaunchGame()
@@ -281,6 +324,7 @@ public sealed class MainViewModel : ObservableObject
     private void OnPreferencesChanged(object? sender, SelectionPreferences preferences)
     {
         UpdateEligibilitySummary();
+        if (Preferences.LastSaveError is { } error) SetStatusRaw(error);
     }
 
     private IEnumerable<string> GetAvailableCollections()
@@ -293,10 +337,11 @@ public sealed class MainViewModel : ObservableObject
 
     private void UpdateEligibilitySummary()
     {
+        _libraryVersion++; // Pending draws also belong to the effective filters of their snapshot.
         IReadOnlyList<GameEntry> eligibleGames;
         try
         {
-            eligibleGames = _selectionEngine.FilterGames(_library);
+            eligibleGames = _selectionEngine.FilterGames(FilterWorkspaceGames());
         }
         catch (Exception ex)
         {
@@ -307,6 +352,7 @@ public sealed class MainViewModel : ObservableObject
         }
 
         _eligibleGameCount = eligibleGames.Count;
+        PopulateCards(eligibleGames);
         var total = _library.Count;
 
         if (!ReferenceEquals(SelectedGame, _emptyGame) &&
@@ -338,6 +384,7 @@ public sealed class MainViewModel : ObservableObject
         }
 
         DrawCommand.RaiseCanExecuteChanged();
+        NotifyLibraryChanged();
     }
 
     private void ChangeLanguage(object? parameter)
@@ -352,11 +399,18 @@ public sealed class MainViewModel : ObservableObject
 
     private void OnLanguageChanged(object? sender, EventArgs e)
     {
+        if (_vmDisposed) return;
+        _cardCache.Clear();
         _emptyGame.RefreshLocalization();
         SelectedGame.RefreshLocalization();
         Preferences.RefreshLocalization();
         ReapplyStatus();
         OnPropertyChanged(nameof(CurrentLanguage));
+        if (_synchronization is not null) _synchronization.Language = CurrentLanguage;
+        UpdateEligibilitySummary();
+        RefreshHistory();
+        NotifyWorkspaceLocalization();
+        if (_initialized) RefreshCommand.Execute(null);
     }
 
     private void SetStatus(Func<ILocalizationService, string> statusFactory)

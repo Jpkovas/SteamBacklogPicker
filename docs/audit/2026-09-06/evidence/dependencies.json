@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "parameters": "--vulnerable --include-transitive",
+  "sources": [
+    "https://api.nuget.org/v3/index.json"
+  ],
+  "projects": [
+    {
+      "path": "src/Infrastructure/SteamDiscovery/SteamDiscovery.csproj"
+    },
+    {
+      "path": "src/Infrastructure/Telemetry/Telemetry.csproj"
+    },
+    {
+      "path": "src/Integration/ValveFormatParser/ValveFormatParser.csproj"
+    },
+    {
+      "path": "src/Domain/Domain.csproj"
+    },
+    {
+      "path": "src/Integration/SteamClientAdapter/SteamClientAdapter.csproj"
+    },
+    {
+      "path": "src/Integration/SteamHooks/SteamHooks.csproj"
+    },
+    {
+      "path": "tests/Infrastructure/SteamDiscovery.Tests/SteamDiscovery.Tests.csproj"
+    },
+    {
+      "path": "tests/Integration/SteamClientAdapter.Tests/SteamClientAdapter.Tests.csproj"
+    },
+    {
+      "path": "tests/Integration/SteamHooks.Tests/SteamHooks.Tests.csproj"
+    },
+    {
+      "path": "tests/Domain/Domain.Tests/Domain.Tests.csproj"
+    },
+    {
+      "path": "src/Presentation/SteamBacklogPicker.UI/SteamBacklogPicker.UI.csproj"
+    },
+    {
+      "path": "tests/Presentation/SteamBacklogPicker.UI.Tests/SteamBacklogPicker.UI.Tests.csproj"
+    },
+    {
+      "path": "tests/TestUtilities/SteamTestUtilities/SteamTestUtilities.csproj"
+    },
+    {
+      "path": "src/Presentation/SteamBacklogPicker.AppCore/SteamBacklogPicker.AppCore.csproj"
+    },
+    {
+      "path": "src/Presentation/SteamBacklogPicker.Linux/SteamBacklogPicker.Linux.csproj"
+    }
+  ]
+}

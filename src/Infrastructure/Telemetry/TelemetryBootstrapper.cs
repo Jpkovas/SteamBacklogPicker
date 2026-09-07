@@ -38,18 +38,24 @@ public static class TelemetryBootstrapper
                 return _logger;
             }
 
-            Directory.CreateDirectory(options.LogsDirectory);
-            var logFilePath = options.GetLogFilePath();
-
             var configuration = new LoggerConfiguration()
                 .MinimumLevel.Is(options.MinimumLogLevel)
-                .Enrich.FromLogContext()
-                .WriteTo.File(
-                    logFilePath,
+                .Enrich.FromLogContext();
+
+            try
+            {
+                Directory.CreateDirectory(options.LogsDirectory);
+                configuration.WriteTo.File(
+                    options.GetLogFilePath(),
                     rollingInterval: RollingInterval.Day,
                     retainedFileCountLimit: options.RetainedLogFileCount,
                     shared: true,
                     restrictedToMinimumLevel: options.MinimumLogLevel);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+            {
+                // The optional file sink must not prevent startup on a read-only profile.
+            }
 
             if (options.EnableDebugSink)
             {
