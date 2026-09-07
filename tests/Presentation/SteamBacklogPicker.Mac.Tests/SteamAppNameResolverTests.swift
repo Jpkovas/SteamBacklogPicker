@@ -50,12 +50,12 @@ final class SteamAppNameResolverTests: XCTestCase {
         try write(#"{"10":{"success":true,"data":{"name":"English"}}}"#, to: endpoint)
         let english = SteamAppNameResolver(cacheURL: cache, endpointURL: endpoint, language: "english", cacheTTL: 60, now: { initial })
         XCTAssertEqual(english.resolveNames(for: [10])[10], "English")
-        try write(#"{"10":{"success":true,"data":{"name":"Português"}}}"#, to: endpoint)
+        try write(#"{"10":{"success":true,"data":{"name":"PortuguÃªs"}}}"#, to: endpoint)
         let portuguese = SteamAppNameResolver(cacheURL: cache, endpointURL: endpoint, language: "brazilian", cacheTTL: 60, now: { initial })
-        XCTAssertEqual(portuguese.resolveNames(for: [10])[10], "Português")
+        XCTAssertEqual(portuguese.resolveNames(for: [10])[10], "PortuguÃªs")
         XCTAssertEqual(english.resolveNames(for: [10])[10], "English")
         let expired = SteamAppNameResolver(cacheURL: cache, endpointURL: endpoint, language: "english", cacheTTL: 60, now: { initial.addingTimeInterval(61) })
-        XCTAssertEqual(expired.resolveNames(for: [10])[10], "Português")
+        XCTAssertEqual(expired.resolveNames(for: [10])[10], "PortuguÃªs")
     }
 
     func testCancelledResolutionDoesNotFetchOrCreateCache() throws {

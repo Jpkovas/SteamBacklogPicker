@@ -18,6 +18,7 @@ Revisão das alterações desde `c45eb915f63b0855988eca9d9c1bcb01dc42b86e`, incl
 | Appinfo | Footer real de quatro bytes era mal interpretado; no Mac perdia todos os metadados | Parser e fixtures usam AppID=0 sem campo size; versões 39–42 e VSZa cobertas. |
 | macOS | Cancelar refresh apagava coleção persistida ou aceitava resultado atrasado | Cancelamento preserva preferências e descarta resultado tardio. |
 | macOS | UTF-8 inválido em string visual descartava metadados independentes | Substituição Unicode nas strings visuais. |
+| Testes Swift | Três caracteres em Windows-1252 impediam compilar os testes no runner macOS | Arquivo convertido para UTF-8; cenários e asserções preservados. |
 | Release | Publicação Linux ocorria depois de tornar a release pública; Windows/macOS não tinham o mesmo fluxo | Workflow por tag valida as plataformas, reúne todos os pacotes em rascunho, verifica checksums e publica o conjunto completo. |
 
 Detalhes AppCore/WPF: [relatório independente](release-review-appcore-wpf.md). O ajuste visual e os benchmarks anteriores estão no [relatório de refino](refinement/REFINAMENTO.md).
@@ -28,6 +29,7 @@ Detalhes AppCore/WPF: [relatório independente](release-review-appcore-wpf.md). 
 - **368 aprovados, zero falhas, 11 ignorados por dependerem de Linux**, total de 379 execuções incluindo múltiplos frameworks.
 - `actionlint` 1.7.12 validou os três workflows. O binário foi obtido da release oficial e conferido pelo checksum; sem shellcheck/pyflakes locais. Git diff sem erros de whitespace.
 - A validação interativa Windows das rodadas anteriores inclui biblioteca real, busca, filtros, backlog/desfazer, alinhamento dos cards e tamanho mínimo 980 × 680.
+- O pacote Windows 0.5.0 também foi aberto por Computer Use: inicialização, término da sincronização sem alterações, busca com dois resultados e alinhamento das sugestões conferidos.
 - A validação nativa Linux/macOS fica nos jobs obrigatórios do GitHub Actions. A publicação depende do sucesso desses jobs e da presença dos pacotes e checksums.
 
 ## Publicação e limites
