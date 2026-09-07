@@ -19,6 +19,7 @@ Revisão das alterações desde `c45eb915f63b0855988eca9d9c1bcb01dc42b86e`, incl
 | macOS | Cancelar refresh apagava coleção persistida ou aceitava resultado atrasado | Cancelamento preserva preferências e descarta resultado tardio. |
 | macOS | UTF-8 inválido em string visual descartava metadados independentes | Substituição Unicode nas strings visuais. |
 | Testes Swift | Três caracteres em Windows-1252 impediam compilar os testes no runner macOS | Arquivo convertido para UTF-8; cenários e asserções preservados. |
+| Traduções | macOS não resolvia 71 chaves novas do catálogo compartilhado | Traduções em português/inglês completadas, com formatação numérica nativa para a contagem. |
 | Release | Publicação Linux ocorria depois de tornar a release pública; Windows/macOS não tinham o mesmo fluxo | Workflow por tag valida as plataformas, reúne todos os pacotes em rascunho, verifica checksums e publica o conjunto completo. |
 
 Detalhes AppCore/WPF: [relatório independente](release-review-appcore-wpf.md). O ajuste visual e os benchmarks anteriores estão no [relatório de refino](refinement/REFINAMENTO.md).
